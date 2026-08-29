@@ -13,24 +13,37 @@ import {
   buildAresonDpiPackets,
   buildCompxDpiPackets,
   buildLedPackets,
+  ARESON_KNOWN_DPI_VALUES,
+  COMPX_DPI_MIN,
+  COMPX_DPI_MAX,
+  COMPX_DPI_STEP,
   type DpiSettings,
   type LedMode,
 } from "./profiles/m913";
+import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
+import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
 const connectBtn = document.querySelector<HTMLButtonElement>("#connect")!;
-const pollButtons = document.querySelectorAll<HTMLButtonElement>(".poll");
+const pollButtonsEl = document.querySelector<HTMLDivElement>("#poll-buttons")!;
 const dpiRowsEl = document.querySelector<HTMLDivElement>("#dpi-rows")!;
-const applyDpiBtn = document.querySelector<HTMLButtonElement>("#apply-dpi")!;
+const dpiHintEl = document.querySelector<HTMLElement>("#dpi-hint")!;
 const ledModeEl = document.querySelector<HTMLSelectElement>("#led-mode")!;
 const ledColorEl = document.querySelector<HTMLInputElement>("#led-color")!;
+const ledBrightnessRow = document.querySelector<HTMLDivElement>("#led-brightness-row")!;
 const ledBrightnessEl = document.querySelector<HTMLInputElement>("#led-brightness")!;
+const ledSpeedRow = document.querySelector<HTMLDivElement>("#led-speed-row")!;
 const ledSpeedEl = document.querySelector<HTMLInputElement>("#led-speed")!;
-const applyLedBtn = document.querySelector<HTMLButtonElement>("#apply-led")!;
+const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
+const applyBtn = document.querySelector<HTMLButtonElement>("#apply")!;
+const showActionRefBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
+const actionRefEl = document.querySelector<HTMLDivElement>("#action-reference")!;
 
 let device: HIDDevice | null = null;
 let hardware: HardwareRevision = "unknown";
+let pollingRateHz = 1000;
+const buttonActions: Record<string, string> = {};
 
 function log(msg: string) {
   const time = new Date().toLocaleTimeString();
@@ -39,9 +52,7 @@ function log(msg: string) {
 
 function setConnected(connected: boolean) {
   connectBtn.disabled = connected;
-  pollButtons.forEach((b) => (b.disabled = !connected));
-  applyDpiBtn.disabled = !connected;
-  applyLedBtn.disabled = !connected;
+  applyBtn.disabled = !connected;
 }
 
 async function sendAndLog(label: string, packet: Uint8Array) {
@@ -52,9 +63,11 @@ async function sendAndLog(label: string, packet: Uint8Array) {
     const resp = await waitForResponse(device, 800);
     log(`← response: ${toHex(resp)}`);
   } catch {
-    log(`  (no response within 800ms — device may not ack this command, or the ack format differs from what's expected)`);
+    log(`  (no response within 800ms)`);
   }
 }
+
+// --- Connect -----------------------------------------------------------
 
 connectBtn.addEventListener("click", async () => {
   try {
@@ -64,54 +77,239 @@ connectBtn.addEventListener("click", async () => {
     statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware)`;
     log(`Connected. Hardware revision detected: ${hardware}`);
     log(describeCollections(device));
+    renderDpiRows();
     setConnected(true);
   } catch (err) {
     log(`Connect failed: ${(err as Error).message}`);
   }
 });
 
-pollButtons.forEach((btn) => {
-  btn.addEventListener("click", async () => {
-    const hz = Number(btn.dataset.hz);
-    const packet = buildPollingRatePacket(hz);
-    await sendAndLog(`polling rate ${hz}Hz`, packet);
-  });
-});
+// --- Polling rate --------------------------------------------------------
 
-// Five DPI slot rows: value input + enabled checkbox.
-const dpiInputs: HTMLInputElement[] = [];
-const dpiEnabled: HTMLInputElement[] = [];
-for (let i = 0; i < 5; i++) {
-  const row = document.createElement("div");
-  row.className = "dpi-row";
-  row.innerHTML = `
-    <label>Slot ${i + 1}</label>
-    <input type="checkbox" class="dpi-enabled" checked />
-    <input type="number" class="dpi-value" step="50" placeholder="e.g. 1600" />
-  `;
-  dpiRowsEl.appendChild(row);
-  dpiEnabled.push(row.querySelector(".dpi-enabled")!);
-  dpiInputs.push(row.querySelector(".dpi-value")!);
+for (const hz of [125, 250, 500, 1000]) {
+  const btn = document.createElement("button");
+  btn.textContent = `${hz} Hz`;
+  if (hz === pollingRateHz) btn.style.fontWeight = "bold";
+  btn.addEventListener("click", () => {
+    pollingRateHz = hz;
+    for (const b of pollButtonsEl.querySelectorAll("button")) (b as HTMLElement).style.fontWeight = "normal";
+    btn.style.fontWeight = "bold";
+  });
+  pollButtonsEl.appendChild(btn);
 }
 
-applyDpiBtn.addEventListener("click", async () => {
-  const settings: DpiSettings = {
-    values: dpiInputs.map((el) => Number(el.value) || 0) as DpiSettings["values"],
-    enabled: dpiEnabled.map((el) => el.checked) as DpiSettings["enabled"],
+// --- DPI -----------------------------------------------------------------
+
+const dpiValueInputs: HTMLInputElement[] = [];
+const dpiEnabledInputs: HTMLInputElement[] = [];
+
+function renderDpiRows() {
+  dpiRowsEl.innerHTML = "";
+  dpiValueInputs.length = 0;
+  dpiEnabledInputs.length = 0;
+
+  if (hardware === "areson") {
+    dpiHintEl.textContent = `Areson hardware only accepts specific table values, e.g. ${ARESON_KNOWN_DPI_VALUES.slice(0, 6).join(", ")}, … (see the datalist on each field).`;
+  } else if (hardware === "compx") {
+    dpiHintEl.textContent = `Compx hardware accepts any multiple of ${COMPX_DPI_STEP} from ${COMPX_DPI_MIN} to ${COMPX_DPI_MAX}.`;
+  } else {
+    dpiHintEl.textContent = "";
+  }
+
+  const datalistId = "dpi-known-values";
+  let datalist = document.getElementById(datalistId) as HTMLDataListElement | null;
+  if (!datalist) {
+    datalist = document.createElement("datalist");
+    datalist.id = datalistId;
+    document.body.appendChild(datalist);
+  }
+  datalist.innerHTML = ARESON_KNOWN_DPI_VALUES.map((v) => `<option value="${v}">`).join("");
+
+  for (let i = 0; i < 5; i++) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <label>Slot ${i + 1}</label>
+      <input type="checkbox" checked />
+      <input type="number" step="${hardware === "compx" ? COMPX_DPI_STEP : 50}" placeholder="e.g. 1600" list="${datalistId}" />
+    `;
+    dpiRowsEl.appendChild(row);
+    dpiEnabledInputs.push(row.querySelector('input[type="checkbox"]')!);
+    dpiValueInputs.push(row.querySelector('input[type="number"]')!);
+  }
+}
+renderDpiRows();
+
+function readDpiSettings(): DpiSettings {
+  return {
+    values: dpiValueInputs.map((el) => Number(el.value) || 0) as DpiSettings["values"],
+    enabled: dpiEnabledInputs.map((el) => el.checked) as DpiSettings["enabled"],
   };
-  const packets = hardware === "compx" ? buildCompxDpiPackets(settings) : buildAresonDpiPackets(settings);
-  for (const [i, packet] of packets.entries()) {
-    await sendAndLog(`DPI packet ${i + 1}/${packets.length}`, packet);
+}
+
+// --- LED -------------------------------------------------------------
+
+function updateLedVisibility() {
+  const mode = ledModeEl.value as LedMode;
+  (document.querySelector("#led-color-row") as HTMLElement).style.display = mode === "steady" || mode === "respiration" ? "flex" : "none";
+  ledBrightnessRow.style.display = mode === "steady" ? "flex" : "none";
+  ledSpeedRow.style.display = mode === "respiration" ? "flex" : "none";
+}
+ledModeEl.addEventListener("change", updateLedVisibility);
+updateLedVisibility();
+
+// --- Buttons -----------------------------------------------------------
+
+function renderButtonRows() {
+  for (const slot of BUTTON_SLOTS) {
+    const row = document.createElement("div");
+    row.className = "button-row";
+
+    const select = document.createElement("select");
+    const unchangedOpt = document.createElement("option");
+    unchangedOpt.value = "";
+    unchangedOpt.textContent = "Unchanged";
+    select.appendChild(unchangedOpt);
+
+    for (const category of ACTION_CATEGORIES) {
+      const group = document.createElement("optgroup");
+      group.label = category.name;
+      for (const action of category.actions) {
+        const opt = document.createElement("option");
+        opt.value = action.value;
+        opt.textContent = action.label;
+        group.appendChild(opt);
+      }
+      select.appendChild(group);
+    }
+
+    const comboOpt = document.createElement("option");
+    comboOpt.value = "__combo__";
+    comboOpt.textContent = "Key Combination…";
+    select.appendChild(comboOpt);
+
+    const customOpt = document.createElement("option");
+    customOpt.value = "__custom__";
+    customOpt.textContent = "Custom…";
+    select.appendChild(customOpt);
+
+    const comboBuilder = document.createElement("div");
+    comboBuilder.className = "combo-builder";
+    comboBuilder.innerHTML = `
+      <label><input type="checkbox" data-mod="ctrl" /> Ctrl</label>
+      <label><input type="checkbox" data-mod="shift" /> Shift</label>
+      <label><input type="checkbox" data-mod="alt" /> Alt</label>
+      <label><input type="checkbox" data-mod="super" /> ⌘/Super</label>
+      <input type="text" placeholder="key, e.g. c" style="width:80px" class="combo-key" />
+      <button type="button" class="combo-apply">Use</button>
+    `;
+
+    const customInput = document.createElement("input");
+    customInput.type = "text";
+    customInput.placeholder = "e.g. ctrl+alt+super+d";
+    customInput.style.display = "none";
+    customInput.style.marginLeft = "0.5rem";
+
+    select.addEventListener("change", () => {
+      comboBuilder.classList.remove("open");
+      customInput.style.display = "none";
+      if (select.value === "__combo__") {
+        comboBuilder.classList.add("open");
+      } else if (select.value === "__custom__") {
+        customInput.style.display = "inline-block";
+        customInput.value = "";
+        buttonActions[slot.id] = "";
+      } else {
+        buttonActions[slot.id] = select.value;
+      }
+    });
+
+    customInput.addEventListener("input", () => {
+      buttonActions[slot.id] = customInput.value.trim();
+    });
+
+    comboBuilder.querySelector(".combo-apply")!.addEventListener("click", () => {
+      const mods: string[] = [];
+      comboBuilder.querySelectorAll<HTMLInputElement>("input[data-mod]").forEach((el) => {
+        if (el.checked) mods.push(el.dataset.mod!);
+      });
+      const key = (comboBuilder.querySelector(".combo-key") as HTMLInputElement).value.trim().toLowerCase();
+      const action = [...mods, key].filter(Boolean).join("+");
+      if (!action) return;
+      const tokens = actionComboTokens(action);
+      if (tokens > MAX_COMBO_TOKENS) {
+        log(`Combo "${action}" uses ${tokens} modifiers+keys — hardware allows at most ${MAX_COMBO_TOKENS}.`);
+        return;
+      }
+      buttonActions[slot.id] = action;
+      comboBuilder.classList.remove("open");
+      // Reflect the combo as the visible selection via the custom field,
+      // since it won't match any quick-pick option.
+      select.value = "__custom__";
+      customInput.style.display = "inline-block";
+      customInput.value = action;
+    });
+
+    row.innerHTML = `<label>${slot.displayName}</label>`;
+    row.appendChild(select);
+    row.appendChild(customInput);
+    row.appendChild(comboBuilder);
+    buttonRowsEl.appendChild(row);
+  }
+}
+renderButtonRows();
+
+showActionRefBtn.addEventListener("click", () => {
+  actionRefEl.classList.toggle("open");
+  if (actionRefEl.classList.contains("open")) {
+    const lines: string[] = [];
+    for (const category of ACTION_CATEGORIES) {
+      lines.push(category.name + ":");
+      for (const action of category.actions) {
+        lines.push(`  ${action.value}${action.label !== action.value ? " — " + action.label : ""}`);
+      }
+    }
+    lines.push("", "Modifiers: ctrl, shift, alt, super (combine with + before a key)");
+    lines.push("Combos: at most " + MAX_COMBO_TOKENS + " modifiers+keys total, e.g. ctrl+shift+z");
+    actionRefEl.textContent = lines.join("\n");
   }
 });
 
-applyLedBtn.addEventListener("click", async () => {
-  const mode = ledModeEl.value as LedMode;
-  const color = parseInt(ledColorEl.value.slice(1), 16);
-  const brightness = Number(ledBrightnessEl.value);
-  const speed = Number(ledSpeedEl.value);
-  const packets = buildLedPackets(mode, color, brightness, speed);
-  for (const [i, packet] of packets.entries()) {
-    await sendAndLog(`LED packet ${i + 1}/${packets.length}`, packet);
+// --- Apply ---------------------------------------------------------------
+
+applyBtn.addEventListener("click", async () => {
+  if (!device) return;
+  applyBtn.disabled = true;
+  try {
+    await sendAndLog("polling rate", buildPollingRatePacket(pollingRateHz));
+
+    const dpi = readDpiSettings();
+    const dpiPackets = hardware === "compx" ? buildCompxDpiPackets(dpi) : buildAresonDpiPackets(dpi);
+    for (const [i, packet] of dpiPackets.entries()) {
+      await sendAndLog(`DPI packet ${i + 1}/${dpiPackets.length}`, packet);
+    }
+
+    const mode = ledModeEl.value as LedMode;
+    const color = parseInt(ledColorEl.value.slice(1), 16);
+    const brightness = Number(ledBrightnessEl.value);
+    const speed = Number(ledSpeedEl.value);
+    const ledPackets = buildLedPackets(mode, color, brightness, speed);
+    for (const [i, packet] of ledPackets.entries()) {
+      await sendAndLog(`LED packet ${i + 1}/${ledPackets.length}`, packet);
+    }
+
+    const changedButtons = Object.fromEntries(Object.entries(buttonActions).filter(([, v]) => v));
+    if (Object.keys(changedButtons).length > 0) {
+      const buttonPackets = buildButtonMappingPackets(changedButtons, hardware === "compx" ? "compx" : "areson");
+      for (const [i, packet] of buttonPackets.entries()) {
+        await sendAndLog(`Button packet ${i + 1}/${buttonPackets.length}`, packet);
+      }
+    }
+
+    log("Apply Configuration: done.");
+  } catch (err) {
+    log(`Apply failed: ${(err as Error).message}`);
+  } finally {
+    applyBtn.disabled = false;
   }
 });

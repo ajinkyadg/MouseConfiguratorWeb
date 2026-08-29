@@ -1,0 +1,121 @@
+{
+  "_comment": "Raw data tables for button remapping, referenced from m913.md. Facts only (byte values, address offsets) — not code.",
+
+  "buttonIndexOrder": [
+    "side1", "side2", "side3", "side4", "side5", "side6",
+    "right", "left", "side7", "side8", "middle", "fire",
+    "side9", "side10", "side11", "side12"
+  ],
+
+  "compxIndexTranslation": {
+    "_comment": "buttonIndexOrder[i] -> protocol packet slot, Compx hardware only",
+    "side1": 3, "side2": 4, "side3": 5, "side4": 6, "side5": 7, "side6": 10,
+    "right": 1, "left": 0, "side7": 9, "side8": 15, "middle": 2, "fire": 8,
+    "side9": 14, "side10": 13, "side11": 12, "side12": 11
+  },
+
+  "defaultButtonMappingAreson": [
+    [8,7,0,0,96,8, 0,0,0,85, 5,0,0,80, 0,0,52],
+    [8,7,0,0,104,8, 5,0,0,80, 1,8,0,76, 0,0,44],
+    [8,7,0,0,112,8, 5,0,0,80, 5,0,0,80, 0,0,36],
+    [8,7,0,0,120,8, 1,2,0,82, 1,1,0,83, 0,0,28],
+    [8,7,0,0,128,8, 5,0,0,80, 5,0,0,80, 0,0,20],
+    [8,7,0,0,136,8, 1,4,0,80, 4,58,3,20, 0,0,12],
+    [8,7,0,0,144,8, 5,0,0,80, 5,0,0,80, 0,0,4],
+    [8,7,0,0,152,8, 5,0,0,80, 5,0,0,80, 0,0,252]
+  ],
+
+  "defaultButtonMappingCompx": [
+    [8,7,0,0,96,8, 1,1,0,83, 1,2,0,82, 0,0,0],
+    [8,7,0,0,104,8, 1,4,0,80, 5,0,0,80, 0,0,0],
+    [8,7,0,0,112,8, 5,0,0,80, 5,0,0,80, 0,0,0],
+    [8,7,0,0,120,8, 5,0,0,80, 5,0,0,80, 0,0,0],
+    [8,7,0,0,128,8, 5,0,0,80, 5,0,0,80, 0,0,0],
+    [8,7,0,0,136,8, 5,0,0,80, 5,0,0,80, 0,0,0],
+    [8,7,0,0,144,8, 5,0,0,80, 5,0,0,80, 0,0,0],
+    [8,7,0,0,152,8, 5,0,0,80, 5,0,0,80, 0,0,0]
+  ],
+
+  "_defaultButtonMapping_note": "byte[16] (last column) is a placeholder in these templates — always recompute the outer checksum after touching a packet, never trust the stored value.",
+
+  "keyboardKeyAddressByProtocolSlot": [
+    [1, 0], [1, 32], [1, 64], [1, 96], [1, 128], [1, 160], [1, 192], [1, 224],
+    [2, 0], [2, 32], [2, 64], [2, 96], [2, 128], [2, 160], [2, 192], [2, 224]
+  ],
+  "_keyboardKeyAddress_note": "Indexed by PROTOCOL SLOT (0-15, i.e. the address table is shared physical layout), not by logical button. For Areson (identity mapping) protocol slot == buttonIndexOrder position, so slot N happens to correspond to buttonIndexOrder[N]. For Compx, look up via compxIndexTranslation first to get the protocol slot, then index this array — do not index it by button name directly.",
+
+  "mouseActions": {
+    "left":           [1, 1, 0, 83],
+    "right":          [1, 2, 0, 82],
+    "middle":         [1, 4, 0, 80],
+    "backward":       [1, 8, 0, 76],
+    "forward":        [1, 16, 0, 68],
+    "dpi-":           [2, 3, 0, 80],
+    "dpi+":           [2, 2, 0, 81],
+    "dpi-cycle":      [2, 1, 0, 82],
+    "dpi-loop":       [2, 1, 0, 82],
+    "led_toggle":     [8, 0, 0, 77],
+    "rgb_toggle":     [8, 0, 0, 77],
+    "none":           [0, 0, 0, 85],
+    "disable":        [0, 0, 0, 85],
+    "fire":           [4, 58, 3, 20],
+    "three_click":    [4, 50, 3, 28],
+    "polling_switch": [7, 0, 0, 78],
+    "media_play":     [146, 0, 205, 0],
+    "media_player":   [146, 1, 131, 1],
+    "media_next":     [146, 0, 181, 0],
+    "media_prev":     [146, 0, 182, 0],
+    "media_stop":     [146, 0, 183, 0],
+    "media_vol_up":   [146, 0, 233, 0],
+    "media_vol_down": [146, 0, 234, 0],
+    "media_mute":     [146, 0, 226, 0],
+    "media_email":    [146, 1, 138, 1],
+    "media_calc":     [146, 1, 146, 1],
+    "media_computer": [146, 1, 148, 1],
+    "media_home":     [146, 2, 35, 2],
+    "media_search":   [146, 2, 33, 2],
+    "www_forward":    [146, 2, 37, 2],
+    "www_back":       [146, 2, 36, 2],
+    "www_stop":       [146, 2, 38, 2],
+    "www_refresh":    [146, 2, 39, 2],
+    "www_favorites":  [146, 2, 42, 2],
+    "favorites":      [146, 2, 42, 2]
+  },
+  "_mouseActions_note": "'fire:speed:times' (speed 3-255, times 0-3) is computed, not looked up: [4, speed, times, (0x55 - 4 - speed - times) & 0xFF].",
+
+  "modifierBits": {
+    "ctrl_l": 1, "shift_l": 2, "alt_l": 4, "super_l": 8, "meta_l": 8,
+    "ctrl_r": 16, "shift_r": 32, "alt_r": 64, "super_r": 128, "meta_r": 128,
+    "ctrl": 1, "shift": 2, "alt": 4, "super": 8, "meta": 8
+  },
+
+  "keyCodes": {
+    "a": 4, "b": 5, "c": 6, "d": 7, "e": 8, "f": 9, "g": 10, "h": 11,
+    "i": 12, "j": 13, "k": 14, "l": 15, "m": 16, "n": 17, "o": 18, "p": 19,
+    "q": 20, "r": 21, "s": 22, "t": 23, "u": 24, "v": 25, "w": 26, "x": 27,
+    "y": 28, "z": 29,
+    "1": 30, "2": 31, "3": 32, "4": 33, "5": 34, "6": 35, "7": 36, "8": 37,
+    "9": 38, "0": 39,
+    "enter": 40, "return": 40, "escape": 41, "esc": 41, "backspace": 42,
+    "tab": 43, "space": 44,
+    "minus": 45, "-": 45, "equal": 46, "=": 46,
+    "lbracket": 47, "[": 47, "rbracket": 48, "]": 48,
+    "backslash": 49, "\\": 49, "semicolon": 51, ";": 51,
+    "quote": 52, "'": 52, "grave": 53, "`": 53,
+    "comma": 54, ",": 54, "dot": 55, ".": 55, "slash": 56, "/": 56,
+    "capslock": 57,
+    "f1": 58, "f2": 59, "f3": 60, "f4": 61, "f5": 62, "f6": 63,
+    "f7": 64, "f8": 65, "f9": 66, "f10": 67, "f11": 68, "f12": 69,
+    "f13": 104, "f14": 105, "f15": 106, "f16": 107, "f17": 108, "f18": 109,
+    "f19": 110, "f20": 111, "f21": 112, "f22": 113, "f23": 114, "f24": 115,
+    "printscreen": 70, "scrolllock": 71, "pause": 72,
+    "insert": 73, "home": 74, "pageup": 75, "delete": 76, "end": 77, "pagedown": 78,
+    "right": 79, "arrow_right": 79, "left": 80, "arrow_left": 80,
+    "down": 81, "arrow_down": 81, "up": 82, "arrow_up": 82,
+    "num0": 98, "num1": 89, "num2": 90, "num3": 91, "num4": 92,
+    "num5": 93, "num6": 94, "num7": 95, "num8": 96, "num9": 97,
+    "numenter": 88, "numdot": 99, "numplus": 87, "numminus": 86,
+    "nummul": 85, "numdiv": 84, "numlock": 83
+  },
+  "_keyCodes_note": "'left'/'right' collide with the mouse-click action names above — resolve mouse actions first, and only fall back to these as keyboard keys inside a combo (e.g. 'ctrl+left'). arrow_left/arrow_right/arrow_up/arrow_down are unambiguous aliases for standalone binding."
+}

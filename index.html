@@ -2,43 +2,48 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>M913 WebHID test harness</title>
+    <title>M913 Configurator (web PoC)</title>
     <style>
-      body { font-family: -apple-system, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #111; }
+      body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #111; }
       h1 { font-size: 1.2rem; }
       section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
       section h2 { margin-top: 0; font-size: 1rem; }
-      button { padding: 0.4rem 0.8rem; margin: 0.2rem; cursor: pointer; }
+      button { padding: 0.4rem 0.8rem; margin: 0.15rem; cursor: pointer; }
       button:disabled { opacity: 0.4; cursor: not-allowed; }
-      label { display: inline-block; width: 90px; }
-      .dpi-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
-      .dpi-row input[type="number"] { width: 80px; }
-      #log { background: #0b0b0c; color: #9dfc9d; font-family: ui-monospace, monospace; font-size: 0.8rem; padding: 0.75rem; border-radius: 6px; height: 260px; overflow-y: auto; white-space: pre-wrap; }
+      button.primary { background: #e2001a; color: white; border: none; border-radius: 6px; padding: 0.6rem 1.2rem; font-weight: bold; }
+      label { display: inline-block; min-width: 90px; }
+      .row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+      .row input[type="number"] { width: 90px; }
+      .button-row { border-bottom: 1px solid #eee; padding: 0.4rem 0; }
+      .button-row select { width: 260px; }
+      .combo-builder { display: none; margin-top: 0.3rem; padding: 0.4rem; background: #f6f6f7; border-radius: 6px; }
+      .combo-builder.open { display: block; }
+      .combo-builder label { min-width: auto; margin-right: 0.5rem; }
+      #log { background: #0b0b0c; color: #9dfc9d; font-family: ui-monospace, monospace; font-size: 0.75rem; padding: 0.75rem; border-radius: 6px; height: 220px; overflow-y: auto; white-space: pre-wrap; }
       #status { font-weight: bold; }
+      #action-reference { display: none; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.8rem; background: #f6f6f7; padding: 0.75rem; border-radius: 6px; max-height: 300px; overflow-y: auto; }
+      #action-reference.open { display: block; }
+      small { color: #666; }
     </style>
   </head>
   <body>
-    <h1>M913 WebHID test harness (not the product — a protocol verification tool)</h1>
-    <p id="status">Not connected. Requires Chrome or Edge.</p>
+    <h1>M913 Configurator — web PoC (not styled as the final product yet)</h1>
+    <p id="status">Not connected. Requires Chrome or Edge, with Input Monitoring permission granted (macOS).</p>
 
     <section>
       <h2>1. Connect</h2>
       <button id="connect">Connect to M913</button>
-      <p>This dumps the device's real report descriptor to the log — settles whether Areson uses Feature reports and whether the report ID needs stripping from byte[0], per docs/protocol-notes/m913.md.</p>
     </section>
 
     <section>
       <h2>2. Polling rate</h2>
-      <button class="poll" data-hz="125" disabled>125 Hz</button>
-      <button class="poll" data-hz="250" disabled>250 Hz</button>
-      <button class="poll" data-hz="500" disabled>500 Hz</button>
-      <button class="poll" data-hz="1000" disabled>1000 Hz</button>
+      <div id="poll-buttons"></div>
     </section>
 
     <section>
       <h2>3. DPI</h2>
       <div id="dpi-rows"></div>
-      <button id="apply-dpi" disabled>Apply DPI</button>
+      <small id="dpi-hint"></small>
     </section>
 
     <section>
@@ -49,14 +54,31 @@
         <option value="steady" selected>Steady</option>
         <option value="respiration">Respiration</option>
         <option value="rainbow">Rainbow</option>
-      </select><br />
-      <label>Color</label>
-      <input type="color" id="led-color" value="#00ff00" /><br />
-      <label>Brightness</label>
-      <input type="range" id="led-brightness" min="0" max="255" value="255" /><br />
-      <label>Speed</label>
-      <input type="range" id="led-speed" min="1" max="5" value="3" /><br />
-      <button id="apply-led" disabled>Apply LED</button>
+      </select>
+      <div class="row" id="led-color-row">
+        <label>Color</label>
+        <input type="color" id="led-color" value="#00ff00" />
+      </div>
+      <div class="row" id="led-brightness-row">
+        <label>Brightness</label>
+        <input type="range" id="led-brightness" min="0" max="255" value="255" />
+      </div>
+      <div class="row" id="led-speed-row">
+        <label>Speed</label>
+        <input type="range" id="led-speed" min="1" max="5" value="3" />
+      </div>
+    </section>
+
+    <section>
+      <h2>5. Buttons</h2>
+      <div id="button-rows"></div>
+      <button id="show-action-reference">Full Action Reference…</button>
+      <div id="action-reference"></div>
+    </section>
+
+    <section>
+      <button class="primary" id="apply" disabled>Apply Configuration</button>
+      <p><small>Sends polling rate, DPI, LED, and any button remaps in sequence.</small></p>
     </section>
 
     <section>
