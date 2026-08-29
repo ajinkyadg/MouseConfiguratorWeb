@@ -21,7 +21,7 @@ import {
   type LedMode,
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
-import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog";
+import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
@@ -75,6 +75,7 @@ connectBtn.addEventListener("click", async () => {
     await openDevice(device);
     hardware = detectHardware(device);
     statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware)`;
+    statusEl.classList.add("connected");
     log(`Connected. Hardware revision detected: ${hardware}`);
     log(describeCollections(device));
     renderDpiRows();
@@ -89,11 +90,11 @@ connectBtn.addEventListener("click", async () => {
 for (const hz of [125, 250, 500, 1000]) {
   const btn = document.createElement("button");
   btn.textContent = `${hz} Hz`;
-  if (hz === pollingRateHz) btn.style.fontWeight = "bold";
+  if (hz === pollingRateHz) btn.classList.add("active");
   btn.addEventListener("click", () => {
     pollingRateHz = hz;
-    for (const b of pollButtonsEl.querySelectorAll("button")) (b as HTMLElement).style.fontWeight = "normal";
-    btn.style.fontWeight = "bold";
+    for (const b of pollButtonsEl.querySelectorAll("button")) b.classList.remove("active");
+    btn.classList.add("active");
   });
   pollButtonsEl.appendChild(btn);
 }
@@ -159,39 +160,36 @@ ledModeEl.addEventListener("change", updateLedVisibility);
 updateLedVisibility();
 
 // --- Buttons -----------------------------------------------------------
+//
+// Two-step picker: a category select (a real, short list — "Clicks",
+// "DPI & Light", etc. — plus Key Combination/Custom) followed by an
+// action select scoped to whichever category was chosen. This replaces a
+// single <select> with <optgroup>s, which browsers still render as one
+// long flat list regardless of the grouping.
 
 function renderButtonRows() {
   for (const slot of BUTTON_SLOTS) {
     const row = document.createElement("div");
     row.className = "button-row";
 
-    const select = document.createElement("select");
-    const unchangedOpt = document.createElement("option");
-    unchangedOpt.value = "";
-    unchangedOpt.textContent = "Unchanged";
-    select.appendChild(unchangedOpt);
+    const label = document.createElement("label");
+    label.textContent = slot.displayName;
 
-    for (const category of ACTION_CATEGORIES) {
-      const group = document.createElement("optgroup");
-      group.label = category.name;
-      for (const action of category.actions) {
-        const opt = document.createElement("option");
-        opt.value = action.value;
-        opt.textContent = action.label;
-        group.appendChild(opt);
-      }
-      select.appendChild(group);
-    }
+    const currentValue = document.createElement("span");
+    currentValue.className = "current-value";
+    currentValue.textContent = "Unchanged";
 
-    const comboOpt = document.createElement("option");
-    comboOpt.value = "__combo__";
-    comboOpt.textContent = "Key Combination…";
-    select.appendChild(comboOpt);
+    const categorySelect = document.createElement("select");
+    categorySelect.className = "category-select";
+    categorySelect.innerHTML =
+      `<option value="">Unchanged</option>` +
+      ACTION_CATEGORIES.map((c) => `<option value="${c.name}">${c.name}</option>`).join("") +
+      `<option value="__combo__">Key Combination…</option>` +
+      `<option value="__custom__">Custom…</option>`;
 
-    const customOpt = document.createElement("option");
-    customOpt.value = "__custom__";
-    customOpt.textContent = "Custom…";
-    select.appendChild(customOpt);
+    const actionSelect = document.createElement("select");
+    actionSelect.className = "action-select";
+    actionSelect.style.display = "none";
 
     const comboBuilder = document.createElement("div");
     comboBuilder.className = "combo-builder";
@@ -200,33 +198,48 @@ function renderButtonRows() {
       <label><input type="checkbox" data-mod="shift" /> Shift</label>
       <label><input type="checkbox" data-mod="alt" /> Alt</label>
       <label><input type="checkbox" data-mod="super" /> ⌘/Super</label>
-      <input type="text" placeholder="key, e.g. c" style="width:80px" class="combo-key" />
+      <input type="text" placeholder="key, e.g. c" class="combo-key" />
       <button type="button" class="combo-apply">Use</button>
     `;
 
+    const customWrap = document.createElement("div");
+    customWrap.className = "custom-wrap";
     const customInput = document.createElement("input");
     customInput.type = "text";
     customInput.placeholder = "e.g. ctrl+alt+super+d";
-    customInput.style.display = "none";
-    customInput.style.marginLeft = "0.5rem";
+    customWrap.appendChild(customInput);
 
-    select.addEventListener("change", () => {
+    function setCurrent(value: string) {
+      buttonActions[slot.id] = value;
+      currentValue.textContent = value ? displayLabel(value) ?? value : "Unchanged";
+    }
+
+    categorySelect.addEventListener("change", () => {
+      actionSelect.style.display = "none";
       comboBuilder.classList.remove("open");
-      customInput.style.display = "none";
-      if (select.value === "__combo__") {
+      customWrap.classList.remove("open");
+      const value = categorySelect.value;
+
+      if (value === "") {
+        setCurrent("");
+      } else if (value === "__combo__") {
         comboBuilder.classList.add("open");
-      } else if (select.value === "__custom__") {
-        customInput.style.display = "inline-block";
+      } else if (value === "__custom__") {
+        customWrap.classList.add("open");
         customInput.value = "";
-        buttonActions[slot.id] = "";
+        setCurrent("");
       } else {
-        buttonActions[slot.id] = select.value;
+        const category = ACTION_CATEGORIES.find((c) => c.name === value)!;
+        actionSelect.innerHTML =
+          `<option value="" disabled selected>Choose action…</option>` +
+          category.actions.map((a) => `<option value="${a.value}">${a.label}</option>`).join("");
+        actionSelect.style.display = "inline-block";
       }
     });
 
-    customInput.addEventListener("input", () => {
-      buttonActions[slot.id] = customInput.value.trim();
-    });
+    actionSelect.addEventListener("change", () => setCurrent(actionSelect.value));
+
+    customInput.addEventListener("input", () => setCurrent(customInput.value.trim()));
 
     comboBuilder.querySelector(".combo-apply")!.addEventListener("click", () => {
       const mods: string[] = [];
@@ -241,19 +254,16 @@ function renderButtonRows() {
         log(`Combo "${action}" uses ${tokens} modifiers+keys — hardware allows at most ${MAX_COMBO_TOKENS}.`);
         return;
       }
-      buttonActions[slot.id] = action;
+      setCurrent(action);
       comboBuilder.classList.remove("open");
-      // Reflect the combo as the visible selection via the custom field,
-      // since it won't match any quick-pick option.
-      select.value = "__custom__";
-      customInput.style.display = "inline-block";
-      customInput.value = action;
     });
 
-    row.innerHTML = `<label>${slot.displayName}</label>`;
-    row.appendChild(select);
-    row.appendChild(customInput);
+    row.appendChild(label);
+    row.appendChild(currentValue);
+    row.appendChild(categorySelect);
+    row.appendChild(actionSelect);
     row.appendChild(comboBuilder);
+    row.appendChild(customWrap);
     buttonRowsEl.appendChild(row);
   }
 }

@@ -4,57 +4,193 @@
     <meta charset="UTF-8" />
     <title>M913 Configurator (web PoC)</title>
     <style>
-      body { font-family: -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #111; }
-      h1 { font-size: 1.2rem; }
-      section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-      section h2 { margin-top: 0; font-size: 1rem; }
-      button { padding: 0.4rem 0.8rem; margin: 0.15rem; cursor: pointer; }
+      :root {
+        --bg: #0b0b0c;
+        --surface: #18181a;
+        --surface-elevated: #222224;
+        --accent: #e2001a;
+        --divider: rgba(226, 0, 26, 0.35);
+        --text: #f2f2f3;
+        --text-secondary: #9a9a9d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 1rem 3rem;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 0;
+        border-bottom: 1px solid var(--divider);
+        margin-bottom: 1.5rem;
+      }
+      header h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
+      header p { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+      #status { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.3rem; }
+      #status.connected { color: #6fe07a; }
+
+      section {
+        background: var(--surface);
+        border: 1px solid #2a2a2d;
+        border-radius: 10px;
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 1rem;
+      }
+      section h2 {
+        margin: 0 0 0.85rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      section p.hint { font-size: 0.75rem; color: var(--text-secondary); margin: 0.5rem 0 0; }
+
+      button {
+        background: var(--surface-elevated);
+        color: var(--text);
+        border: 1px solid #333336;
+        border-radius: 6px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      button:hover { border-color: var(--accent); }
       button:disabled { opacity: 0.4; cursor: not-allowed; }
-      button.primary { background: #e2001a; color: white; border: none; border-radius: 6px; padding: 0.6rem 1.2rem; font-weight: bold; }
-      label { display: inline-block; min-width: 90px; }
-      .row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+      button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        font-weight: 600;
+        padding: 0.65rem 1.4rem;
+        font-size: 0.9rem;
+      }
+      button.primary:hover { filter: brightness(1.1); border-color: var(--accent); }
+
+      .segmented { display: inline-flex; border-radius: 6px; overflow: hidden; border: 1px solid #333336; }
+      .segmented button {
+        border: none;
+        border-radius: 0;
+        border-right: 1px solid #333336;
+      }
+      .segmented button:last-child { border-right: none; }
+      .segmented button.active { background: var(--accent); color: white; }
+
+      label { display: inline-block; min-width: 90px; font-size: 0.85rem; color: var(--text-secondary); }
+      select, input[type="text"], input[type="number"] {
+        background: var(--surface-elevated);
+        color: var(--text);
+        border: 1px solid #333336;
+        border-radius: 6px;
+        padding: 0.35rem 0.5rem;
+        font-size: 0.85rem;
+      }
+      input[type="checkbox"] { accent-color: var(--accent); }
+      input[type="range"] { accent-color: var(--accent); }
+
+      .row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
       .row input[type="number"] { width: 90px; }
-      .button-row { border-bottom: 1px solid #eee; padding: 0.4rem 0; }
-      .button-row select { width: 260px; }
-      .combo-builder { display: none; margin-top: 0.3rem; padding: 0.4rem; background: #f6f6f7; border-radius: 6px; }
-      .combo-builder.open { display: block; }
-      .combo-builder label { min-width: auto; margin-right: 0.5rem; }
-      #log { background: #0b0b0c; color: #9dfc9d; font-family: ui-monospace, monospace; font-size: 0.75rem; padding: 0.75rem; border-radius: 6px; height: 220px; overflow-y: auto; white-space: pre-wrap; }
-      #status { font-weight: bold; }
-      #action-reference { display: none; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.8rem; background: #f6f6f7; padding: 0.75rem; border-radius: 6px; max-height: 300px; overflow-y: auto; }
+
+      .button-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #232326;
+        flex-wrap: wrap;
+      }
+      .button-row:last-child { border-bottom: none; }
+      .button-row label { min-width: 110px; color: var(--text); font-weight: 500; }
+      .current-value {
+        min-width: 140px;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        font-family: ui-monospace, monospace;
+      }
+      .category-select { min-width: 150px; }
+      .action-select { min-width: 190px; }
+
+      .combo-builder, .custom-wrap {
+        display: none;
+        align-items: center;
+        gap: 0.4rem;
+        background: #0e0e10;
+        border: 1px solid #2a2a2d;
+        border-radius: 6px;
+        padding: 0.4rem 0.6rem;
+      }
+      .combo-builder.open, .custom-wrap.open { display: flex; flex-wrap: wrap; }
+      .combo-builder label { min-width: auto; font-size: 0.78rem; }
+      .combo-key { width: 70px; }
+
+      #log {
+        background: #000;
+        color: #7dfb85;
+        font-family: ui-monospace, monospace;
+        font-size: 0.72rem;
+        padding: 0.75rem;
+        border-radius: 6px;
+        height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+      #action-reference {
+        display: none;
+        white-space: pre-wrap;
+        font-family: ui-monospace, monospace;
+        font-size: 0.78rem;
+        background: #0e0e10;
+        border: 1px solid #2a2a2d;
+        padding: 0.75rem;
+        border-radius: 6px;
+        max-height: 320px;
+        overflow-y: auto;
+        margin-top: 0.6rem;
+      }
       #action-reference.open { display: block; }
-      small { color: #666; }
+
+      .apply-row { display: flex; align-items: center; justify-content: space-between; }
+      .apply-row p { margin: 0; font-size: 0.78rem; color: var(--text-secondary); }
     </style>
   </head>
   <body>
-    <h1>M913 Configurator — web PoC (not styled as the final product yet)</h1>
-    <p id="status">Not connected. Requires Chrome or Edge, with Input Monitoring permission granted (macOS).</p>
-
-    <section>
-      <h2>1. Connect</h2>
+    <header>
+      <div>
+        <h1>M913 Configurator</h1>
+        <p>Web PoC — configures the Redragon M913 Impact Elite directly over USB via WebHID. Not affiliated with Redragon.</p>
+        <p id="status">Not connected. Requires Chrome or Edge, with Input Monitoring permission granted (macOS).</p>
+      </div>
       <button id="connect">Connect to M913</button>
+    </header>
+
+    <section>
+      <h2>Polling Rate</h2>
+      <div class="segmented" id="poll-buttons"></div>
     </section>
 
     <section>
-      <h2>2. Polling rate</h2>
-      <div id="poll-buttons"></div>
-    </section>
-
-    <section>
-      <h2>3. DPI</h2>
+      <h2>DPI Stages</h2>
       <div id="dpi-rows"></div>
-      <small id="dpi-hint"></small>
+      <p class="hint" id="dpi-hint"></p>
     </section>
 
     <section>
-      <h2>4. LED</h2>
-      <label>Mode</label>
-      <select id="led-mode">
-        <option value="off">Off</option>
-        <option value="steady" selected>Steady</option>
-        <option value="respiration">Respiration</option>
-        <option value="rainbow">Rainbow</option>
-      </select>
+      <h2>LED</h2>
+      <div class="row">
+        <label>Mode</label>
+        <select id="led-mode">
+          <option value="off">Off</option>
+          <option value="steady" selected>Steady</option>
+          <option value="respiration">Respiration</option>
+          <option value="rainbow">Rainbow</option>
+        </select>
+      </div>
       <div class="row" id="led-color-row">
         <label>Color</label>
         <input type="color" id="led-color" value="#00ff00" />
@@ -70,15 +206,15 @@
     </section>
 
     <section>
-      <h2>5. Buttons</h2>
+      <h2>Buttons</h2>
       <div id="button-rows"></div>
-      <button id="show-action-reference">Full Action Reference…</button>
+      <button id="show-action-reference" style="margin-top: 0.75rem;">Full Action Reference…</button>
       <div id="action-reference"></div>
     </section>
 
-    <section>
+    <section class="apply-row">
       <button class="primary" id="apply" disabled>Apply Configuration</button>
-      <p><small>Sends polling rate, DPI, LED, and any button remaps in sequence.</small></p>
+      <p>Sends polling rate, DPI, LED, and any button remaps in sequence.</p>
     </section>
 
     <section>
