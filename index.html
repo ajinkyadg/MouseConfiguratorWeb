@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>M913 WebHID test harness</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #111; }
+      h1 { font-size: 1.2rem; }
+      section { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+      section h2 { margin-top: 0; font-size: 1rem; }
+      button { padding: 0.4rem 0.8rem; margin: 0.2rem; cursor: pointer; }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      label { display: inline-block; width: 90px; }
+      .dpi-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; }
+      .dpi-row input[type="number"] { width: 80px; }
+      #log { background: #0b0b0c; color: #9dfc9d; font-family: ui-monospace, monospace; font-size: 0.8rem; padding: 0.75rem; border-radius: 6px; height: 260px; overflow-y: auto; white-space: pre-wrap; }
+      #status { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h1>M913 WebHID test harness (not the product — a protocol verification tool)</h1>
+    <p id="status">Not connected. Requires Chrome or Edge.</p>
+
+    <section>
+      <h2>1. Connect</h2>
+      <button id="connect">Connect to M913</button>
+      <p>This dumps the device's real report descriptor to the log — settles whether Areson uses Feature reports and whether the report ID needs stripping from byte[0], per docs/protocol-notes/m913.md.</p>
+    </section>
+
+    <section>
+      <h2>2. Polling rate</h2>
+      <button class="poll" data-hz="125" disabled>125 Hz</button>
+      <button class="poll" data-hz="250" disabled>250 Hz</button>
+      <button class="poll" data-hz="500" disabled>500 Hz</button>
+      <button class="poll" data-hz="1000" disabled>1000 Hz</button>
+    </section>
+
+    <section>
+      <h2>3. DPI</h2>
+      <div id="dpi-rows"></div>
+      <button id="apply-dpi" disabled>Apply DPI</button>
+    </section>
+
+    <section>
+      <h2>4. LED</h2>
+      <label>Mode</label>
+      <select id="led-mode">
+        <option value="off">Off</option>
+        <option value="steady" selected>Steady</option>
+        <option value="respiration">Respiration</option>
+        <option value="rainbow">Rainbow</option>
+      </select><br />
+      <label>Color</label>
+      <input type="color" id="led-color" value="#00ff00" /><br />
+      <label>Brightness</label>
+      <input type="range" id="led-brightness" min="0" max="255" value="255" /><br />
+      <label>Speed</label>
+      <input type="range" id="led-speed" min="1" max="5" value="3" /><br />
+      <button id="apply-led" disabled>Apply LED</button>
+    </section>
+
+    <section>
+      <h2>Log</h2>
+      <div id="log"></div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
