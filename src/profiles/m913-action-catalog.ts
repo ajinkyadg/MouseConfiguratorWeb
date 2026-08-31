@@ -64,8 +64,12 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     actions: [
       "ctrl+c", "ctrl+v", "ctrl+x", "ctrl+z", "ctrl+shift+z",
       "ctrl+a", "ctrl+s", "ctrl+f", "alt+tab",
-      "super+e", "super+d", "super+l", "ctrl+alt+super+d",
+      "super+e", "super+d", "super+l",
     ].map(plain),
+    // Note: "ctrl+alt+super+d" (Task Manager-style combo) is NOT included
+    // here — 3 modifiers + 1 key = 4 tokens, one over the hardware's
+    // MAX_COMBO_TOKENS(3) cap for keyboard-key sub-packets. It cannot
+    // actually be sent to the mouse; see m913-buttons.test.ts.
   },
 ];
 

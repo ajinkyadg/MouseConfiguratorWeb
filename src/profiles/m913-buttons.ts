@@ -212,6 +212,21 @@ export function buildButtonMappingPackets(changes: Record<string, string>, hardw
     const parsed = parseAction(actionStr);
     if (!parsed) continue;
 
+    if (parsed.keyboard) {
+      const tokens = actionComboTokens(actionStr);
+      if (tokens > MAX_COMBO_TOKENS) {
+        // Defense in depth: the combo builder UI already checks this before
+        // letting a user apply one, but a quick-pick catalog entry (or any
+        // other caller) could still reach here with an oversized binding.
+        // Without this check, buildKeyboardSubPackets() would silently
+        // write past its 17-byte packet — never throwing, just corrupting
+        // data — so refuse explicitly instead.
+        throw new Error(
+          `"${actionStr}" for button "${buttonId}" uses ${tokens} modifiers+keys — the hardware packet format allows at most ${MAX_COMBO_TOKENS}.`
+        );
+      }
+    }
+
     const pkt = mapping[Math.floor(slot / 2)];
     const off = slot % 2 === 0 ? 6 : 10;
 
