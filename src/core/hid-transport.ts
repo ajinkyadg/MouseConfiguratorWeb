@@ -9,10 +9,29 @@ export const M913_VENDOR_IDS = {
   compx: 0x3554,
 } as const;
 
+// Confirmed against real hardware, 2026-08-31: the 2.4G wireless receiver
+// (aresonWireless PID) only relays standard mouse input reports — writing
+// the config feature report over it fails outright. Only the wired
+// connection (aresonWired PID) accepts config writes. Compx PIDs are the
+// documented equivalents from usb.h; not yet independently confirmed.
+export const M913_PRODUCT_IDS = {
+  aresonWireless: 0xfa07,
+  aresonWired: 0xfa08,
+  compxWireless: 0xf55d,
+  compxWired: 0xf55e,
+} as const;
+
 export function detectHardware(device: HIDDevice): HardwareRevision {
   if (device.vendorId === M913_VENDOR_IDS.areson) return "areson";
   if (device.vendorId === M913_VENDOR_IDS.compx) return "compx";
   return "unknown";
+}
+
+// Whether this HIDDevice is the wired connection (required for sending
+// config commands) rather than the wireless receiver (input-only, as far
+// as WebHID is concerned).
+export function isWiredConnection(device: HIDDevice): boolean {
+  return device.productId === M913_PRODUCT_IDS.aresonWired || device.productId === M913_PRODUCT_IDS.compxWired;
 }
 
 export async function requestM913(): Promise<HIDDevice> {

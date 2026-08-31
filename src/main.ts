@@ -2,6 +2,7 @@ import {
   requestM913,
   openDevice,
   detectHardware,
+  isWiredConnection,
   describeCollections,
   sendConfigPacket,
   waitForResponse,
@@ -74,12 +75,21 @@ connectBtn.addEventListener("click", async () => {
     device = await requestM913();
     await openDevice(device);
     hardware = detectHardware(device);
-    statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware)`;
-    statusEl.classList.add("connected");
-    log(`Connected. Hardware revision detected: ${hardware}`);
+    const wired = isWiredConnection(device);
+    log(`Connected. Hardware revision detected: ${hardware} (${wired ? "wired" : "wireless receiver"})`);
     log(describeCollections(device));
     renderDpiRows();
-    setConnected(true);
+
+    if (!wired) {
+      statusEl.textContent = `Connected: ${device.productName} — wireless receiver detected. Plug in the USB cable to apply settings.`;
+      statusEl.classList.remove("connected");
+      setConnected(false);
+      log("The wireless receiver only relays mouse movement/clicks — configuration commands need the wired USB connection. Plug in the cable and reconnect.");
+    } else {
+      statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware, wired)`;
+      statusEl.classList.add("connected");
+      setConnected(true);
+    }
   } catch (err) {
     log(`Connect failed: ${(err as Error).message}`);
   }
