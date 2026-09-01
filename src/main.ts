@@ -99,16 +99,17 @@ connectBtn.addEventListener("click", async () => {
     // once (see requestM913()'s doc comment) — picking the device in
     // Chrome's chooser grants all of them in one requestDevice() call.
     // Which one lands at index 0 isn't stable connection to connection,
-    // so every candidate gets opened and inspected rather than trusting
-    // devices[0].
+    // so every candidate gets inspected rather than trusting devices[0].
+    // Inspection reads .collections only — deliberately not opened here;
+    // see findConfigDevice()'s doc comment for why opening a sibling
+    // collection first breaks the write on the one actually used.
     const devices = await requestM913();
     for (const [i, candidate] of devices.entries()) {
-      await openDevice(candidate);
       log(`Granted collection ${i + 1}/${devices.length}:`);
       log(describeCollections(candidate));
     }
 
-    const configDevice = await findConfigDevice(devices);
+    const configDevice = findConfigDevice(devices);
     if (!configDevice) {
       log("None of the granted collections declare the config channel (a feature or output report with id 0x08). This M913 may need a different report id, or the picker didn't grant every collection this time — try reconnecting.");
       statusEl.textContent = "Connected, but couldn't find the config channel — see log.";
@@ -116,6 +117,7 @@ connectBtn.addEventListener("click", async () => {
       setConnected(false);
       return;
     }
+    await openDevice(configDevice); // the only collection this session ever opens
     device = configDevice;
 
     hardware = detectHardware(device);

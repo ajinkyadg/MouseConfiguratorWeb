@@ -79,13 +79,21 @@ function hasReport(device: HIDDevice, category: "input" | "output" | "feature", 
 // Among all of a physical M913's collections (see requestM913()'s doc
 // comment), finds the one that actually declares the config channel — a
 // feature report with id 0x08 (Areson) or an output report with id 0x08
-// (Compx) — by opening each candidate and inspecting its real report
-// descriptor, rather than trusting picker order. Opens every candidate
-// (harmless — HIDDevice.open() on an already-open device is a no-op) so
-// the caller can use whichever one this returns immediately.
-export async function findConfigDevice(devices: HIDDevice[]): Promise<HIDDevice | null> {
+// (Compx) — by inspecting each candidate's real report descriptor rather
+// than trusting picker order.
+//
+// Deliberately does NOT call open() on every candidate to do this:
+// HIDDevice.collections is populated at grant time, before open() is ever
+// called — reading it needs no connection. Confirmed against real
+// hardware, 2026-09-01: an earlier version of this function opened every
+// candidate just to inspect it, which reintroduced "Failed to write the
+// feature report" — opening the sibling (plain mouse) collection first
+// appears to claim exclusive access at the OS level and blocks the write
+// on the one actually being used, even though it's nominally a different
+// top-level collection. Only the caller's chosen device should ever be
+// opened.
+export function findConfigDevice(devices: HIDDevice[]): HIDDevice | null {
   for (const device of devices) {
-    await openDevice(device);
     if (hasReport(device, "feature", 0x08) || hasReport(device, "output", 0x08)) {
       return device;
     }
