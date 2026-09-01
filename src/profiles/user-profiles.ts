@@ -61,7 +61,30 @@ export interface ProfileExportFile {
 // BuiltInPresets.all), so switching between the two products feels
 // consistent. Not persisted, not editable in place.
 export const BUILT_IN_PRESETS: UserProfile[] = [
-  { id: "preset-default", name: "Default", config: defaultConfig() },
+  {
+    id: "preset-default",
+    name: "Default",
+    config: {
+      ...defaultConfig(),
+      // A real starter mapping (left/right/middle/fire kept at their
+      // ordinary click actions explicitly, not left "Unchanged") rather
+      // than an empty buttonActions — demonstrates clicks, browser
+      // navigation, DPI, and LED toggle without touching every one of
+      // the 12 side buttons. The rest stay "Unchanged" (factory action).
+      buttonActions: {
+        left: "left",
+        right: "right",
+        middle: "middle",
+        fire: "fire",
+        side1: "forward",
+        side2: "backward",
+        side3: "dpi+",
+        side4: "dpi-",
+        side5: "dpi-cycle",
+        side6: "led_toggle",
+      },
+    },
+  },
   {
     id: "preset-fps",
     name: "FPS / Fast Aim",

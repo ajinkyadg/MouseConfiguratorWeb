@@ -511,15 +511,14 @@ profileExportBtn.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-// Restore whatever was selected last time, if anything.
-if (profileStore.selectedProfileID) {
-  const restored = profileStore.profiles.find((p) => p.id === profileStore.selectedProfileID);
-  if (restored) {
-    loadedProfileID = restored.id;
-    applyConfigToUI(restored.config);
-  }
-}
-renderProfileSelect();
+// Restore whatever was selected last time; otherwise start from the
+// Default preset, so the page's initial state actually matches what
+// "Default" claims to be instead of whatever raw HTML happens to be
+// hardcoded in index.html (e.g. a placeholder LED color no preset uses).
+const restoredProfile = profileStore.selectedProfileID
+  ? profileStore.profiles.find((p) => p.id === profileStore.selectedProfileID)
+  : undefined;
+loadProfile(restoredProfile ?? BUILT_IN_PRESETS[0]); // loadProfile() already calls renderProfileSelect()
 
 // --- Apply ---------------------------------------------------------------
 
