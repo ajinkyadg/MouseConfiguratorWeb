@@ -545,18 +545,37 @@ loadProfile(restoredProfile ?? BUILT_IN_PRESETS[0]); // loadProfile() already ca
 
 // --- Apply ---------------------------------------------------------------
 
+// Each section is tried independently and keeps going even if an earlier
+// one throws — a single combined try/catch meant one failing section (in
+// practice, whichever came first) silently prevented every section after
+// it from ever being attempted, which made it impossible to tell whether
+// a failure was specific to one command or affected everything.
+async function applySection(label: string, send: () => Promise<void>): Promise<boolean> {
+  try {
+    await send();
+    return true;
+  } catch (err) {
+    log(`${label} failed: ${(err as Error).message}`);
+    return false;
+  }
+}
+
 applyBtn.addEventListener("click", async () => {
   if (!device) return;
   applyBtn.disabled = true;
-  try {
-    await sendAndLog("polling rate", buildPollingRatePacket(pollingRateHz));
+  const results: Record<string, boolean> = {};
 
+  results.pollingRate = await applySection("Polling rate", () => sendAndLog("polling rate", buildPollingRatePacket(pollingRateHz)));
+
+  results.dpi = await applySection("DPI", async () => {
     const dpi = readDpiSettings();
     const dpiPackets = hardware === "compx" ? buildCompxDpiPackets(dpi) : buildAresonDpiPackets(dpi);
     for (const [i, packet] of dpiPackets.entries()) {
       await sendAndLog(`DPI packet ${i + 1}/${dpiPackets.length}`, packet);
     }
+  });
 
+  results.led = await applySection("LED", async () => {
     const mode = ledModeEl.value as LedMode;
     const color = parseInt(ledColorEl.value.slice(1), 16);
     const brightness = Number(ledBrightnessEl.value);
@@ -565,19 +584,21 @@ applyBtn.addEventListener("click", async () => {
     for (const [i, packet] of ledPackets.entries()) {
       await sendAndLog(`LED packet ${i + 1}/${ledPackets.length}`, packet);
     }
+  });
 
-    const changedButtons = Object.fromEntries(Object.entries(buttonActions).filter(([, v]) => v));
-    if (Object.keys(changedButtons).length > 0) {
+  const changedButtons = Object.fromEntries(Object.entries(buttonActions).filter(([, v]) => v));
+  if (Object.keys(changedButtons).length > 0) {
+    results.buttons = await applySection("Buttons", async () => {
       const buttonPackets = buildButtonMappingPackets(changedButtons, hardware === "compx" ? "compx" : "areson");
       for (const [i, packet] of buttonPackets.entries()) {
         await sendAndLog(`Button packet ${i + 1}/${buttonPackets.length}`, packet);
       }
-    }
-
-    log("Apply Configuration: done.");
-  } catch (err) {
-    log(`Apply failed: ${(err as Error).message}`);
-  } finally {
-    applyBtn.disabled = false;
+    });
   }
+
+  const summary = Object.entries(results)
+    .map(([section, ok]) => `${section}=${ok ? "ok" : "FAILED"}`)
+    .join(", ");
+  log(`Apply Configuration: ${summary}`);
+  applyBtn.disabled = false;
 });
