@@ -23,6 +23,7 @@ import {
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
+import { KEY_COMBO_SPECIAL_GROUPS } from "./profiles/key-combo-keys";
 import { BUILT_IN_PRESETS, type MouseWebConfig, type UserProfile } from "./profiles/user-profiles";
 import { ProfileStore } from "./profiles/profile-store";
 
@@ -239,6 +240,15 @@ function renderButtonRows() {
       <label><input type="checkbox" data-mod="alt" /> Alt</label>
       <label><input type="checkbox" data-mod="super" /> ⌘/Super</label>
       <input type="text" placeholder="key, e.g. c" class="combo-key" />
+      <select class="combo-special-key">
+        <option value="" selected>Special key…</option>
+        ${KEY_COMBO_SPECIAL_GROUPS.map(
+          (group) =>
+            `<optgroup label="${group.name}">` +
+            group.keys.map((k) => `<option value="${k}">${k}</option>`).join("") +
+            `</optgroup>`
+        ).join("")}
+      </select>
       <button type="button" class="combo-apply">Use</button>
     `;
 
@@ -314,12 +324,19 @@ function renderButtonRows() {
 
     customInput.addEventListener("input", () => setCurrent(customInput.value.trim()));
 
+    const comboKeyInput = comboBuilder.querySelector<HTMLInputElement>(".combo-key")!;
+    const comboSpecialKeySelect = comboBuilder.querySelector<HTMLSelectElement>(".combo-special-key")!;
+    comboSpecialKeySelect.addEventListener("change", () => {
+      if (comboSpecialKeySelect.value) comboKeyInput.value = comboSpecialKeySelect.value;
+      comboSpecialKeySelect.value = ""; // acts as a quick-insert, not a persistent selection
+    });
+
     comboBuilder.querySelector(".combo-apply")!.addEventListener("click", () => {
       const mods: string[] = [];
       comboBuilder.querySelectorAll<HTMLInputElement>("input[data-mod]").forEach((el) => {
         if (el.checked) mods.push(el.dataset.mod!);
       });
-      const key = (comboBuilder.querySelector(".combo-key") as HTMLInputElement).value.trim().toLowerCase();
+      const key = comboKeyInput.value.trim().toLowerCase();
       const action = [...mods, key].filter(Boolean).join("+");
       if (!action) return;
       const tokens = actionComboTokens(action);
@@ -329,6 +346,8 @@ function renderButtonRows() {
       }
       setCurrent(action);
       comboBuilder.classList.remove("open");
+      comboKeyInput.value = "";
+      comboBuilder.querySelectorAll<HTMLInputElement>("input[data-mod]").forEach((el) => (el.checked = false));
     });
 
     row.appendChild(label);
