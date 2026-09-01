@@ -237,7 +237,7 @@ function renderButtonRows() {
     comboBuilder.innerHTML = `
       <label><input type="checkbox" data-mod="ctrl" /> Ctrl</label>
       <label><input type="checkbox" data-mod="shift" /> Shift</label>
-      <label><input type="checkbox" data-mod="alt" /> Alt</label>
+      <label><input type="checkbox" data-mod="alt" /> ⌥ Option/Alt</label>
       <label><input type="checkbox" data-mod="super" /> ⌘/Super</label>
       <input type="text" placeholder="key, e.g. c" class="combo-key" />
       <select class="combo-special-key">
