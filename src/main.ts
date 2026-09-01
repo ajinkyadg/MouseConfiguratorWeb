@@ -1,6 +1,7 @@
 import {
   requestM913,
   openDevice,
+  closeDevice,
   findConfigDevice,
   detectHardware,
   isWiredConnection,
@@ -95,6 +96,13 @@ async function sendAndLog(label: string, packet: Uint8Array) {
 
 connectBtn.addEventListener("click", async () => {
   try {
+    // Close any previously-opened device from an earlier connect() in
+    // this same page session before requesting a new one — see
+    // closeDevice()'s doc comment for why leaving old handles open can
+    // eventually block new writes.
+    await closeDevice(device);
+    device = null;
+
     // The physical M913 exposes several top-level HID collections at
     // once (see requestM913()'s doc comment) — picking the device in
     // Chrome's chooser grants all of them in one requestDevice() call.

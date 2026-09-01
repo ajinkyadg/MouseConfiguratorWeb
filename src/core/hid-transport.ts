@@ -67,6 +67,25 @@ export async function openDevice(device: HIDDevice): Promise<void> {
   }
 }
 
+// Closes a previously-opened device, swallowing any error — used before
+// reconnecting so a stale handle from an earlier connect() in the same
+// page session doesn't linger. Nothing in this file called close()
+// anywhere before this existed: every "Connect" click left its device
+// open forever, so a long session with many reconnects (exactly what
+// happens while troubleshooting) could accumulate several simultaneous
+// open connections to the same physical device — a real candidate for
+// "used to work, now every write fails" that a fresh page load resets
+// but repeated in-page reconnects would not.
+export async function closeDevice(device: HIDDevice | null): Promise<void> {
+  if (!device?.opened) return;
+  try {
+    await device.close();
+  } catch {
+    // best-effort — proceeding to open a new device matters more than
+    // a clean close of the old one
+  }
+}
+
 // Recursively checks whether any collection on this device declares a
 // report with the given id in the given category (input/output/feature).
 function hasReport(device: HIDDevice, category: "input" | "output" | "feature", reportId: number): boolean {
