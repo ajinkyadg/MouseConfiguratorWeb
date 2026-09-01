@@ -62,14 +62,24 @@ export function describeCollections(device: HIDDevice): string {
   const lines: string[] = [];
   lines.push(`vendorId=0x${device.vendorId.toString(16)} productId=0x${device.productId.toString(16)} name="${device.productName}"`);
 
-  const describeReports = (label: string, reports: HIDReportItem[]) => {
+  // A report's actual bit-level shape lives on each of its `items`, not on
+  // the report itself — one reportId commonly packs several items of
+  // different widths (e.g. a few bytes of buttons plus a byte of
+  // scroll delta). Total the whole report's byte length by summing every
+  // item's reportSize*reportCount, in addition to listing each item.
+  const describeReports = (label: string, reports: HIDReportInfo[]) => {
     if (reports.length === 0) return;
     lines.push(`  ${label}:`);
     for (const r of reports) {
-      const bytes = r.reportSize && r.reportCount ? (r.reportSize * r.reportCount) / 8 : "?";
-      lines.push(
-        `    reportId=${r.reportId ?? "(none)"} reportSize=${r.reportSize}b reportCount=${r.reportCount} (~${bytes} bytes) usages=[${(r.usages ?? []).map((u) => "0x" + u.toString(16)).join(",")}]`
-      );
+      const items = r.items ?? [];
+      const totalBits = items.reduce((sum, item) => sum + (item.reportSize ?? 0) * (item.reportCount ?? 0), 0);
+      lines.push(`    reportId=${r.reportId ?? "(none)"} totalSize=${totalBits / 8} bytes (${items.length} item(s)):`);
+      for (const item of items) {
+        const bytes = item.reportSize && item.reportCount ? (item.reportSize * item.reportCount) / 8 : "?";
+        lines.push(
+          `      reportSize=${item.reportSize}b reportCount=${item.reportCount} (~${bytes} bytes) usages=[${(item.usages ?? []).map((u) => "0x" + u.toString(16)).join(",")}]`
+        );
+      }
     }
   };
 

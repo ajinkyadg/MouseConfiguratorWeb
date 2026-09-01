@@ -11,19 +11,45 @@ interface HIDDeviceRequestOptions {
   filters: HIDDeviceFilter[];
 }
 
+// One field within a report — the actual bit-level shape (size/count,
+// usages) lives here, NOT on HIDReportInfo. A single report (one reportId)
+// commonly packs several items of different widths, which is why this is
+// a nested array rather than flat fields on the report itself — a mistake
+// this file originally made, silently producing "reportSize=undefined"
+// for every report regardless of device.
 interface HIDReportItem {
-  reportId?: number;
+  isAbsolute?: boolean;
+  isArray?: boolean;
+  isRange?: boolean;
+  isVolatile?: boolean;
+  hasNull?: boolean;
   usages?: number[];
+  usageMinimum?: number;
+  usageMaximum?: number;
   reportSize?: number;
   reportCount?: number;
+  unitExponent?: number;
+  unit?: number;
+  min?: number;
+  max?: number;
+  logicalMinimum?: number;
+  logicalMaximum?: number;
+  physicalMinimum?: number;
+  physicalMaximum?: number;
+  strings?: string[];
+}
+
+interface HIDReportInfo {
+  reportId?: number;
+  items?: HIDReportItem[];
 }
 
 interface HIDCollectionInfo {
   usagePage: number;
   usage: number;
-  inputReports: HIDReportItem[];
-  outputReports: HIDReportItem[];
-  featureReports: HIDReportItem[];
+  inputReports: HIDReportInfo[];
+  outputReports: HIDReportInfo[];
+  featureReports: HIDReportInfo[];
   children: HIDCollectionInfo[];
 }
 
