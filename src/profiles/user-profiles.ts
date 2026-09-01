@@ -66,22 +66,19 @@ export const BUILT_IN_PRESETS: UserProfile[] = [
     name: "Default",
     config: {
       ...defaultConfig(),
-      // A real starter mapping (left/right/middle/fire kept at their
-      // ordinary click actions explicitly, not left "Unchanged") rather
-      // than an empty buttonActions — demonstrates clicks, browser
-      // navigation, DPI, and LED toggle without touching every one of
-      // the 12 side buttons. The rest stay "Unchanged" (factory action).
+      // The user's own real-world mapping (same as their "My Setup"
+      // profile) — genuinely useful general-purpose bindings rather than
+      // an invented generic scheme.
       buttonActions: {
-        left: "left",
-        right: "right",
-        middle: "middle",
-        fire: "fire",
-        side1: "forward",
-        side2: "backward",
-        side3: "dpi+",
-        side4: "dpi-",
-        side5: "dpi-cycle",
-        side6: "led_toggle",
+        side1: "super+c", // Copy
+        side2: "super+v", // Paste
+        side3: "super+tab", // Tab right (app switcher forward)
+        side4: "ctrl+arrow_right", // Swipe between windows, right
+        side5: "ctrl+arrow_left", // Swipe between windows, left
+        side6: "super+shift+tab", // Tab left (app switcher backward)
+        side10: "super+shift+4", // Screenshot (selection)
+        side12: "ctrl+arrow_up", // Mission Control
+        fire: "enter",
       },
     },
   },
