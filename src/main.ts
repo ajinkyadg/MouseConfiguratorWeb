@@ -23,6 +23,8 @@ import {
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
+import { BUILT_IN_PRESETS, type MouseWebConfig, type UserProfile } from "./profiles/user-profiles";
+import { ProfileStore } from "./profiles/profile-store";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
@@ -40,11 +42,30 @@ const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
 const applyBtn = document.querySelector<HTMLButtonElement>("#apply")!;
 const showActionRefBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionRefEl = document.querySelector<HTMLDivElement>("#action-reference")!;
+const profileSelectEl = document.querySelector<HTMLSelectElement>("#profile-select")!;
+const profileSaveAsBtn = document.querySelector<HTMLButtonElement>("#profile-save-as")!;
+const profileUpdateBtn = document.querySelector<HTMLButtonElement>("#profile-update")!;
+const profileDeleteBtn = document.querySelector<HTMLButtonElement>("#profile-delete")!;
+const profileImportBtn = document.querySelector<HTMLButtonElement>("#profile-import")!;
+const profileExportBtn = document.querySelector<HTMLButtonElement>("#profile-export")!;
+const profileImportInput = document.querySelector<HTMLInputElement>("#profile-import-input")!;
 
 let device: HIDDevice | null = null;
 let hardware: HardwareRevision = "unknown";
 let pollingRateHz = 1000;
 const buttonActions: Record<string, string> = {};
+// Per-button-id "load a value into this row's UI" functions, populated by
+// renderButtonRows() — lets applyConfigToUI() below set a button row's
+// picker/label state the same way a user's own interaction would, instead
+// of only ever updating buttonActions directly.
+const buttonRowLoaders: Record<string, (value: string) => void> = {};
+
+const profileStore = new ProfileStore();
+// Which profile (preset or user-saved) the working configuration was last
+// loaded from, if any — null means the user is editing an unsaved
+// configuration from scratch. Matched against profileStore.profiles (not
+// BUILT_IN_PRESETS) to decide whether Update/Delete apply.
+let loadedProfileID: string | null = null;
 
 function log(msg: string) {
   const time = new Date().toLocaleTimeString();
@@ -97,15 +118,19 @@ connectBtn.addEventListener("click", async () => {
 
 // --- Polling rate --------------------------------------------------------
 
+function setPollingRate(hz: number) {
+  pollingRateHz = hz;
+  for (const b of pollButtonsEl.querySelectorAll("button")) {
+    b.classList.toggle("active", Number((b as HTMLElement).dataset.hz) === hz);
+  }
+}
+
 for (const hz of [125, 250, 500, 1000]) {
   const btn = document.createElement("button");
   btn.textContent = `${hz} Hz`;
+  btn.dataset.hz = String(hz);
   if (hz === pollingRateHz) btn.classList.add("active");
-  btn.addEventListener("click", () => {
-    pollingRateHz = hz;
-    for (const b of pollButtonsEl.querySelectorAll("button")) b.classList.remove("active");
-    btn.classList.add("active");
-  });
+  btn.addEventListener("click", () => setPollingRate(hz));
   pollButtonsEl.appendChild(btn);
 }
 
@@ -156,6 +181,11 @@ function readDpiSettings(): DpiSettings {
     values: dpiValueInputs.map((el) => Number(el.value) || 0) as DpiSettings["values"],
     enabled: dpiEnabledInputs.map((el) => el.checked) as DpiSettings["enabled"],
   };
+}
+
+function setDpiSettings(values: readonly number[], enabled: readonly boolean[]) {
+  dpiValueInputs.forEach((el, i) => (el.value = values[i] ? String(values[i]) : ""));
+  dpiEnabledInputs.forEach((el, i) => (el.checked = enabled[i] ?? true));
 }
 
 // --- LED -------------------------------------------------------------
@@ -219,10 +249,43 @@ function renderButtonRows() {
     customInput.placeholder = "e.g. ctrl+alt+super+d";
     customWrap.appendChild(customInput);
 
+    // Updates the model + visible label only — used for direct
+    // interaction within this row, where the picker UI driving the change
+    // is already showing the right thing.
     function setCurrent(value: string) {
       buttonActions[slot.id] = value;
       currentValue.textContent = value ? displayLabel(value) ?? value : "Unchanged";
     }
+
+    // Full programmatic load: also re-syncs the category/action pickers
+    // and the custom field to match `value`, for when a profile is loaded
+    // rather than the user picking something interactively.
+    function loadRowValue(value: string) {
+      comboBuilder.classList.remove("open");
+      customWrap.classList.remove("open");
+      actionSelect.style.display = "none";
+
+      if (!value) {
+        categorySelect.value = "";
+        setCurrent("");
+        return;
+      }
+      const owningCategory = ACTION_CATEGORIES.find((c) => c.actions.some((a) => a.value === value));
+      if (owningCategory) {
+        categorySelect.value = owningCategory.name;
+        actionSelect.innerHTML =
+          `<option value="" disabled>Choose action…</option>` +
+          owningCategory.actions.map((a) => `<option value="${a.value}">${a.label}</option>`).join("");
+        actionSelect.value = value;
+        actionSelect.style.display = "inline-block";
+      } else {
+        categorySelect.value = "__custom__";
+        customWrap.classList.add("open");
+        customInput.value = value;
+      }
+      setCurrent(value);
+    }
+    buttonRowLoaders[slot.id] = loadRowValue;
 
     categorySelect.addEventListener("change", () => {
       actionSelect.style.display = "none";
@@ -294,6 +357,150 @@ showActionRefBtn.addEventListener("click", () => {
     actionRefEl.textContent = lines.join("\n");
   }
 });
+
+// --- Profiles --------------------------------------------------------
+
+function getCurrentConfig(): MouseWebConfig {
+  const dpi = readDpiSettings();
+  return {
+    pollingRateHz,
+    dpi: dpi.values,
+    dpiEnabled: dpi.enabled,
+    ledMode: ledModeEl.value as LedMode,
+    ledColorHex: ledColorEl.value.slice(1),
+    ledBrightness: Number(ledBrightnessEl.value),
+    ledSpeed: Number(ledSpeedEl.value),
+    buttonActions: Object.fromEntries(Object.entries(buttonActions).filter(([, v]) => v)),
+  };
+}
+
+function applyConfigToUI(config: MouseWebConfig) {
+  setPollingRate(config.pollingRateHz);
+  setDpiSettings(config.dpi, config.dpiEnabled);
+  ledModeEl.value = config.ledMode;
+  ledColorEl.value = `#${config.ledColorHex}`;
+  ledBrightnessEl.value = String(config.ledBrightness);
+  ledSpeedEl.value = String(config.ledSpeed);
+  updateLedVisibility();
+  for (const slot of BUTTON_SLOTS) {
+    buttonRowLoaders[slot.id]?.(config.buttonActions[slot.id] ?? "");
+  }
+}
+
+function currentUserProfile(): UserProfile | undefined {
+  return loadedProfileID ? profileStore.profiles.find((p) => p.id === loadedProfileID) : undefined;
+}
+
+function currentProfileLabel(): string {
+  const userProfile = currentUserProfile();
+  if (userProfile) return userProfile.name;
+  const preset = BUILT_IN_PRESETS.find((p) => p.id === loadedProfileID);
+  if (preset) return preset.name;
+  return "Unsaved Configuration";
+}
+
+function renderProfileSelect() {
+  const current = loadedProfileID ?? "";
+  profileSelectEl.innerHTML =
+    `<option value="">— Unsaved Configuration —</option>` +
+    `<optgroup label="Presets">` +
+    BUILT_IN_PRESETS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("") +
+    `</optgroup>` +
+    (profileStore.profiles.length
+      ? `<optgroup label="My Profiles">` +
+        profileStore.profiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("") +
+        `</optgroup>`
+      : "");
+  profileSelectEl.value = current;
+  profileUpdateBtn.disabled = !currentUserProfile();
+  profileDeleteBtn.disabled = !currentUserProfile();
+}
+
+function loadProfile(profile: UserProfile) {
+  applyConfigToUI(profile.config);
+  loadedProfileID = profile.id;
+  renderProfileSelect();
+}
+
+profileSelectEl.addEventListener("change", () => {
+  const id = profileSelectEl.value;
+  if (!id) {
+    loadedProfileID = null;
+    renderProfileSelect();
+    return;
+  }
+  const profile = BUILT_IN_PRESETS.find((p) => p.id === id) ?? profileStore.profiles.find((p) => p.id === id);
+  if (profile) loadProfile(profile);
+});
+
+profileSaveAsBtn.addEventListener("click", () => {
+  const name = window.prompt("Save profile as:", currentProfileLabel() === "Unsaved Configuration" ? "" : currentProfileLabel());
+  if (name === null) return;
+  const trimmed = name.trim();
+  const saved = profileStore.addProfile(trimmed || "Untitled", getCurrentConfig());
+  loadedProfileID = saved.id;
+  renderProfileSelect();
+  log(`Saved profile "${saved.name}".`);
+});
+
+profileUpdateBtn.addEventListener("click", () => {
+  const profile = currentUserProfile();
+  if (!profile) return;
+  profileStore.updateProfile(profile.id, getCurrentConfig());
+  log(`Updated profile "${profile.name}".`);
+});
+
+profileDeleteBtn.addEventListener("click", () => {
+  const profile = currentUserProfile();
+  if (!profile) return;
+  profileStore.deleteProfile(profile.id);
+  loadedProfileID = null;
+  renderProfileSelect();
+  log(`Deleted profile "${profile.name}".`);
+});
+
+profileImportBtn.addEventListener("click", () => profileImportInput.click());
+
+profileImportInput.addEventListener("change", async () => {
+  const file = profileImportInput.files?.[0];
+  profileImportInput.value = ""; // allow re-importing the same file later
+  if (!file) return;
+  const text = await file.text();
+  const imported = profileStore.importProfile(text);
+  if (!imported) {
+    log(`Import failed: "${file.name}" isn't a valid profile export.`);
+    return;
+  }
+  loadProfile(imported);
+  log(`Imported profile "${imported.name}".`);
+});
+
+profileExportBtn.addEventListener("click", () => {
+  const label = currentProfileLabel();
+  const profileToExport: UserProfile = currentUserProfile() ?? {
+    id: crypto.randomUUID(),
+    name: label === "Unsaved Configuration" ? "M913 Profile" : label,
+    config: getCurrentConfig(),
+  };
+  const json = profileStore.exportProfile(profileToExport);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${profileToExport.name}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// Restore whatever was selected last time, if anything.
+if (profileStore.selectedProfileID) {
+  const restored = profileStore.profiles.find((p) => p.id === profileStore.selectedProfileID);
+  if (restored) {
+    loadedProfileID = restored.id;
+    applyConfigToUI(restored.config);
+  }
+}
+renderProfileSelect();
 
 // --- Apply ---------------------------------------------------------------
 
