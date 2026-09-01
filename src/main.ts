@@ -1,6 +1,7 @@
 import {
   requestM913,
   openDevice,
+  findConfigDevice,
   detectHardware,
   isWiredConnection,
   describeCollections,
@@ -94,12 +95,32 @@ async function sendAndLog(label: string, packet: Uint8Array) {
 
 connectBtn.addEventListener("click", async () => {
   try {
-    device = await requestM913();
-    await openDevice(device);
+    // The physical M913 exposes several top-level HID collections at
+    // once (see requestM913()'s doc comment) — picking the device in
+    // Chrome's chooser grants all of them in one requestDevice() call.
+    // Which one lands at index 0 isn't stable connection to connection,
+    // so every candidate gets opened and inspected rather than trusting
+    // devices[0].
+    const devices = await requestM913();
+    for (const [i, candidate] of devices.entries()) {
+      await openDevice(candidate);
+      log(`Granted collection ${i + 1}/${devices.length}:`);
+      log(describeCollections(candidate));
+    }
+
+    const configDevice = await findConfigDevice(devices);
+    if (!configDevice) {
+      log("None of the granted collections declare the config channel (a feature or output report with id 0x08). This M913 may need a different report id, or the picker didn't grant every collection this time — try reconnecting.");
+      statusEl.textContent = "Connected, but couldn't find the config channel — see log.";
+      statusEl.classList.remove("connected");
+      setConnected(false);
+      return;
+    }
+    device = configDevice;
+
     hardware = detectHardware(device);
     const wired = isWiredConnection(device);
-    log(`Connected. Hardware revision detected: ${hardware} (${wired ? "wired" : "wireless receiver"})`);
-    log(describeCollections(device));
+    log(`Using the collection with the config channel. Hardware revision detected: ${hardware} (${wired ? "wired" : "wireless receiver"})`);
     renderDpiRows();
 
     if (!wired) {

@@ -34,7 +34,21 @@ export function isWiredConnection(device: HIDDevice): boolean {
   return device.productId === M913_PRODUCT_IDS.aresonWired || device.productId === M913_PRODUCT_IDS.compxWired;
 }
 
-export async function requestM913(): Promise<HIDDevice> {
+// A physical M913 exposes several top-level HID collections at once (the
+// standard mouse pointer interface, plus at least one vendor-specific one
+// carrying the config feature report) — and per the WebHID spec, one
+// HIDDevice represents a single top-level collection, not the whole
+// physical device. Picking the device in Chrome's chooser grants access to
+// ALL of that physical device's collections in one grant, so a single
+// requestDevice() call returns one HIDDevice per collection here.
+//
+// Confirmed against real hardware, 2026-09-01: which collection lands at
+// index 0 varies connection to connection — sometimes the plain mouse
+// interface (no feature reports at all), sometimes the vendor one (feature
+// reports 6 and 8). Blindly using devices[0] intermittently grabbed the
+// wrong one and produced "Failed to write the feature report" — not a
+// device problem, a "trusted array order that isn't stable" bug.
+export async function requestM913(): Promise<HIDDevice[]> {
   const devices = await navigator.hid.requestDevice({
     filters: [
       { vendorId: M913_VENDOR_IDS.areson },
@@ -44,13 +58,39 @@ export async function requestM913(): Promise<HIDDevice> {
   if (devices.length === 0) {
     throw new Error("No device selected.");
   }
-  return devices[0];
+  return devices;
 }
 
 export async function openDevice(device: HIDDevice): Promise<void> {
   if (!device.opened) {
     await device.open();
   }
+}
+
+// Recursively checks whether any collection on this device declares a
+// report with the given id in the given category (input/output/feature).
+function hasReport(device: HIDDevice, category: "input" | "output" | "feature", reportId: number): boolean {
+  const key = `${category}Reports` as const;
+  const search = (collections: HIDCollectionInfo[]): boolean =>
+    collections.some((c) => c[key].some((r) => r.reportId === reportId) || search(c.children));
+  return search(device.collections);
+}
+
+// Among all of a physical M913's collections (see requestM913()'s doc
+// comment), finds the one that actually declares the config channel — a
+// feature report with id 0x08 (Areson) or an output report with id 0x08
+// (Compx) — by opening each candidate and inspecting its real report
+// descriptor, rather than trusting picker order. Opens every candidate
+// (harmless — HIDDevice.open() on an already-open device is a no-op) so
+// the caller can use whichever one this returns immediately.
+export async function findConfigDevice(devices: HIDDevice[]): Promise<HIDDevice | null> {
+  for (const device of devices) {
+    await openDevice(device);
+    if (hasReport(device, "feature", 0x08) || hasReport(device, "output", 0x08)) {
+      return device;
+    }
+  }
+  return null;
 }
 
 // Human-readable dump of the device's real report descriptor — the
