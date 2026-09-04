@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>M913 Configurator (web PoC)</title>
+    <title>MouseConfig</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
     <style>
       :root {
         --bg: #0b0b0c;
@@ -30,10 +31,28 @@
         border-bottom: 1px solid var(--divider);
         margin-bottom: 1.5rem;
       }
-      header h1 { font-size: 1.05rem; font-weight: 600; margin: 0; }
-      header p { margin: 0.2rem 0 0; font-size: 0.8rem; color: var(--text-secondary); }
-      #status { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.3rem; }
+      .eyebrow {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin: 0 0 0.2rem;
+      }
+      header h1 { font-size: 1.4rem; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+      header p { margin: 0.3rem 0 0; font-size: 0.82rem; color: var(--text-secondary); max-width: 46ch; }
+      #status { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.4rem; }
       #status.connected { color: #6fe07a; }
+
+      footer {
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--divider);
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+      footer a { color: var(--text-secondary); }
 
       section {
         background: var(--surface);
@@ -51,6 +70,22 @@
         color: var(--accent);
       }
       section p.hint { font-size: 0.75rem; color: var(--text-secondary); margin: 0.5rem 0 0; }
+
+      .mouse-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+      .mouse-list-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.6rem 0.85rem;
+        border-radius: 8px;
+        background: var(--surface-elevated);
+        border: 1px solid #2a2a2d;
+        font-size: 0.85rem;
+      }
+      .mouse-list-item.active { border-color: var(--accent); }
+      .mouse-list-item .mouse-name { font-weight: 500; }
+      .mouse-list-item .mouse-status { font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
+      .mouse-list-item.active .mouse-status { color: var(--accent); font-weight: 700; }
 
       button {
         background: var(--surface-elevated);
@@ -162,12 +197,35 @@
   <body>
     <header>
       <div>
-        <h1>M913 Configurator</h1>
-        <p>Web PoC — configures the Redragon M913 Impact Elite directly over USB via WebHID. Not affiliated with Redragon.</p>
-        <p id="status">Not connected. Requires Chrome or Edge, with Input Monitoring permission granted (macOS).</p>
+        <p class="eyebrow">Panther Tech</p>
+        <h1>MouseConfig</h1>
+        <p>Configure gaming mice right from your browser — no Windows software, no drivers to install.</p>
+        <p id="status">Not connected. Works in Chrome or Edge — on macOS, grant Input Monitoring access when prompted.</p>
       </div>
       <button id="connect">Connect to M913</button>
     </header>
+
+    <section>
+      <h2>Supported Mice</h2>
+      <ul class="mouse-list">
+        <li class="mouse-list-item active">
+          <span class="mouse-name">Redragon M913 Impact Elite</span>
+          <span class="mouse-status">Configuring below</span>
+        </li>
+        <li class="mouse-list-item">
+          <span class="mouse-name">Redragon M908 Impact</span>
+          <span class="mouse-status">Coming soon</span>
+        </li>
+        <li class="mouse-list-item">
+          <span class="mouse-name">Redragon M719 Invader</span>
+          <span class="mouse-status">Coming soon</span>
+        </li>
+        <li class="mouse-list-item">
+          <span class="mouse-name">More mice</span>
+          <span class="mouse-status">Requests welcome</span>
+        </li>
+      </ul>
+    </section>
 
     <section>
       <h2>Profile</h2>
@@ -234,6 +292,10 @@
       <h2>Log</h2>
       <div id="log"></div>
     </section>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech, currently supporting the Redragon M913 Impact Elite with more mice planned. Not affiliated with, endorsed by, or sponsored by Redragon or any other hardware brand named on this page — brand and model names are used only to identify the hardware this tool configures.</p>
+    </footer>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
