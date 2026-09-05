@@ -77,7 +77,7 @@ export const BUILT_IN_PRESETS: UserProfile[] = [
         side5: "ctrl+arrow_right", // Swipe between windows, right
         side6: "ctrl+shift+tab", // Previous tab
         side8: "super+space", // Spotlight search
-        side10: "super+shift+4", // Screenshot (selection)
+        side10: "ctrl+w", // Close tab
         side12: "ctrl+arrow_up", // Mission Control
         fire: "enter",
       },
