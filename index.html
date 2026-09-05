@@ -271,8 +271,17 @@
         <button id="profile-delete">Delete</button>
         <button id="profile-import">Import…</button>
         <button id="profile-export">Export…</button>
+        <button id="profile-import-jmk">Import .jmk…</button>
         <input type="file" id="profile-import-input" accept="application/json" hidden />
+        <input type="file" id="profile-import-jmk-input" accept=".jmk" hidden />
       </div>
+      <p class="hint">
+        Have a .jmk file (Redragon's Windows profile export) shared by
+        someone on a forum or Discord? There's no way to open a .jmk file on
+        Mac or Linux with Redragon's own software — import it here instead
+        to bring in its button mappings. DPI, polling rate, and LED aren't
+        decoded yet, so those stay at defaults.
+      </p>
     </section>
 
     <section>

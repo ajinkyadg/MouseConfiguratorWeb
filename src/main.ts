@@ -26,8 +26,9 @@ import {
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
 import { KEY_COMBO_SPECIAL_GROUPS } from "./profiles/key-combo-keys";
-import { BUILT_IN_PRESETS, type MouseWebConfig, type UserProfile } from "./profiles/user-profiles";
+import { BUILT_IN_PRESETS, defaultConfig, type MouseWebConfig, type UserProfile } from "./profiles/user-profiles";
 import { ProfileStore } from "./profiles/profile-store";
+import { jmkToButtonActions } from "./profiles/jmk-import";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
@@ -52,6 +53,8 @@ const profileDeleteBtn = document.querySelector<HTMLButtonElement>("#profile-del
 const profileImportBtn = document.querySelector<HTMLButtonElement>("#profile-import")!;
 const profileExportBtn = document.querySelector<HTMLButtonElement>("#profile-export")!;
 const profileImportInput = document.querySelector<HTMLInputElement>("#profile-import-input")!;
+const profileImportJmkBtn = document.querySelector<HTMLButtonElement>("#profile-import-jmk")!;
+const profileImportJmkInput = document.querySelector<HTMLInputElement>("#profile-import-jmk-input")!;
 
 let device: HIDDevice | null = null;
 let hardware: HardwareRevision = "unknown";
@@ -523,6 +526,34 @@ profileImportInput.addEventListener("change", async () => {
   }
   loadProfile(imported);
   log(`Imported profile "${imported.name}".`);
+});
+
+profileImportJmkBtn.addEventListener("click", () => profileImportJmkInput.click());
+
+profileImportJmkInput.addEventListener("change", async () => {
+  const file = profileImportJmkInput.files?.[0];
+  profileImportJmkInput.value = "";
+  if (!file) return;
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const buttonActions = jmkToButtonActions(bytes);
+  const mappedCount = Object.keys(buttonActions).length;
+  if (mappedCount === 0) {
+    log(`Import failed: "${file.name}" doesn't look like a recognizable .jmk profile.`);
+    return;
+  }
+
+  const imported: UserProfile = {
+    id: crypto.randomUUID(),
+    name: file.name.replace(/\.jmk$/i, ""),
+    config: { ...defaultConfig(), buttonActions },
+  };
+  loadProfile(imported);
+  log(
+    `Imported ${mappedCount} button mapping(s) from "${file.name}". ` +
+      `DPI, polling rate, and LED weren't decoded yet, so those are at defaults — ` +
+      `buttons bound to a custom recorded macro in the original file aren't decoded either.`
+  );
 });
 
 profileExportBtn.addEventListener("click", () => {
