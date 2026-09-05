@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Open a .jmk File on Mac or Linux — Free Redragon Profile Decoder | MouseConfig</title>
+    <meta name="description" content="Redragon's Windows software exports mouse profiles as .jmk files, which Mac and Linux users have no way to open. Paste or upload a .jmk file here to see its button mappings decoded — entirely in your browser, nothing uploaded anywhere." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/jmk-decoder.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Open a .jmk File on Mac or Linux — Free Decoder" />
+    <meta property="og:description" content="Decode a Redragon .jmk profile export's button mappings entirely in your browser. No install, nothing uploaded anywhere." />
+    <meta property="og:url" content="https://mouseconfig.app/jmk-decoder.html" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Open a .jmk File on Mac or Linux — Free Decoder" />
+    <meta name="twitter:description" content="Decode a Redragon .jmk profile export's button mappings entirely in your browser. No install, nothing uploaded anywhere." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is a .jmk file?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "A .jmk file is a mouse profile exported by Redragon's official Windows configuration software. It stores button mappings, DPI stages, and lighting settings for supported Redragon mice."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I open a .jmk file on Mac or Linux?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Not with Redragon's own software, which is Windows-only. This page decodes a .jmk file's button mappings directly in your browser, without needing Redragon's software or any installation."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is my .jmk file uploaded anywhere?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. This tool runs entirely client-side in your browser — the file never leaves your device or gets sent to any server."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Panther Tech</p>
+        <h1>.jmk File Decoder</h1>
+        <p>Open and read a Redragon .jmk profile's button mappings on Mac or Linux — entirely in your browser.</p>
+      </div>
+      <a href="/"><button>← Back to MouseConfig</button></a>
+    </header>
+
+    <section>
+      <h2>What is a .jmk file?</h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+        A .jmk file is a mouse profile exported by Redragon's official
+        Windows configuration software — it stores button mappings, DPI
+        stages, and lighting settings. Redragon doesn't publish a Mac or
+        Linux version of that software, so if someone shares a .jmk file
+        with you (a forum post, a Discord message, a saved backup), there's
+        normally no way to open it outside Windows. This page decodes its
+        button mappings directly on your device — nothing is uploaded
+        anywhere, and it works without connecting a mouse.
+      </p>
+    </section>
+
+    <section>
+      <h2>Decode a .jmk file</h2>
+      <div id="drop-zone" class="drop-zone">
+        Drag a .jmk file here, or
+        <button id="pick-file-btn" type="button">choose a file…</button>
+        <input type="file" id="file-input" accept=".jmk" hidden />
+      </div>
+
+      <p class="hint" style="margin-top: 1rem;">Or paste the file's raw bytes as hex text:</p>
+      <textarea id="hex-input" class="hex-input" placeholder="e.g. 34 12 aa fc ..."></textarea>
+      <div class="row" style="margin-top: 0.5rem;">
+        <button id="decode-hex-btn" class="primary" type="button">Decode pasted hex</button>
+      </div>
+
+      <div id="error-message" class="error-message" hidden></div>
+      <div id="results" style="margin-top: 1rem; display: none;">
+        <table class="result-table">
+          <thead>
+            <tr><th>Button</th><th>Mapping</th></tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+        <p class="hint" id="results-summary"></p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What this doesn't decode (yet)</h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+        DPI stages, polling rate, and LED settings aren't decoded yet. Buttons
+        bound to a named custom macro (a recorded sequence of keystrokes,
+        rather than a single key combo) use a different encoding this tool
+        doesn't read yet either — those show up as "not decoded" below.
+      </p>
+    </section>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and format names are used only to identify what this tool works with.</p>
+    </footer>
+
+    <script type="module" src="/src/jmk-decoder-page.ts"></script>
+  </body>
+</html>
