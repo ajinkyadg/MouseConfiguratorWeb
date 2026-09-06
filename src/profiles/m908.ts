@@ -9,6 +9,7 @@
 // included in the payload or stripped (this module assumes it's stripped,
 // mirroring M913's convention — see buildFeatureReportPayloads below).
 import tables from "../../docs/protocol-notes/m908-tables.json";
+import { parseM908Action, M908_BUTTON_NAMES, type M908ButtonName } from "./m908-buttons";
 
 const DPI_CODES = tables.dpiCodes as unknown as Record<string, [number, number]>;
 const LIGHT_MODE_VALUES = tables.lightModeValues as unknown as Record<string, [number, number]>;
@@ -39,6 +40,9 @@ export interface M908ProfileSettings {
   reportRateHz: number; // 125 | 250 | 500 | 1000
   dpiEnabled: [boolean, boolean, boolean, boolean, boolean];
   dpiValues: [number, number, number, number, number]; // must be m908DpiSupported()
+  /** Button name -> action string (see profiles/m908-buttons.ts). Buttons
+   * not present here keep their current/factory mapping. */
+  buttonActions: Partial<Record<M908ButtonName, string>>;
 }
 
 function cloneTemplate2D(template: number[][]): number[][] {
@@ -86,6 +90,22 @@ export function buildM908SettingsRows(profiles: [
         row[9] = code[0];
         row[10] = code[1];
       }
+    }
+
+    // Button mapping, settings3 packets `35 + 20*i + j` for button slot j
+    // (0-19), 4 mapping bytes at offsets 8-11. Unrecognized/unspecified
+    // buttons keep whatever the template row already had — never guessed.
+    for (const [buttonName, actionStr] of Object.entries(profile.buttonActions)) {
+      if (!actionStr) continue;
+      const slot = M908_BUTTON_NAMES.indexOf(buttonName as M908ButtonName);
+      if (slot < 0) continue;
+      const bytes = parseM908Action(actionStr);
+      if (!bytes) continue;
+      const row = settings3[35 + 20 * i + slot];
+      row[8] = bytes[0];
+      row[9] = bytes[1];
+      row[10] = bytes[2];
+      row[11] = bytes[3];
     }
   });
 

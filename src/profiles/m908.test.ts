@@ -19,6 +19,7 @@ function baseProfile(overrides: Partial<M908ProfileSettings> = {}): M908ProfileS
     reportRateHz: 1000,
     dpiEnabled: [true, true, true, true, true],
     dpiValues: [400, 800, 1600, 3200, 6400],
+    buttonActions: {},
     ...overrides,
   };
 }
