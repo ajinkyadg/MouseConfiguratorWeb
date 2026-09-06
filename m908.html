@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redragon M908 Impact Configurator | MouseConfig</title>
+    <meta name="description" content="Configure your Redragon M908 Impact mouse — DPI, RGB, report rate, and all 20 buttons — right from your browser on Windows, Mac, or Linux. No software install, no drivers." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/m908.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Redragon M908 Impact Configurator | MouseConfig" />
+    <meta property="og:description" content="Configure DPI, buttons, and RGB on your Redragon M908 straight from the browser. No install, no drivers, works on Windows, Mac, and Linux." />
+    <meta property="og:url" content="https://mouseconfig.app/m908.html" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Redragon M908 Impact Configurator | MouseConfig" />
+    <meta name="twitter:description" content="Configure DPI, buttons, and RGB on your Redragon M908 straight from the browser. No install, no drivers." />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Panther Tech</p>
+        <h1>M908 Configurator</h1>
+        <p>Configure your Redragon M908 Impact — DPI, buttons, RGB — right from your browser on Windows, Mac, or Linux.</p>
+        <p id="status">Not connected. Works in Chrome or Edge.</p>
+      </div>
+      <div class="row">
+        <a href="/"><button>← MouseConfig</button></a>
+        <button id="connect">Connect to M908</button>
+      </div>
+    </header>
+
+    <section>
+      <h2>New — not yet hardware-verified</h2>
+      <p class="hint">
+        M908 support was built from public protocol documentation, not a
+        confirmed working device — unlike the M913, this hasn't been
+        tested on real hardware yet. DPI/LED/report-rate and button
+        mapping should be structurally correct, but if something doesn't
+        work as expected, that's expected until the first real test.
+      </p>
+    </section>
+
+    <section>
+      <h2>Preset</h2>
+      <div class="row">
+        <select id="preset-select">
+          <option value="">Custom</option>
+        </select>
+      </div>
+      <p class="hint">Loads DPI, LED, and button mappings below — tweak anything after, then Apply.</p>
+    </section>
+
+    <section>
+      <h2>DPI Stages</h2>
+      <div id="dpi-rows"></div>
+      <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list.</p>
+    </section>
+
+    <section>
+      <h2>LED</h2>
+      <div class="row">
+        <label>Mode</label>
+        <select id="led-mode"></select>
+      </div>
+      <div class="row">
+        <label>Color</label>
+        <input type="color" id="led-color" value="#00ff00" />
+      </div>
+      <div class="row">
+        <label>Brightness</label>
+        <input type="range" id="led-brightness" min="0" max="255" value="200" />
+      </div>
+      <div class="row">
+        <label>Speed</label>
+        <input type="range" id="led-speed" min="1" max="5" value="3" />
+      </div>
+    </section>
+
+    <section>
+      <h2>Report Rate</h2>
+      <div class="segmented" id="report-rate-buttons"></div>
+    </section>
+
+    <section>
+      <h2>Scroll Speed</h2>
+      <div class="row">
+        <input type="number" id="scroll-speed" min="0" max="255" value="1" />
+      </div>
+      <p class="hint">Raw device value (0-255) — exact real-world scaling not yet confirmed.</p>
+    </section>
+
+    <section>
+      <h2>Buttons</h2>
+      <div id="button-rows"></div>
+      <button id="show-action-reference" style="margin-top: 0.75rem;">Action Syntax Reference…</button>
+      <div id="action-reference"></div>
+    </section>
+
+    <section class="apply-row">
+      <button class="primary" id="apply" disabled>Apply Configuration</button>
+      <p>Writes this as onboard profile 1; profiles 2-5 get a neutral default.</p>
+    </section>
+
+    <section>
+      <h2>Log</h2>
+      <div id="log"></div>
+    </section>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+    </footer>
+
+    <script type="module" src="/src/m908-page.ts"></script>
+  </body>
+</html>
