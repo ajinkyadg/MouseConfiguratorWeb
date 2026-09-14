@@ -79,6 +79,10 @@ section p.hint { font-size: 0.75rem; color: var(--text-secondary); margin: 0.5re
 .mouse-list-item .mouse-name { font-weight: 500; }
 .mouse-list-item .mouse-status { font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
 .mouse-list-item.active .mouse-status { color: var(--accent); font-weight: 700; }
+.mouse-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2rem; }
+.mouse-actions .buy-links { font-size: 0.68rem; color: var(--text-secondary); }
+.mouse-actions .buy-links a { color: var(--text-secondary); text-decoration: underline; }
+.mouse-actions .buy-links a:hover { color: var(--accent); }
 
 button {
   background: var(--surface-elevated);
