@@ -1,6 +1,12 @@
 name = "mouseconfiguratorweb"
 compatibility_date = "2026-09-02"
 
+# Non-main branches build as preview versions (not deployed to production)
+# at https://<branch>-mouseconfiguratorweb.ajinkyad220.workers.dev — the
+# `staging` branch is the pre-prod site. Set explicitly because newer
+# Wrangler defaults preview URLs to off when this is unset.
+preview_urls = true
+
 # Static-asset-only Worker: no server code, just serves the Vite build
 # output. Cloudflare's Workers Builds already runs `npm run build` (see
 # the dashboard's Build command) before this deploy step, so `dist`
