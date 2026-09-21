@@ -29,12 +29,14 @@ const resultsSummary = document.querySelector<HTMLParagraphElement>("#results-su
 function showError(message: string) {
   errorEl.textContent = message; // textContent only — never innerHTML with user-derived text
   errorEl.hidden = false;
+  hexInput.setAttribute("aria-invalid", "true");
   resultsEl.style.display = "none";
 }
 
 function clearError() {
   errorEl.hidden = true;
   errorEl.textContent = "";
+  hexInput.removeAttribute("aria-invalid");
 }
 
 // Purely cosmetic formatting of an already-safe, fixed-vocabulary action
@@ -71,6 +73,7 @@ function renderResults(mappings: JmkButtonMapping[]) {
   }
 
   resultsSummary.textContent = `${decodedCount} of ${mappings.length} button slots decoded.`;
+  document.querySelector("#results-announce")!.textContent = `Decoded: ${resultsSummary.textContent} Results are below.`;
   resultsEl.style.display = "block";
 }
 

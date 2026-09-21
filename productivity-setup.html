@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redragon M913 Productivity Setup | MouseConfig</title>
     <meta name="description" content="A free, ready-to-use productivity button mapping for the Redragon M913 — copy/paste, tab switching, window switching, search, and more, one click away. Set it up in seconds with MouseConfig." />
     <meta name="robots" content="index, follow" />
@@ -33,8 +34,8 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/styles.css" />
     <style>
-      article p { font-size: 0.9rem; line-height: 1.7; color: var(--text); margin: 0 0 1rem; }
-      article h2 { font-size: 1rem; color: var(--text); margin: 1.5rem 0 0.5rem; }
+      article p { font-size: var(--fs-md); line-height: 1.7; color: var(--text); margin: 0 0 1rem; max-width: 68ch; }
+      article h2 { font-size: 1.0625rem; font-weight: 650; color: var(--text); text-transform: none; letter-spacing: -0.005em; margin: 1.75rem 0 0.5rem; }
       .cta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
     </style>
   </head>
@@ -45,8 +46,10 @@
         <h1>Twelve Buttons, Zero Friction</h1>
         <p>How the right mouse setup changes the way you work — built around MouseConfig's Default preset for the Redragon M913.</p>
       </div>
-      <a href="/"><button>← Back to MouseConfig</button></a>
+      <a class="btn" href="/">← Back to MouseConfig</a>
     </header>
+
+    <main id="main">
 
     <section>
       <article>
@@ -135,14 +138,16 @@
     </section>
 
     <section class="cta-row">
-      <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">
+      <p class="prose-muted" style="margin: 0;">
         Ready to try it on your own M913?
       </p>
-      <a href="/"><button class="primary">Set up the Default preset →</button></a>
+      <a class="btn primary" href="/">Set up the Default preset →</a>
     </section>
+    </main>
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/productivity-setup.html">Productivity button mapping</a> · <a href="/jmk-decoder.html">.jmk file decoder</a></p>
     </footer>
   </body>
 </html>

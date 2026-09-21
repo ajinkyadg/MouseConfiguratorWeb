@@ -1,5 +1,7 @@
 // Wires the M908 configurator page (m908.html) to the M908 protocol
 // modules. UNVERIFIED AGAINST REAL HARDWARE — see docs/protocol-notes/m908.md.
+import { initMouseMenu } from "./mouse-menu";
+import { initRangeSliders, syncRangeSliders } from "./range-slider";
 import {
   closeDevice,
   findM908ConfigDevice,
@@ -59,9 +61,23 @@ function log(msg: string) {
 let device: HIDDevice | null = null;
 let profile: M908ProfileSettings = structuredClone(M908_NEUTRAL_PROFILE);
 
+const applyHintEl = document.querySelector<HTMLParagraphElement>("#apply-hint")!;
+const APPLY_HINT = applyHintEl.textContent ?? "";
+
 function setConnected(connected: boolean) {
-  connectBtn.disabled = connected;
   applyBtn.disabled = !connected;
+  // Disabling the focused Connect button would drop keyboard focus to
+  // <body>; hand it to Apply first, which is the next step anyway.
+  if (connected && document.activeElement === connectBtn) applyBtn.focus();
+  connectBtn.disabled = connected;
+  applyHintEl.textContent = connected ? APPLY_HINT : "Connect your mouse (top of page) to enable Apply.";
+}
+
+// Short outcome for screen readers and anyone scrolled away from the log.
+function announce(message: string, tone: "warning" | "" = "") {
+  statusEl.textContent = message;
+  statusEl.classList.remove("connected");
+  statusEl.classList.toggle("warning", tone === "warning");
 }
 
 // --- Rendering ---
@@ -88,13 +104,25 @@ function renderReportRateButtons() {
   reportRateButtonsEl.replaceChildren();
   for (const hz of REPORT_RATES) {
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = `${hz} Hz`;
-    btn.classList.toggle("active", profile.reportRateHz === hz);
+    btn.dataset.hz = String(hz);
     btn.addEventListener("click", () => {
       profile.reportRateHz = hz;
-      renderReportRateButtons();
+      syncReportRateButtons();
     });
     reportRateButtonsEl.append(btn);
+  }
+  syncReportRateButtons();
+}
+
+// Updates selection in place — rebuilding the buttons on every click
+// would destroy the focused one and drop keyboard focus to <body>.
+function syncReportRateButtons() {
+  for (const btn of reportRateButtonsEl.querySelectorAll<HTMLButtonElement>("button")) {
+    const selected = Number(btn.dataset.hz) === profile.reportRateHz;
+    btn.classList.toggle("active", selected);
+    btn.setAttribute("aria-pressed", String(selected));
   }
 }
 
@@ -110,11 +138,13 @@ function renderDpiRows() {
     const enabledCheckbox = document.createElement("input");
     enabledCheckbox.type = "checkbox";
     enabledCheckbox.checked = profile.dpiEnabled[i];
+    enabledCheckbox.setAttribute("aria-label", `Enable stage ${i + 1}`);
     enabledCheckbox.addEventListener("change", () => {
       profile.dpiEnabled[i] = enabledCheckbox.checked;
     });
 
     const select = document.createElement("select");
+    select.setAttribute("aria-label", `Stage ${i + 1} DPI`);
     for (const dpi of M908_KNOWN_DPI_VALUES) {
       const opt = document.createElement("option");
       opt.value = String(dpi);
@@ -146,22 +176,20 @@ function renderButtonRows() {
     input.placeholder = "e.g. ctrl+c, fire:a:5:10, macro3";
     input.value = profile.buttonActions[name] ?? "";
     input.style.flex = "1";
+    input.setAttribute("aria-label", `${label.textContent} action`);
 
     const validity = document.createElement("span");
     validity.className = "current-value";
+    validity.id = `validity-${name}`;
+    input.setAttribute("aria-describedby", validity.id);
 
     function updateValidity() {
       const value = input.value.trim();
-      if (!value) {
-        validity.textContent = "(unchanged)";
-        validity.style.color = "var(--text-secondary)";
-      } else if (m908ActionSupported(value)) {
-        validity.textContent = "✓ valid";
-        validity.style.color = "#6fe07a";
-      } else {
-        validity.textContent = "✗ unrecognized";
-        validity.style.color = "#ff6b6b";
-      }
+      const valid = !value || m908ActionSupported(value);
+      validity.textContent = !value ? "(unchanged)" : valid ? "✓ valid" : "✗ unrecognized";
+      validity.classList.toggle("is-valid", !!value && valid);
+      validity.classList.toggle("is-invalid", !valid);
+      input.setAttribute("aria-invalid", String(!valid));
     }
     updateValidity();
 
@@ -183,6 +211,7 @@ function renderLedControls() {
   ledColorEl.value = `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
   ledBrightnessEl.value = String(profile.brightness);
   ledSpeedEl.value = String(profile.speed);
+  syncRangeSliders();
 }
 
 function renderAll() {
@@ -236,6 +265,7 @@ scrollSpeedEl.addEventListener("input", () => {
 
 showActionReferenceBtn.addEventListener("click", () => {
   const isOpen = actionReferenceEl.classList.toggle("open");
+  showActionReferenceBtn.setAttribute("aria-expanded", String(isOpen));
   actionReferenceEl.textContent = isOpen ? buildActionReferenceText() : "";
 });
 
@@ -247,17 +277,19 @@ connectBtn.addEventListener("click", async () => {
     const configDevice = findM908ConfigDevice(devices);
     if (!configDevice) {
       log("Connect failed: none of the granted collections expose the config feature report.");
+      announce("Connect failed: couldn't find the config channel — see the log.", "warning");
       return;
     }
     await closeDevice(device);
     await openDevice(configDevice);
     device = configDevice;
     setConnected(true);
-    statusEl.textContent = `Connected: ${configDevice.productName || "M908"}`;
+    announce(`Connected: ${configDevice.productName || "M908"}`);
     statusEl.classList.add("connected");
     log("Connected.");
   } catch (err) {
     log(`Connect failed: ${err instanceof Error ? err.message : String(err)}`);
+    announce(`Connect failed: ${err instanceof Error ? err.message : String(err)}`, "warning");
   }
 });
 
@@ -274,8 +306,15 @@ async function applySection(name: string, fn: () => Promise<void>): Promise<bool
   }
 }
 
+// Busy state uses aria-disabled rather than disabled: disabling the button
+// the user just activated would drop keyboard focus to <body>.
+let applying = false;
+
 applyBtn.addEventListener("click", async () => {
-  if (!device) return;
+  if (!device || applying) return;
+  applying = true;
+  applyBtn.setAttribute("aria-disabled", "true");
+  applyBtn.textContent = "Applying…";
 
   const profiles = [profile, M908_NEUTRAL_PROFILE, M908_NEUTRAL_PROFILE, M908_NEUTRAL_PROFILE, M908_NEUTRAL_PROFILE] as const;
   const results: boolean[] = [];
@@ -300,6 +339,15 @@ applyBtn.addEventListener("click", async () => {
 
   const okCount = results.filter(Boolean).length;
   log(`Apply Configuration: ${okCount}/${results.length} sections ok.`);
+  if (okCount === results.length) {
+    announce("Configuration applied.");
+    statusEl.classList.add("connected");
+  } else {
+    announce(`Apply finished with errors: ${okCount}/${results.length} sections ok — see the log.`, "warning");
+  }
+  applying = false;
+  applyBtn.removeAttribute("aria-disabled");
+  applyBtn.textContent = "Apply Configuration";
 });
 
 // --- Init ---
@@ -307,11 +355,18 @@ applyBtn.addEventListener("click", async () => {
 renderPresetOptions();
 renderLedModeOptions();
 renderAll();
+setConnected(false);
 
 if (!isWebHidAvailable()) {
   statusEl.textContent = "This browser doesn't support WebHID — open this page in Chrome or Edge.";
   statusEl.classList.remove("connected");
   connectBtn.disabled = true;
+  applyBtn.disabled = true;
+  document.querySelector<HTMLElement>("#unsupported")!.hidden = false;
+  // Apply can never enable here, so don't keep it floating over the page.
+  applyBtn.closest(".apply-row")?.classList.add("unstuck");
   log(WEBHID_UNAVAILABLE_MESSAGE);
 }
 
+initMouseMenu();
+initRangeSliders();

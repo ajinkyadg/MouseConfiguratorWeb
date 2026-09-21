@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Open a .jmk File on Mac or Linux | MouseConfig</title>
     <meta name="description" content="Redragon's Windows software exports mouse profiles as .jmk files, which Mac and Linux users have no way to open. Paste or upload a .jmk file here to see its button mappings decoded — entirely in your browser, nothing uploaded anywhere." />
     <meta name="robots" content="index, follow" />
@@ -60,12 +61,13 @@
         <h1>.jmk File Decoder</h1>
         <p>Open and read a Redragon .jmk profile's button mappings on Mac or Linux — entirely in your browser.</p>
       </div>
-      <a href="/"><button>← Back to MouseConfig</button></a>
+      <a class="btn" href="/">← Back to MouseConfig</a>
     </header>
 
+    <main id="main">
     <section>
       <h2>What is a .jmk file?</h2>
-      <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+      <p class="prose-muted">
         A .jmk file is a mouse profile exported by Redragon's official
         Windows configuration software — it stores button mappings, DPI
         stages, and lighting settings. Redragon doesn't publish a Mac or
@@ -81,17 +83,18 @@
       <h2>Decode a .jmk file</h2>
       <div id="drop-zone" class="drop-zone">
         Drag a .jmk file here, or
-        <button id="pick-file-btn" type="button">choose a file…</button>
+        <button id="pick-file-btn" class="primary" type="button">Choose a .jmk file…</button>
         <input type="file" id="file-input" accept=".jmk" hidden />
       </div>
 
-      <p class="hint" style="margin-top: 1rem;">Or paste the file's raw bytes as hex text:</p>
-      <textarea id="hex-input" class="hex-input" placeholder="e.g. 34 12 aa fc ..."></textarea>
+      <label for="hex-input" class="hint" style="display: block; margin-top: 1rem;">Or paste the file's raw bytes as hex text:</label>
+      <textarea id="hex-input" class="hex-input" aria-describedby="error-message" placeholder="e.g. 34 12 aa fc ..."></textarea>
       <div class="row" style="margin-top: 0.5rem;">
-        <button id="decode-hex-btn" class="primary" type="button">Decode pasted hex</button>
+        <button id="decode-hex-btn" type="button">Decode pasted hex</button>
       </div>
 
-      <div id="error-message" class="error-message" hidden></div>
+      <div id="error-message" class="error-message" role="alert" hidden></div>
+      <p id="results-announce" class="visually-hidden" role="status"></p>
       <div id="results" style="margin-top: 1rem; display: none;">
         <table class="result-table">
           <thead>
@@ -105,16 +108,18 @@
 
     <section>
       <h2>What this doesn't decode (yet)</h2>
-      <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+      <p class="prose-muted">
         DPI stages, polling rate, and LED settings aren't decoded yet. Buttons
         bound to a named custom macro (a recorded sequence of keystrokes,
         rather than a single key combo) use a different encoding this tool
         doesn't read yet either — those show up as "not decoded" below.
       </p>
     </section>
+    </main>
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and format names are used only to identify what this tool works with.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/productivity-setup.html">Productivity button mapping</a> · <a href="/jmk-decoder.html">.jmk file decoder</a></p>
     </footer>
 
     <script type="module" src="/src/jmk-decoder-page.ts"></script>

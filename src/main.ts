@@ -1,3 +1,5 @@
+import { initMouseMenu } from "./mouse-menu";
+import { initRangeSliders, syncRangeSliders } from "./range-slider";
 import {
   requestM913,
   openDevice,
@@ -85,9 +87,24 @@ function log(msg: string) {
   logEl.textContent = `[${time}] ${msg}\n${logEl.textContent}`;
 }
 
+const applyHintEl = document.querySelector<HTMLParagraphElement>("#apply-hint")!;
+const APPLY_HINT = applyHintEl.textContent ?? "";
+
 function setConnected(connected: boolean) {
-  connectBtn.disabled = connected;
   applyBtn.disabled = !connected;
+  // Disabling the focused Connect button would drop keyboard focus to
+  // <body>; hand it to Apply first, which is the next step anyway.
+  if (connected && document.activeElement === connectBtn) applyBtn.focus();
+  connectBtn.disabled = connected;
+  applyHintEl.textContent = connected ? APPLY_HINT : "Connect your mouse (top of page) to enable Apply.";
+}
+
+// Short, human-readable outcome for screen readers and anyone who has
+// scrolled away from the log; the log keeps the full packet trace.
+function announce(message: string, tone: "warning" | "" = "") {
+  statusEl.textContent = message;
+  statusEl.classList.remove("connected");
+  statusEl.classList.toggle("warning", tone === "warning");
 }
 
 async function sendAndLog(label: string, packet: Uint8Array) {
@@ -144,8 +161,7 @@ connectBtn.addEventListener("click", async () => {
     renderDpiRows();
 
     if (!wired) {
-      statusEl.textContent = `Connected: ${device.productName} — wireless receiver detected. Plug in the USB cable to apply settings.`;
-      statusEl.classList.remove("connected");
+      announce(`Connected: ${device.productName} — wireless receiver detected. Plug in the USB cable to apply settings.`, "warning");
       setConnected(false);
       log("The wireless receiver only relays mouse movement/clicks — configuration commands need the wired USB connection. Plug in the cable and reconnect.");
     } else if (await macOSBlocksHidWrites()) {
@@ -155,21 +171,33 @@ connectBtn.addEventListener("click", async () => {
       // unprivileged processes, so a browser running as root (or a future
       // macOS that relaxes the gate, or a wrong version detection) can
       // still succeed, and the page shouldn't be the thing that stops it.
-      statusEl.textContent = `Connected: ${device.productName} — macOS 26.6+ usually blocks browser writes to this mouse. Apply will be attempted anyway.`;
-      statusEl.classList.remove("connected");
+      announce(`Connected: ${device.productName} — macOS 26.6+ usually blocks browser writes to this mouse. Apply will be attempted anyway.`, "warning");
+      if (macosTip) macosTip.open = true;
       setConnected(true);
       log(MACOS_WRITE_BLOCK_EXPLANATION);
     } else {
-      statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware, wired)`;
+      announce(`Connected: ${device.productName} (${hardware} hardware, wired)`);
       statusEl.classList.add("connected");
       setConnected(true);
     }
   } catch (err) {
     log(`Connect failed: ${(err as Error).message}`);
+    announce(`Connect failed: ${(err as Error).message}`, "warning");
   }
 });
 
 // --- macOS tip: copy the sudo Chrome command -------------------------------
+
+// The tip is a collapsed expander so it doesn't push the configurator a
+// screen down; it opens itself only when linked to (the #status link or a
+// shared #macos URL) and when a connect detects the macOS write block.
+const macosTip = document.querySelector<HTMLDetailsElement>("#macos");
+if (macosTip && location.hash === "#macos") macosTip.open = true;
+document.querySelector('a[href="#macos"]')?.addEventListener("click", () => {
+  if (macosTip) macosTip.open = true;
+});
+
+const copyStatusEl = document.querySelector<HTMLSpanElement>("#copy-status");
 
 const copyMacosCommandBtn = document.querySelector<HTMLButtonElement>("#copy-macos-command");
 copyMacosCommandBtn?.addEventListener("click", async () => {
@@ -177,10 +205,12 @@ copyMacosCommandBtn?.addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(command);
     copyMacosCommandBtn.textContent = "Copied";
+    if (copyStatusEl) copyStatusEl.textContent = "Command copied.";
   } catch {
     // Clipboard access can be denied; the <pre> is user-select: all, so a
     // single click still selects the whole command for a manual copy.
     copyMacosCommandBtn.textContent = "Select & copy";
+    if (copyStatusEl) copyStatusEl.textContent = "Copy was blocked — select the command and copy it manually.";
   }
   setTimeout(() => (copyMacosCommandBtn.textContent = "Copy"), 2000);
 });
@@ -190,15 +220,19 @@ copyMacosCommandBtn?.addEventListener("click", async () => {
 function setPollingRate(hz: number) {
   pollingRateHz = hz;
   for (const b of pollButtonsEl.querySelectorAll("button")) {
-    b.classList.toggle("active", Number((b as HTMLElement).dataset.hz) === hz);
+    const selected = Number((b as HTMLElement).dataset.hz) === hz;
+    b.classList.toggle("active", selected);
+    b.setAttribute("aria-pressed", String(selected));
   }
 }
 
 for (const hz of [125, 250, 500, 1000]) {
   const btn = document.createElement("button");
   btn.textContent = `${hz} Hz`;
+  btn.type = "button";
   btn.dataset.hz = String(hz);
-  if (hz === pollingRateHz) btn.classList.add("active");
+  btn.classList.toggle("active", hz === pollingRateHz);
+  btn.setAttribute("aria-pressed", String(hz === pollingRateHz));
   btn.addEventListener("click", () => setPollingRate(hz));
   pollButtonsEl.appendChild(btn);
 }
@@ -234,9 +268,9 @@ function renderDpiRows() {
     const row = document.createElement("div");
     row.className = "row";
     row.innerHTML = `
-      <label>Slot ${i + 1}</label>
-      <input type="checkbox" checked />
-      <input type="number" step="${hardware === "compx" ? COMPX_DPI_STEP : 50}" placeholder="e.g. 1600" list="${datalistId}" />
+      <label>Stage ${i + 1}</label>
+      <input type="checkbox" checked aria-label="Enable stage ${i + 1}" />
+      <input type="number" aria-label="Stage ${i + 1} DPI" step="${hardware === "compx" ? COMPX_DPI_STEP : 50}" placeholder="e.g. 1600" list="${datalistId}" />
     `;
     dpiRowsEl.appendChild(row);
     dpiEnabledInputs.push(row.querySelector('input[type="checkbox"]')!);
@@ -286,10 +320,12 @@ function renderButtonRows() {
 
     const currentValue = document.createElement("span");
     currentValue.className = "current-value";
+    currentValue.id = `current-${slot.id}`;
     currentValue.textContent = "Unchanged";
 
     const categorySelect = document.createElement("select");
     categorySelect.className = "category-select";
+    categorySelect.setAttribute("aria-label", `${slot.displayName} action category`);
     categorySelect.innerHTML =
       `<option value="">Unchanged</option>` +
       ACTION_CATEGORIES.map((c) => `<option value="${c.name}">${c.name}</option>`).join("") +
@@ -298,33 +334,50 @@ function renderButtonRows() {
 
     const actionSelect = document.createElement("select");
     actionSelect.className = "action-select";
+    actionSelect.setAttribute("aria-label", `${slot.displayName} action`);
     actionSelect.style.display = "none";
 
     const comboBuilder = document.createElement("div");
     comboBuilder.className = "combo-builder";
+    comboBuilder.setAttribute("role", "group");
+    comboBuilder.setAttribute("aria-label", `${slot.displayName} key combination`);
+    // The special-key <option>s (~77 per row) are filled in on first open
+    // by openComboBuilder() — building them for all 16 rows up front was
+    // most of the page's DOM, for a picker that's rarely opened.
     comboBuilder.innerHTML = `
       <label><input type="checkbox" data-mod="ctrl" /> Ctrl</label>
       <label><input type="checkbox" data-mod="shift" /> Shift</label>
       <label><input type="checkbox" data-mod="alt" /> ⌥ Option/Alt</label>
       <label><input type="checkbox" data-mod="super" /> ⌘/Super</label>
-      <input type="text" placeholder="key, e.g. c" class="combo-key" />
-      <select class="combo-special-key">
+      <input type="text" placeholder="key, e.g. c" class="combo-key" aria-label="${slot.displayName} key" />
+      <select class="combo-special-key" aria-label="${slot.displayName} special key">
         <option value="" selected>Special key…</option>
-        ${KEY_COMBO_SPECIAL_GROUPS.map(
-          (group) =>
-            `<optgroup label="${group.name}">` +
-            group.keys.map((k) => `<option value="${k}">${k}</option>`).join("") +
-            `</optgroup>`
-        ).join("")}
       </select>
-      <button type="button" class="combo-apply">Use</button>
+      <button type="button" class="combo-apply" aria-label="Use combination for ${slot.displayName}">Use</button>
     `;
+    function openComboBuilder() {
+      const specialKeySelect = comboBuilder.querySelector<HTMLSelectElement>(".combo-special-key")!;
+      if (specialKeySelect.options.length === 1) {
+        specialKeySelect.insertAdjacentHTML(
+          "beforeend",
+          KEY_COMBO_SPECIAL_GROUPS.map(
+            (group) =>
+              `<optgroup label="${group.name}">` +
+              group.keys.map((k) => `<option value="${k}">${k}</option>`).join("") +
+              `</optgroup>`
+          ).join("")
+        );
+      }
+      comboBuilder.classList.add("open");
+    }
 
     const customWrap = document.createElement("div");
     customWrap.className = "custom-wrap";
     const customInput = document.createElement("input");
     customInput.type = "text";
     customInput.placeholder = "e.g. ctrl+alt+super+d";
+    customInput.setAttribute("aria-label", `${slot.displayName} custom action`);
+    for (const el of [categorySelect, actionSelect, customInput]) el.setAttribute("aria-describedby", currentValue.id);
     customWrap.appendChild(customInput);
 
     // Updates the model + visible label only — used for direct
@@ -333,6 +386,7 @@ function renderButtonRows() {
     function setCurrent(value: string) {
       buttonActions[slot.id] = value;
       currentValue.textContent = value ? displayLabel(value) ?? value : "Unchanged";
+      currentValue.title = currentValue.textContent; // full text when the column ellipsizes it
     }
 
     // Full programmatic load: also re-syncs the category/action pickers
@@ -374,7 +428,7 @@ function renderButtonRows() {
       if (value === "") {
         setCurrent("");
       } else if (value === "__combo__") {
-        comboBuilder.classList.add("open");
+        openComboBuilder();
       } else if (value === "__custom__") {
         customWrap.classList.add("open");
         customInput.value = "";
@@ -406,10 +460,15 @@ function renderButtonRows() {
       });
       const key = comboKeyInput.value.trim().toLowerCase();
       const action = [...mods, key].filter(Boolean).join("+");
-      if (!action) return;
+      if (!action) {
+        announce(`${slot.displayName}: pick a modifier or type a key first.`, "warning");
+        comboKeyInput.focus();
+        return;
+      }
       const tokens = actionComboTokens(action);
       if (tokens > MAX_COMBO_TOKENS) {
         log(`Combo "${action}" uses ${tokens} modifiers+keys — hardware allows at most ${MAX_COMBO_TOKENS}.`);
+        announce(`${slot.displayName}: that combination uses ${tokens} keys — the mouse allows at most ${MAX_COMBO_TOKENS}.`, "warning");
         return;
       }
       setCurrent(action);
@@ -431,6 +490,7 @@ renderButtonRows();
 
 showActionRefBtn.addEventListener("click", () => {
   actionRefEl.classList.toggle("open");
+  showActionRefBtn.setAttribute("aria-expanded", String(actionRefEl.classList.contains("open")));
   if (actionRefEl.classList.contains("open")) {
     const lines: string[] = [];
     for (const category of ACTION_CATEGORIES) {
@@ -468,6 +528,7 @@ function applyConfigToUI(config: MouseWebConfig) {
   ledColorEl.value = `#${config.ledColorHex}`;
   ledBrightnessEl.value = String(config.ledBrightness);
   ledSpeedEl.value = String(config.ledSpeed);
+  syncRangeSliders();
   updateLedVisibility();
   for (const slot of BUTTON_SLOTS) {
     buttonRowLoaders[slot.id]?.(config.buttonActions[slot.id] ?? "");
@@ -543,6 +604,7 @@ profileDeleteBtn.addEventListener("click", () => {
   profileStore.deleteProfile(profile.id);
   loadedProfileID = null;
   renderProfileSelect();
+  profileSelectEl.focus(); // Delete just disabled itself; keep keyboard focus on the page
   log(`Deleted profile "${profile.name}".`);
 });
 
@@ -556,6 +618,7 @@ profileImportInput.addEventListener("change", async () => {
   const imported = profileStore.importProfile(text);
   if (!imported) {
     log(`Import failed: "${file.name}" isn't a valid profile export.`);
+    announce(`Import failed: "${file.name}" isn't a valid profile export.`, "warning");
     return;
   }
   loadProfile(imported);
@@ -574,6 +637,7 @@ profileImportJmkInput.addEventListener("change", async () => {
   const mappedCount = Object.keys(buttonActions).length;
   if (mappedCount === 0) {
     log(`Import failed: "${file.name}" doesn't look like a recognizable .jmk profile.`);
+    announce(`Import failed: "${file.name}" doesn't look like a recognizable .jmk profile.`, "warning");
     return;
   }
 
@@ -615,6 +679,7 @@ const restoredProfile = profileStore.selectedProfileID
   ? profileStore.profiles.find((p) => p.id === profileStore.selectedProfileID)
   : undefined;
 loadProfile(restoredProfile ?? BUILT_IN_PRESETS[0]); // loadProfile() already calls renderProfileSelect()
+setConnected(false);
 
 // Say up front that this browser can't do it, rather than letting the user
 // click Connect and get a raw TypeError from deep inside requestM913().
@@ -623,6 +688,10 @@ if (!isWebHidAvailable()) {
   statusEl.classList.remove("connected");
   connectBtn.disabled = true;
   applyBtn.disabled = true;
+  document.querySelector<HTMLElement>("#unsupported")!.hidden = false;
+  // Apply can never enable here, so don't keep it floating over the page.
+  applyBtn.closest(".apply-row")?.classList.add("unstuck");
+  if (macosTip) macosTip.open = false;
   log(WEBHID_UNAVAILABLE_MESSAGE);
 }
 
@@ -652,9 +721,15 @@ async function applySection(label: string, send: () => Promise<void>): Promise<b
   }
 }
 
+// Busy state uses aria-disabled rather than disabled: disabling the button
+// the user just activated would drop keyboard focus to <body>.
+let applying = false;
+
 applyBtn.addEventListener("click", async () => {
-  if (!device) return;
-  applyBtn.disabled = true;
+  if (!device || applying) return;
+  applying = true;
+  applyBtn.setAttribute("aria-disabled", "true");
+  applyBtn.textContent = "Applying…";
   explainedWriteBlock = false;
   const results: Record<string, boolean> = {};
 
@@ -693,5 +768,14 @@ applyBtn.addEventListener("click", async () => {
     .map(([section, ok]) => `${section}=${ok ? "ok" : "FAILED"}`)
     .join(", ");
   log(`Apply Configuration: ${summary}`);
-  applyBtn.disabled = false;
+  const failed = Object.entries(results).filter(([, ok]) => !ok).map(([section]) => section);
+  if (failed.length) announce(`Apply finished with errors: ${failed.join(", ")} failed — see the log.`, "warning");
+  else announce("Configuration applied.");
+  if (!failed.length) statusEl.classList.add("connected");
+  applying = false;
+  applyBtn.removeAttribute("aria-disabled");
+  applyBtn.textContent = "Apply Configuration";
 });
+
+initMouseMenu();
+initRangeSliders();

@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Redragon M908 Impact Configurator | MouseConfig</title>
     <meta name="description" content="Configure your Redragon M908 Impact mouse — DPI, RGB, report rate, and all 20 buttons — right from your browser on Windows, Mac, or Linux. No software install, no drivers." />
     <meta name="robots" content="index, follow" />
@@ -26,18 +27,36 @@
         <p class="eyebrow">Panther Tech</p>
         <h1>M908 Configurator</h1>
         <p>Configure your Redragon M908 Impact — DPI, buttons, RGB — right from your browser on Windows, Mac, or Linux.</p>
-        <p id="status">Not connected. Works in Chrome or Edge.</p>
-        <p class="hint">Don't have one yet? Buy: <a href="https://www.amazon.com/Redragon-M908-Programmable-Buttons-Cartridge/dp/B07N2SXZGG" target="_blank" rel="noopener noreferrer">Amazon</a> · <a href="https://redragonshop.com/products/impact-m908" target="_blank" rel="noopener noreferrer">Redragon</a></p>
+        <p id="status" role="status">Not connected. Works in Chrome or Edge.</p>
       </div>
-      <div class="row">
-        <a href="/"><button>← MouseConfig</button></a>
-        <button id="connect">Connect to M908</button>
-      </div>
+      <button id="connect" class="primary">Connect to M908</button>
     </header>
 
-    <section>
+    <main id="main">
+    <section class="mouse-bar" aria-label="Choose your mouse">
+      <span class="mouse-bar-label" id="mouse-menu-label">Mouse</span>
+      <details class="mouse-menu" id="mouse-menu">
+        <summary aria-describedby="mouse-menu-label">Redragon M908 Impact</summary>
+        <div class="mouse-menu-panel">
+          <ul>
+            <li><a class="mouse-option" href="/"><span>Redragon M913 Impact Elite</span><span class="badge">Supported</span></a></li>
+            <li><a class="mouse-option" href="/m908.html" aria-current="page"><span>Redragon M908 Impact</span><span class="badge">Beta</span><svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+            <li><span class="mouse-option is-disabled"><span>Redragon M719 Invader</span><span class="badge">Coming soon</span></span></li>
+          </ul>
+          <p class="mouse-menu-foot">Don&rsquo;t see your mouse? Requests welcome.</p>
+        </div>
+      </details>
+      <span class="buy-links">Buy: <a href="https://www.amazon.com/Redragon-M908-Programmable-Buttons-Cartridge/dp/B07N2SXZGG" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 on Amazon (opens in a new tab)">Amazon</a> · <a href="https://redragonshop.com/products/impact-m908" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 from Redragon (opens in a new tab)">Redragon</a></span>
+    </section>
+
+    <section id="unsupported" class="unsupported" hidden>
+      <h2>This browser can't talk to the mouse</h2>
+      <p>MouseConfig uses WebHID, which only desktop Chrome, Edge, Brave, and Opera support. Safari, Firefox, and phone or tablet browsers can't connect — open <strong>mouseconfig.app</strong> on a computer in one of those browsers. You can still browse the settings here.</p>
+    </section>
+
+    <section class="callout">
       <h2>New — not yet hardware-verified</h2>
-      <p class="hint">
+      <p>
         M908 support was built from public protocol documentation, not a
         confirmed working device — unlike the M913, this hasn't been
         tested on real hardware yet. DPI/LED/report-rate and button
@@ -49,11 +68,16 @@
     <section>
       <h2>Preset</h2>
       <div class="row">
-        <select id="preset-select">
+        <select id="preset-select" aria-label="Preset">
           <option value="">Custom</option>
         </select>
       </div>
       <p class="hint">Loads DPI, LED, and button mappings below — tweak anything after, then Apply.</p>
+    </section>
+
+    <section>
+      <h2 id="poll-heading">Polling Rate</h2>
+      <div class="segmented" id="report-rate-buttons" role="group" aria-labelledby="poll-heading"></div>
     </section>
 
     <section>
@@ -65,32 +89,29 @@
     <section>
       <h2>LED</h2>
       <div class="row">
-        <label>Mode</label>
+        <label for="led-mode">Mode</label>
         <select id="led-mode"></select>
       </div>
       <div class="row">
-        <label>Color</label>
+        <label for="led-color">Color</label>
         <input type="color" id="led-color" value="#00ff00" />
       </div>
       <div class="row">
-        <label>Brightness</label>
-        <input type="range" id="led-brightness" min="0" max="255" value="200" />
+        <label for="led-brightness">Brightness</label>
+        <input type="range" id="led-brightness" min="0" max="255" value="200" data-format="percent" />
+        <output for="led-brightness" class="range-value"></output>
       </div>
       <div class="row">
-        <label>Speed</label>
-        <input type="range" id="led-speed" min="1" max="5" value="3" />
+        <label for="led-speed">Speed</label>
+        <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
+        <output for="led-speed" class="range-value"></output>
       </div>
-    </section>
-
-    <section>
-      <h2>Report Rate</h2>
-      <div class="segmented" id="report-rate-buttons"></div>
     </section>
 
     <section>
       <h2>Scroll Speed</h2>
       <div class="row">
-        <input type="number" id="scroll-speed" min="0" max="255" value="1" />
+        <input type="number" id="scroll-speed" aria-label="Scroll speed" min="0" max="255" value="1" />
       </div>
       <p class="hint">Raw device value (0-255) — exact real-world scaling not yet confirmed.</p>
     </section>
@@ -98,22 +119,24 @@
     <section>
       <h2>Buttons</h2>
       <div id="button-rows"></div>
-      <button id="show-action-reference" style="margin-top: 0.75rem;">Action Syntax Reference…</button>
-      <div id="action-reference"></div>
+      <button id="show-action-reference" class="mt-3" aria-expanded="false" aria-controls="action-reference">Action Syntax Reference…</button>
+      <div id="action-reference" role="region" aria-label="Action syntax reference" tabindex="0"></div>
     </section>
 
     <section class="apply-row">
       <button class="primary" id="apply" disabled>Apply Configuration</button>
-      <p>Writes this as onboard profile 1; profiles 2-5 get a neutral default.</p>
+      <p id="apply-hint">Writes this as onboard profile 1; profiles 2-5 get a neutral default.</p>
     </section>
 
     <section>
       <h2>Log</h2>
-      <div id="log"></div>
+      <div id="log" role="log" aria-label="Device log" tabindex="0"></div>
     </section>
+    </main>
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/productivity-setup.html">Productivity button mapping</a> · <a href="/jmk-decoder.html">.jmk file decoder</a></p>
     </footer>
 
     <script type="module" src="/src/m908-page.ts"></script>
