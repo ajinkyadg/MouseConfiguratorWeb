@@ -62,6 +62,18 @@ section h2 {
   text-transform: uppercase;
   color: var(--accent);
 }
+.macos-tip { border-left: 3px solid var(--accent); }
+.macos-tip p, .macos-tip li { font-size: 0.85rem; line-height: 1.55; }
+.macos-tip ol { padding-left: 1.25rem; margin: 0.75rem 0; }
+.macos-tip li { margin-bottom: 0.5rem; }
+.macos-tip code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; }
+.macos-tip .command { display: flex; align-items: stretch; gap: 0.5rem; margin-top: 0.5rem; }
+.macos-tip .command pre {
+  flex: 1; margin: 0; padding: 0.6rem 0.75rem; overflow-x: auto;
+  background: var(--bg); border: 1px solid var(--surface-elevated); border-radius: 6px;
+  user-select: all;
+}
+.macos-tip .command button { flex-shrink: 0; }
 section p.hint { font-size: 0.75rem; color: var(--text-secondary); margin: 0.5rem 0 0; }
 
 .mouse-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }

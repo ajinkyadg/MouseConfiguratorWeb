@@ -23,7 +23,7 @@
         "@type": "SoftwareApplication",
         "name": "MouseConfig",
         "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Windows, Linux",
+        "operatingSystem": "Windows, macOS, Linux",
         "url": "https://mouseconfig.app/",
         "description": "Free browser-based configurator for the Redragon M913 Impact Elite gaming mouse — DPI, polling rate, RGB, and button remapping, no software install required.",
         "offers": {
@@ -47,10 +47,38 @@
         <p class="eyebrow">Panther Tech</p>
         <h1>MouseConfig</h1>
         <p>Configure your Redragon M913 gaming mouse — DPI, buttons, RGB — right from your browser on Windows, Mac, or Linux. No vendor software, no drivers to install.</p>
-        <p id="status">Not connected. Works in Chrome or Edge on Windows and Linux. macOS 26.6.2 and later block browser writes to this mouse &mdash; use the native macOS app instead.</p>
+        <p id="status">Not connected. Works in Chrome or Edge. On macOS 26.6.2 or later, <a href="#macos">launch Chrome this way first</a>.</p>
       </div>
       <button id="connect">Connect to M913</button>
     </header>
+
+    <section id="macos" class="macos-tip">
+      <h2>On macOS 26.6.2 or later?</h2>
+      <p>
+        Since macOS 26.6.2, Apple only lets privileged apps write settings to this mouse, so a
+        normally-launched browser can connect but every <strong>Apply</strong> fails with
+        &ldquo;Failed to write the feature report.&rdquo; Nothing is wrong with your mouse or this
+        page. The workaround is to open Chrome with administrator rights, just for this:
+      </p>
+      <ol>
+        <li>Open <strong>Terminal</strong> (Spotlight &rarr; &ldquo;Terminal&rdquo;). Your normal Chrome can stay open.</li>
+        <li>Paste this command, press Return, and enter your Mac password when asked:
+          <div class="command">
+            <pre><code id="macos-command">sudo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/tmp/chrome-root https://mouseconfig.app/</code></pre>
+            <button type="button" id="copy-macos-command">Copy</button>
+          </div>
+        </li>
+        <li>A separate Chrome window opens on this page. Click <strong>Connect to M913</strong>, then <strong>Apply Configuration</strong>.</li>
+        <li>When you&rsquo;re done, quit that Chrome window (&#8984;Q) and close Terminal. Your settings stay saved on the mouse.</li>
+      </ol>
+      <p class="hint">
+        <strong>Only use that window for MouseConfig.</strong> A browser running with administrator
+        rights has full access to your Mac, so don&rsquo;t browse anywhere else in it. The
+        <code>--user-data-dir</code> part keeps it in a throwaway profile, separate from your
+        normal Chrome, so your bookmarks and logins are never touched. Not using Chrome? Edge and
+        Brave work the same way &mdash; swap in their app path.
+      </p>
+    </section>
 
     <section>
       <h2>Supported Mice</h2>

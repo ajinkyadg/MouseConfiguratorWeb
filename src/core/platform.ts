@@ -31,11 +31,11 @@ export const MACOS_WRITE_BLOCK_EXPLANATION =
   "macOS 26.6.2 and later block browsers from writing to this mouse. The M913's " +
   "config channel shares a HID interface with its keyboard collection, and macOS " +
   "now restricts writes on those interfaces to privileged processes. Chrome isn't " +
-  "one, so the write is refused by the kernel before it reaches the mouse. This " +
-  "isn't a permission you can grant — Input Monitoring doesn't affect it, and " +
-  "neither does changing browser, USB port, or restarting. Use the native macOS " +
-  "app instead, which talks to the mouse over USB directly. Windows and Linux are " +
-  "unaffected.";
+  "one, so the write is refused by the kernel before it reaches the mouse. Input " +
+  "Monitoring, changing USB port, or restarting won't help. Workaround: launch " +
+  "Chrome with sudo (see \"On macOS 26.6.2 or later?\" at the top of this page " +
+  "for the exact command) and apply from that window — confirmed working. Windows " +
+  "and Linux are unaffected.";
 
 export function isMacOS(): boolean {
   const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;

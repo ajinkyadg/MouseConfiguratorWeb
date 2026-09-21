@@ -169,6 +169,22 @@ connectBtn.addEventListener("click", async () => {
   }
 });
 
+// --- macOS tip: copy the sudo Chrome command -------------------------------
+
+const copyMacosCommandBtn = document.querySelector<HTMLButtonElement>("#copy-macos-command");
+copyMacosCommandBtn?.addEventListener("click", async () => {
+  const command = document.querySelector("#macos-command")?.textContent ?? "";
+  try {
+    await navigator.clipboard.writeText(command);
+    copyMacosCommandBtn.textContent = "Copied";
+  } catch {
+    // Clipboard access can be denied; the <pre> is user-select: all, so a
+    // single click still selects the whole command for a manual copy.
+    copyMacosCommandBtn.textContent = "Select & copy";
+  }
+  setTimeout(() => (copyMacosCommandBtn.textContent = "Copy"), 2000);
+});
+
 // --- Polling rate --------------------------------------------------------
 
 function setPollingRate(hz: number) {
