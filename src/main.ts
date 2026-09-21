@@ -150,12 +150,14 @@ connectBtn.addEventListener("click", async () => {
       log("The wireless receiver only relays mouse movement/clicks — configuration commands need the wired USB connection. Plug in the cable and reconnect.");
     } else if (await macOSBlocksHidWrites()) {
       // Connected and correct in every respect the page can control — the
-      // write is refused by the macOS kernel, not by the device. Say so
-      // before the user fills in a whole config and hits Apply, rather
-      // than after 27 identical failures.
-      statusEl.textContent = `Connected: ${device.productName} — but macOS blocks browser writes to this mouse. Use the native app.`;
+      // write is normally refused by the macOS kernel, not by the device.
+      // Warn up front, but still allow Apply: the gate only rejects
+      // unprivileged processes, so a browser running as root (or a future
+      // macOS that relaxes the gate, or a wrong version detection) can
+      // still succeed, and the page shouldn't be the thing that stops it.
+      statusEl.textContent = `Connected: ${device.productName} — macOS 26.6+ usually blocks browser writes to this mouse. Apply will be attempted anyway.`;
       statusEl.classList.remove("connected");
-      setConnected(false);
+      setConnected(true);
       log(MACOS_WRITE_BLOCK_EXPLANATION);
     } else {
       statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware, wired)`;
