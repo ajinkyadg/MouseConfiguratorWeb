@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mouse DPI Checker: Measure Your Real DPI Online | MouseConfig</title>
+    <meta name="description" content="Measure your mouse's real DPI in the browser: move it a known distance, and see the counts per inch it actually reports, the % deviation from its setting, and an average over several runs. Works in Chrome, Edge, Firefox and Safari." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/dpi-checker.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Mouse DPI Checker — Measure Your Real DPI" />
+    <meta property="og:description" content="Move your mouse a known distance and see the DPI it actually reports, how far it is from its setting, and an average over several runs. Free, in your browser." />
+    <meta property="og:url" content="https://mouseconfig.app/dpi-checker.html" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Mouse DPI Checker — Measure Your Real DPI" />
+    <meta name="twitter:description" content="Move your mouse a known distance and see the DPI it actually reports, how far it is from its setting, and an average over several runs. Free, in your browser." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How does an online DPI checker work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It locks the pointer to the page, adds up the movement the browser reports while you slide the mouse a measured distance, and divides those counts by the distance in inches. 3200 counts over 4 inches is 800 DPI."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Why is my measured DPI different from the DPI I set?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sensors often run a few percent off their rated DPI. Larger differences usually come from the measurement: OS pointer acceleration, a pointer speed other than the default, display scaling or browser zoom, a curved path, or the mouse lifting off the pad."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does mouse acceleration affect the DPI test?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It can. Chrome and Edge on Windows and macOS can request raw, unaccelerated input and this page uses it when available. Other browsers receive OS-processed movement, so turn off Enhance pointer precision on Windows or pointer acceleration on macOS before measuring."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 0.25rem 1rem; align-items: start; }
+      .field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+      .field label, .field .field-label { min-width: 0; font-size: var(--fs-sm); color: var(--text-secondary); }
+      .field input { inline-size: 100%; }
+      .field .segmented { align-self: flex-start; }
+      .segmented button { min-inline-size: 3.25rem; }
+      .field-error { margin: 0; min-block-size: 1.2rem; font-size: var(--fs-xs); color: var(--danger); }
+      .field-hint { margin: 0; min-block-size: 1.2rem; font-size: var(--fs-xs); color: var(--text-secondary); }
+      input[aria-invalid="true"] { border-color: var(--danger); }
+
+      .pad {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
+        min-block-size: 12rem; padding: 1.25rem; margin-top: 0.5rem; text-align: center;
+        border: 2px dashed var(--border-control); border-radius: 10px; background: var(--surface-sunken);
+      }
+      .pad[data-state="armed"] { border-color: var(--warning); border-style: solid; }
+      .pad[data-state="counting"] { border-color: var(--accent); border-style: solid; background: var(--surface-elevated); }
+      .pad-title { margin: 0; font-size: var(--fs-md); font-weight: 600; color: var(--text); max-inline-size: 36rem; }
+      .pad-sub { margin: 0; font-size: var(--fs-sm); color: var(--text-secondary); max-inline-size: 36rem; }
+      .pad-live { margin: 0; font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+      kbd {
+        font-family: var(--font-mono); font-size: var(--fs-xs); padding: 0.05rem 0.35rem;
+        border: 1px solid var(--border-control); border-bottom-width: 2px; border-radius: 4px; background: var(--surface-elevated); color: var(--text);
+      }
+
+      .result {
+        margin-top: 1rem; padding: 1rem 1.1rem; border-radius: 8px;
+        background: var(--surface-elevated); border: 1px solid var(--border);
+      }
+      .result-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; margin: 0; }
+      .result-label { font-size: var(--fs-sm); color: var(--text-secondary); }
+      .result-value { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .result-dev { font-size: var(--fs-md); font-weight: 600; }
+      .notes { margin: 0.75rem 0 0; padding-left: 1.1rem; font-size: var(--fs-sm); color: var(--text-secondary); }
+      .notes li { margin-bottom: 0.35rem; }
+      .notes li:last-child { margin-bottom: 0; }
+      .notes .warn { color: var(--warning); }
+      .dev-good { color: var(--success); }
+      .dev-fair { color: var(--warning); }
+      .dev-off { color: var(--danger); }
+
+      .table-wrap { overflow-x: auto; }
+      table.result-table td, table.result-table th { white-space: nowrap; }
+      table.result-table td.num, table.result-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      .summary { margin: 0.9rem 0 0; font-size: var(--fs-sm); color: var(--text); }
+      .summary strong { font-variant-numeric: tabular-nums; }
+
+      .steps { margin: 0; padding-left: 1.25rem; color: var(--text-secondary); line-height: 1.6; }
+      .steps li { margin-bottom: 0.4rem; }
+      .prose-muted { margin: 0 0 0.75rem; }
+      .prose-muted:last-child { margin-bottom: 0; }
+      .faq h3 { font-size: var(--fs-md); margin: 1.1rem 0 0.35rem; }
+      .faq h3:first-of-type { margin-top: 0; }
+      .os-list { margin: 0; padding-left: 1.1rem; color: var(--text-secondary); line-height: 1.6; }
+      .os-list li { margin-bottom: 0.35rem; }
+      .callout h2 { color: var(--warning); }
+      .pad:focus { outline: none; }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908.html"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Configurator — beta</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu is-active">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker.html" aria-current="page"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter.html"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder.html"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup.html"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+    </nav>
+    <header>
+      <div>
+        <p class="eyebrow">Panther Tech</p>
+        <h1>Mouse DPI Checker</h1>
+        <p>Move your mouse a measured distance and see the DPI it really reports, and how far that is from its setting.</p>
+      </div>
+    </header>
+
+    <main id="main">
+    <section class="callout" id="unsupported" hidden>
+      <h2>This test needs a mouse</h2>
+      <p id="unsupported-text">
+        Measuring DPI needs a physical mouse and a desktop browser that
+        supports pointer lock (Chrome, Edge, Firefox or Safari on a computer).
+        Phones and tablets can't run it. You can still read how it works below,
+        or use the <a href="/sensitivity-converter.html">sensitivity converter</a>.
+      </p>
+    </section>
+
+    <section aria-labelledby="measure-heading">
+      <h2 id="measure-heading">Measure</h2>
+      <div class="fields">
+        <div class="field">
+          <span class="field-label" id="unit-label">Unit</span>
+          <div class="segmented" role="group" aria-labelledby="unit-label">
+            <button type="button" id="unit-in" aria-pressed="false">in</button>
+            <button type="button" id="unit-cm" aria-pressed="true" class="active">cm</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="distance">Distance to move (<span id="distance-unit">cm</span>)</label>
+          <input type="text" inputmode="decimal" autocomplete="off" id="distance" value="10" aria-describedby="distance-error distance-hint" />
+          <p class="field-error" id="distance-error" aria-live="polite"></p>
+          <p class="visually-hidden" id="distance-hint">Longer distances give a more accurate reading.</p>
+        </div>
+        <div class="field">
+          <label for="expected">Your DPI setting (optional)</label>
+          <input type="text" inputmode="numeric" autocomplete="off" id="expected" placeholder="e.g. 1600" aria-describedby="expected-error" />
+          <p class="field-error" id="expected-error" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="pad" id="pad" data-state="idle">
+        <p class="pad-title" id="pad-title">Mark two points 10 cm apart on your mousepad, then press Start.</p>
+        <p class="pad-sub" id="pad-sub">The cursor hides while measuring. <kbd>Esc</kbd> cancels at any time.</p>
+        <p class="pad-live" id="pad-live" hidden aria-hidden="true">0</p>
+        <button type="button" class="primary" id="start-btn">Start measuring</button>
+      </div>
+      <p class="error-message" id="lock-error" role="alert" hidden></p>
+
+      <div class="result" id="result" hidden>
+        <p class="result-main">
+          <span class="result-label">Measured</span>
+          <span class="result-value" id="result-dpi">—</span>
+          <span class="result-label">DPI</span>
+          <span class="result-dev" id="result-dev"></span>
+        </p>
+        <ul class="notes" id="result-notes"></ul>
+      </div>
+      <p class="visually-hidden" id="announce" role="status"></p>
+    </section>
+
+    <section aria-labelledby="runs-heading" id="runs-section" hidden>
+      <h2 id="runs-heading">Runs</h2>
+      <div class="table-wrap">
+        <table class="result-table">
+          <caption class="visually-hidden">Measurement runs</caption>
+          <thead>
+            <tr>
+              <th scope="col">Run</th>
+              <th scope="col" class="num">Distance</th>
+              <th scope="col" class="num">Counts</th>
+              <th scope="col" class="num">DPI</th>
+              <th scope="col" class="num">vs setting</th>
+              <th scope="col">Input</th>
+            </tr>
+          </thead>
+          <tbody id="runs-body"></tbody>
+        </table>
+      </div>
+      <p class="summary" id="summary"></p>
+      <div class="row" style="margin: 0.75rem 0 0;">
+        <button type="button" id="clear-btn">Clear runs</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="how-heading">
+      <h2 id="how-heading">How to get an accurate reading</h2>
+      <ol class="steps">
+        <li>Put two marks on your desk or mousepad exactly the chosen distance apart. Use a real ruler or tape measure, not an on-screen ruler: display scaling makes on-screen sizes unreliable.</li>
+        <li>Enter the DPI your mouse is set to, if you want to compare against it.</li>
+        <li>Press <strong>Start measuring</strong>. Then line up the edge of the mouse with the first mark (you can lift and reposition freely at this point) and click or press <kbd>Space</kbd> to start counting.</li>
+        <li>Slide the mouse in a straight line to the right until the same edge reaches the second mark. Keep it flat on the pad the whole way.</li>
+        <li>Click or press <kbd>Space</kbd> to stop. Repeat three to five times and go by the average.</li>
+      </ol>
+      <p class="hint">Longer distances give better accuracy: a 1 mm placement error is 1% over 10 cm but only 0.5% over 20 cm.</p>
+    </section>
+
+    <section aria-labelledby="accuracy-heading">
+      <h2 id="accuracy-heading">Why the reading can be off</h2>
+      <p class="prose-muted">
+        The page can only count the movement the browser hands it, and that
+        isn't always the raw sensor output.
+      </p>
+      <ul class="os-list">
+        <li><strong>Pointer acceleration.</strong> Chrome and Edge on Windows and macOS can ask for raw, unaccelerated input, and this page does. Each run shows whether it got it. Firefox and Safari don't offer that option (nor does Linux), so the page can't confirm raw input there. Turn acceleration off before measuring: on Windows, untick <em>Enhance pointer precision</em> (Settings → Bluetooth &amp; devices → Mouse → Additional mouse settings → Pointer Options) and leave the pointer speed on its default middle notch; on macOS, turn off <em>Pointer acceleration</em> (System Settings → Mouse → Advanced); on Linux, choose the flat acceleration profile.</li>
+        <li><strong>Display scaling and zoom.</strong> Browsers don't agree on the units they report movement in. Chrome and Edge use device pixels, while Firefox divides by your display scale and page zoom. Reset the page zoom (<kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>0</kbd>) before measuring. If a reading is off by exactly your display scale (e.g. 1.5× or 2×), the page points that out.</li>
+        <li><strong>Technique.</strong> A slanted path, a mouse that tilts or lifts, or starting and stopping a little early or late all add error. Averaging several runs smooths most of it out.</li>
+      </ul>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Questions</h2>
+      <h3>How far off is normal?</h3>
+      <p class="prose-muted">
+        Sensors are often a few percent away from the number they're set to,
+        and this measurement carries a few percent of error of its own. Within
+        ±5% is a match; a consistent 10% or more across several careful runs
+        means the sensor really reads differently from its label.
+      </p>
+      <h3>Is DPI the same as CPI?</h3>
+      <p class="prose-muted">
+        For mice, yes. The precise term is CPI (counts per inch: how many
+        movement reports the sensor sends per inch of travel), but the
+        industry calls it DPI. This page measures counts per inch.
+      </p>
+      <h3>My mouse is off. What now?</h3>
+      <p class="prose-muted">
+        Nothing is broken; your aim just depends on the real number. Use the
+        measured DPI in the <a href="/sensitivity-converter.html">sensitivity converter</a>
+        to get accurate eDPI and cm/360 figures, or nudge the DPI setting in
+        your mouse's software. For a Redragon M913 or M908, that's the
+        <a href="/">M913 configurator</a> or the <a href="/m908.html">M908 configurator</a>.
+      </p>
+      <h3>Is anything sent anywhere?</h3>
+      <p class="prose-muted">
+        No. Everything runs in your browser and nothing is stored or uploaded.
+      </p>
+    </section>
+    </main>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and format names are used only to identify what this tool works with.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/dpi-checker.html">DPI checker</a> · <a href="/sensitivity-converter.html">Sensitivity converter</a> · <a href="/jmk-decoder.html">.jmk file decoder</a> · <a href="/productivity-setup.html">Productivity button mapping</a></p>
+    </footer>
+
+    <script type="module" src="/src/dpi-checker-page.ts"></script>
+  </body>
+</html>

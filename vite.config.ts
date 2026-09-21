@@ -12,6 +12,8 @@ export default defineConfig({
         jmkDecoder: resolve(__dirname, "jmk-decoder.html"),
         productivitySetup: resolve(__dirname, "productivity-setup.html"),
         m908: resolve(__dirname, "m908.html"),
+        dpiChecker: resolve(__dirname, "dpi-checker.html"),
+        sensitivityConverter: resolve(__dirname, "sensitivity-converter.html"),
       },
     },
   },

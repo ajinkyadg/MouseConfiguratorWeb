@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mouse Sensitivity Converter: New DPI or New Game | MouseConfig</title>
+    <meta name="description" content="Keep the same aim when you change mouse DPI or switch games. Converts sensitivity between CS2, CS:GO, Valorant, Apex Legends, Overwatch 2 and TF2, and shows eDPI and cm/360. Free, runs in your browser." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/sensitivity-converter.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Mouse Sensitivity Converter — New DPI or New Game" />
+    <meta property="og:description" content="Keep the same cm/360 when you change DPI or move between CS2, Valorant, Apex, Overwatch 2 and TF2. Shows eDPI, cm/360 and in/360." />
+    <meta property="og:url" content="https://mouseconfig.app/sensitivity-converter.html" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Mouse Sensitivity Converter — New DPI or New Game" />
+    <meta name="twitter:description" content="Keep the same cm/360 when you change DPI or move between CS2, Valorant, Apex, Overwatch 2 and TF2. Shows eDPI, cm/360 and in/360." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "How do I keep the same sensitivity after changing my mouse DPI?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Multiply your in-game sensitivity by your old DPI and divide by your new DPI. Doubling DPI from 800 to 1600 means halving sensitivity, e.g. 2.0 becomes 1.0. Your eDPI (DPI × sensitivity) and cm/360 stay the same."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is cm/360?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "cm/360 is how far you move the mouse, in centimetres, to turn a full 360 degrees in game. It combines DPI, in-game sensitivity and the game's own rotation scale, so it is the one number that compares directly across games."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Why can't I compare eDPI between games?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Each game turns a different number of degrees per mouse count at sensitivity 1 (its yaw). CS2 uses 0.022°, Valorant 0.07° and Overwatch 2 0.0066°, so the same eDPI turns you at very different speeds. Compare cm/360 instead."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I convert CS2 sensitivity to Valorant?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "At the same DPI, divide your CS2 sensitivity by 3.182 (0.07 ÷ 0.022). A CS2 sensitivity of 1.0 is about 0.314 in Valorant. Going from CS2 to Overwatch 2, multiply by 3.333."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: 0.25rem 1rem; }
+      .field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+      .field label { min-width: 0; }
+      .field input, .field select { inline-size: 100%; }
+      .field-error { margin: 0; min-block-size: 1.2rem; font-size: var(--fs-xs); color: var(--danger); }
+      .field-hint { margin: 0; min-block-size: 1.2rem; font-size: var(--fs-xs); color: var(--text-secondary); }
+      input[aria-invalid="true"] { border-color: var(--danger); }
+      .group-label {
+        margin: 0.25rem 0 0.6rem; font-size: var(--fs-sm); font-weight: 600; color: var(--text);
+      }
+      .swap-row { display: flex; align-items: center; gap: 0.75rem; margin: 0.25rem 0 0.75rem; }
+      .swap-row::before, .swap-row::after { content: ""; flex: 1; border-top: 1px solid var(--border); }
+      .result {
+        margin-top: 0.5rem; padding: 1rem 1.1rem; border-radius: 8px;
+        background: var(--surface-elevated); border: 1px solid var(--border);
+      }
+      .result-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; margin: 0; }
+      .result-label { font-size: var(--fs-sm); color: var(--text-secondary); }
+      .result-value {
+        font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15;
+        font-variant-numeric: tabular-nums; color: var(--text);
+      }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr)); gap: 0.75rem 1rem; margin: 0.9rem 0 0; }
+      .stats div { min-width: 0; }
+      .stats dt { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+      .stats dd { margin: 0.1rem 0 0; font-size: var(--fs-md); font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+      .formula {
+        display: block; margin: 0.5rem 0; padding: 0.6rem 0.8rem; border-radius: 6px;
+        background: var(--surface-sunken); border: 1px solid var(--border);
+        font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text); overflow-wrap: anywhere;
+      }
+      table.result-table td:last-child, table.result-table th:last-child { text-align: right; }
+      table.result-table td { font-variant-numeric: tabular-nums; }
+      .faq h3 { font-size: var(--fs-md); margin: 1.1rem 0 0.35rem; }
+      .faq h3:first-of-type { margin-top: 0; }
+      .faq p { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908.html"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Configurator — beta</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu is-active">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker.html"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter.html" aria-current="page"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder.html"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup.html"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+    </nav>
+    <header>
+      <div>
+        <p class="eyebrow">Panther Tech</p>
+        <h1>Mouse Sensitivity Converter</h1>
+        <p>Changed your DPI or switching games? Get the sensitivity that keeps your aim exactly where your muscle memory expects it.</p>
+      </div>
+    </header>
+
+    <main id="main">
+    <section aria-labelledby="dpi-change-heading">
+      <h2 id="dpi-change-heading">Same game, new DPI</h2>
+      <form id="dpi-form" novalidate>
+        <div class="fields">
+          <div class="field">
+            <label for="dc-sens">Current sensitivity</label>
+            <input type="text" inputmode="decimal" autocomplete="off" id="dc-sens" value="2" aria-describedby="dc-sens-error" />
+            <p class="field-error" id="dc-sens-error" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="dc-old-dpi">Current DPI</label>
+            <input type="text" inputmode="numeric" autocomplete="off" id="dc-old-dpi" value="800" aria-describedby="dc-old-dpi-error" />
+            <p class="field-error" id="dc-old-dpi-error" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="dc-new-dpi">New DPI</label>
+            <input type="text" inputmode="numeric" autocomplete="off" id="dc-new-dpi" value="1600" aria-describedby="dc-new-dpi-error" />
+            <p class="field-error" id="dc-new-dpi-error" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="dc-game">Game (for cm/360)</label>
+            <select id="dc-game" aria-describedby="dc-game-hint">
+              <option value="">Not listed / skip</option>
+            </select>
+            <p class="field-hint" id="dc-game-hint">Optional. The new sensitivity doesn't depend on it.</p>
+          </div>
+        </div>
+
+        <div class="result">
+          <p class="result-main">
+            <span class="result-label">New sensitivity</span>
+            <output id="dc-result" class="result-value" for="dc-sens dc-old-dpi dc-new-dpi">1</output>
+          </p>
+          <dl class="stats">
+            <div><dt>eDPI (unchanged)</dt><dd id="dc-edpi">1600</dd></div>
+            <div><dt>cm/360</dt><dd id="dc-cm">—</dd></div>
+            <div><dt>in/360</dt><dd id="dc-in">—</dd></div>
+          </dl>
+          <p class="visually-hidden" id="dc-announce" aria-live="polite"></p>
+        </div>
+      </form>
+    </section>
+
+    <section aria-labelledby="game-heading">
+      <h2 id="game-heading">Convert between games</h2>
+      <form id="game-form" novalidate>
+        <p class="group-label" id="from-label">From</p>
+        <div class="fields" role="group" aria-labelledby="from-label">
+          <div class="field">
+            <label for="gc-from-game">Game</label>
+            <select id="gc-from-game"></select>
+            <p class="field-hint"></p>
+          </div>
+          <div class="field">
+            <label for="gc-sens">Sensitivity</label>
+            <input type="text" inputmode="decimal" autocomplete="off" id="gc-sens" value="1" aria-describedby="gc-sens-error" />
+            <p class="field-error" id="gc-sens-error" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="gc-from-dpi">DPI</label>
+            <input type="text" inputmode="numeric" autocomplete="off" id="gc-from-dpi" value="800" aria-describedby="gc-from-dpi-error" />
+            <p class="field-error" id="gc-from-dpi-error" aria-live="polite"></p>
+          </div>
+        </div>
+
+        <div class="swap-row">
+          <button type="button" id="gc-swap" aria-describedby="gc-swap-desc">Swap games ⇅</button>
+          <span class="visually-hidden" id="gc-swap-desc">Swaps the From and To games and DPIs, and fills in the converted sensitivity as the new starting point.</span>
+        </div>
+
+        <p class="group-label" id="to-label">To</p>
+        <div class="fields" role="group" aria-labelledby="to-label">
+          <div class="field">
+            <label for="gc-to-game">Game</label>
+            <select id="gc-to-game"></select>
+            <p class="field-hint"></p>
+          </div>
+          <div class="field">
+            <label for="gc-to-dpi">DPI</label>
+            <input type="text" inputmode="numeric" autocomplete="off" id="gc-to-dpi" value="800" aria-describedby="gc-to-dpi-error gc-to-dpi-hint" />
+            <p class="field-error" id="gc-to-dpi-error" aria-live="polite"></p>
+            <p class="visually-hidden" id="gc-to-dpi-hint">Change this only if you're also changing DPI.</p>
+          </div>
+        </div>
+
+        <div class="result">
+          <p class="result-main">
+            <span class="result-label" id="gc-result-label">Valorant sensitivity</span>
+            <output id="gc-result" class="result-value" for="gc-from-game gc-sens gc-from-dpi gc-to-game gc-to-dpi">0.3143</output>
+          </p>
+          <dl class="stats">
+            <div><dt>cm/360 (both)</dt><dd id="gc-cm">—</dd></div>
+            <div><dt>in/360 (both)</dt><dd id="gc-in">—</dd></div>
+            <div><dt id="gc-from-edpi-label">eDPI before</dt><dd id="gc-from-edpi">—</dd></div>
+            <div><dt id="gc-to-edpi-label">eDPI after</dt><dd id="gc-to-edpi">—</dd></div>
+          </dl>
+          <p class="visually-hidden" id="gc-announce" aria-live="polite"></p>
+        </div>
+      </form>
+      <p class="hint">Hip-fire (unscoped) sensitivity only. Scope and ADS multipliers are separate settings in each game.</p>
+    </section>
+
+    <section aria-labelledby="how-heading">
+      <h2 id="how-heading">How the conversion works</h2>
+      <p class="prose-muted">
+        Every game turns the camera a fixed number of degrees for each count
+        your mouse reports, scaled by your sensitivity. That per-count angle
+        at sensitivity 1 is the game's <strong>yaw</strong>. The distance you
+        move the mouse for a full turn is then:
+      </p>
+      <code class="formula">cm/360 = 360 ÷ (yaw × sensitivity × DPI) × 2.54</code>
+      <p class="prose-muted">
+        Converting keeps that distance the same. For a DPI change in one game
+        the yaw cancels out, so it's just <code>new sens = old sens × old DPI ÷ new DPI</code>.
+        Between games, the yaw ratio does the work.
+      </p>
+      <table class="result-table" style="margin-top: 0.75rem;">
+        <caption class="visually-hidden">Yaw values used by this converter</caption>
+        <thead><tr><th scope="col">Game</th><th scope="col">Yaw (° per count)</th></tr></thead>
+        <tbody>
+          <tr><td>Counter-Strike 2</td><td>0.022</td></tr>
+          <tr><td>CS:GO</td><td>0.022</td></tr>
+          <tr><td>Apex Legends</td><td>0.022</td></tr>
+          <tr><td>Team Fortress 2</td><td>0.022</td></tr>
+          <tr><td>Valorant</td><td>0.07</td></tr>
+          <tr><td>Overwatch 2</td><td>0.0066</td></tr>
+        </tbody>
+      </table>
+      <p class="hint">
+        Only games with a single, well-established yaw are listed. Games whose
+        sensitivity also depends on field of view or resolution (Fortnite,
+        Rainbow Six Siege and others) need more inputs than this tool asks
+        for, so they're left out rather than guessed.
+      </p>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Questions</h2>
+      <h3>Should I raise DPI and lower sensitivity?</h3>
+      <p class="prose-muted">
+        If the game lets you set a low enough sensitivity, a higher DPI
+        (e.g. 1600 instead of 400) gives smaller rotation steps per count,
+        which can make slow micro-adjustments smoother. Your overall speed
+        stays the same as long as cm/360 does, which is what the first
+        converter keeps constant. Very high DPI can also speed up menus and
+        the desktop cursor, so pick what feels right.
+      </p>
+      <h3>What is eDPI, and why doesn't it match between games?</h3>
+      <p class="prose-muted">
+        eDPI is DPI × sensitivity. It's a handy shorthand within one game,
+        but each game has a different yaw, so 800 eDPI in CS2 and 800 eDPI
+        in Valorant are very different speeds. cm/360 is the number that
+        compares across games.
+      </p>
+      <h3>Is my DPI setting accurate?</h3>
+      <p class="prose-muted">
+        Not always. Sensors can run a few percent above or below the number
+        on the box, and that shifts your real cm/360. You can measure it
+        with the <a href="/dpi-checker.html">DPI checker</a> and use the
+        measured value here.
+      </p>
+      <h3>Does Windows or macOS pointer speed matter?</h3>
+      <p class="prose-muted">
+        Usually not. Most shooters, including the ones listed here, read raw
+        mouse input, which bypasses the OS pointer speed and acceleration
+        settings (in TF2, make sure <code>m_rawinput</code> is set to 1).
+        Those settings still affect your desktop cursor and menus.
+      </p>
+    </section>
+    </main>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and format names are used only to identify what this tool works with.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/dpi-checker.html">DPI checker</a> · <a href="/sensitivity-converter.html">Sensitivity converter</a> · <a href="/jmk-decoder.html">.jmk file decoder</a> · <a href="/productivity-setup.html">Productivity button mapping</a></p>
+    </footer>
+
+    <script type="module" src="/src/sensitivity-converter-page.ts"></script>
+  </body>
+</html>
