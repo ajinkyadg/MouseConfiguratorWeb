@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { ProfileStore, type KeyValueStorage } from "./profile-store";
-import { defaultConfig, uniqueProfileName } from "./user-profiles";
+import { defaultConfig, uniqueProfileName, dpiColorsHexOf, DEFAULT_DPI_COLORS_HEX, type MouseWebConfig } from "./user-profiles";
 
 class FakeStorage implements KeyValueStorage {
   private data = new Map<string, string>();
@@ -115,5 +115,50 @@ describe("ProfileStore", () => {
   it("importing well-formed JSON missing a profile returns null", () => {
     const store = new ProfileStore(storage);
     expect(store.importProfile(JSON.stringify({ schemaVersion: 1 }))).toBeNull();
+  });
+
+  it("a profile saved before DPI colors existed loads with default colors", () => {
+    const { dpiColorsHex: _omit, ...legacyConfig } = defaultConfig();
+    storage.setItem(
+      "m913-profiles",
+      JSON.stringify({ schemaVersion: 1, profiles: [{ id: "old", name: "Old", config: legacyConfig }], selectedProfileID: "old" })
+    );
+
+    const store = new ProfileStore(storage);
+
+    expect(store.profiles[0].config.dpiColorsHex).toEqual(DEFAULT_DPI_COLORS_HEX);
+    expect(store.profiles[0].config.dpi).toEqual(legacyConfig.dpi);
+  });
+
+  it("importing an export without DPI colors fills in defaults", () => {
+    const store = new ProfileStore(storage);
+    const { dpiColorsHex: _omit, ...legacyConfig } = defaultConfig();
+    const imported = store.importProfile(
+      JSON.stringify({ schemaVersion: 1, exportedAt: "2026-01-01T00:00:00Z", profile: { id: "x", name: "Legacy", config: legacyConfig } })
+    );
+    expect(imported!.config.dpiColorsHex).toEqual(DEFAULT_DPI_COLORS_HEX);
+  });
+
+  it("custom DPI colors survive save, reload, and export/import", () => {
+    const colors: MouseWebConfig["dpiColorsHex"] = ["112233", "445566", "778899", "aabbcc", "ddeeff"];
+    const first = new ProfileStore(storage);
+    const saved = first.addProfile("Colors", { ...defaultConfig(), dpiColorsHex: colors });
+
+    const second = new ProfileStore(storage);
+    expect(second.profiles[0].config.dpiColorsHex).toEqual(colors);
+
+    const imported = second.importProfile(second.exportProfile(saved));
+    expect(imported!.config.dpiColorsHex).toEqual(colors);
+  });
+});
+
+describe("dpiColorsHexOf", () => {
+  it("replaces only missing or malformed entries with defaults", () => {
+    const partial = { dpiColorsHex: ["#ABCDEF", "nope", 42, "123456"] } as unknown as MouseWebConfig;
+    expect(dpiColorsHexOf(partial)).toEqual(["abcdef", DEFAULT_DPI_COLORS_HEX[1], DEFAULT_DPI_COLORS_HEX[2], "123456", DEFAULT_DPI_COLORS_HEX[4]]);
+  });
+
+  it("defaults are the M913's factory colors", () => {
+    expect(DEFAULT_DPI_COLORS_HEX).toEqual(["ff0000", "0000ff", "00ff00", "ffff00", "ff557d"]);
   });
 });

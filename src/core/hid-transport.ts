@@ -23,6 +23,65 @@ export const M913_PRODUCT_IDS = {
   compxWired: 0xf55e,
 } as const;
 
+// --- Is this actually an M913? --------------------------------------------
+//
+// Neither vendor ID is exclusive to the M913: 0x3554 (Compx) is an OEM ID,
+// and its wired PID 0xf55e is also reported by the Redragon M917 GB Pro
+// (libratbag/libratbag#1854) and the K1NG M916 PRO
+// (skullboypl/universal-mouse-drivers#1); Areson's 0x25a7:fa07/fa08 are
+// also used by the UtechSmart Venus Pro. Sending the M913's 16-button
+// layout to one of those could remap or scramble its buttons. VID/PID alone
+// therefore can't prove it's an M913 — only the product name can, and a
+// device whose name doesn't say "M913" needs the user to confirm.
+
+export type M913Identification =
+  // Name says M913 on a known vendor — safe to configure.
+  | { kind: "m913"; revision: Exclude<HardwareRevision, "unknown">; reason: string }
+  // Known vendor, but the name doesn't say M913 (generic or empty) —
+  // plausibly an M913, but needs explicit user confirmation.
+  | { kind: "unconfirmed"; revision: HardwareRevision; reason: string }
+  // Name names a different model (e.g. M917, K1NG M916) or the vendor isn't
+  // one the M913 uses — very likely not an M913.
+  | { kind: "other-model"; revision: HardwareRevision; reason: string };
+
+export interface HidIdentity {
+  vendorId: number;
+  productId: number;
+  productName: string;
+}
+
+const hex4 = (n: number) => n.toString(16).padStart(4, "0");
+
+export function identifyM913({ vendorId, productId, productName }: HidIdentity): M913Identification {
+  const revision: HardwareRevision =
+    vendorId === M913_VENDOR_IDS.areson ? "areson" : vendorId === M913_VENDOR_IDS.compx ? "compx" : "unknown";
+  const id = `${hex4(vendorId)}:${hex4(productId)}`;
+  const name = (productName ?? "").trim();
+  const quoted = name ? `"${name}"` : "(no product name)";
+
+  if (revision === "unknown") {
+    return { kind: "other-model", revision, reason: `${quoted} (${id}) isn't from a vendor the M913 uses.` };
+  }
+  const knownPid = (Object.values(M913_PRODUCT_IDS) as number[]).includes(productId);
+
+  // "M913", "M-913", "M 913" — but not e.g. "M9130".
+  if (/M[\s-]?913(?!\d)/i.test(name)) {
+    return knownPid
+      ? { kind: "m913", revision, reason: `${quoted} (${id}) identifies as an M913.` }
+      : { kind: "unconfirmed", revision, reason: `${quoted} says M913, but its product ID ${id} isn't one of the known M913 IDs.` };
+  }
+  // Another model number in the name: M9xx / M6xx / K1NG etc.
+  const otherModel = name.match(/\bM[\s-]?\d{3}\b|\bK1NG\b|Venus/i);
+  if (otherModel) {
+    return { kind: "other-model", revision, reason: `${quoted} (${id}) looks like a different mouse (${otherModel[0]}), not an M913.` };
+  }
+  return {
+    kind: "unconfirmed",
+    revision,
+    reason: `${quoted} (${id}) doesn't identify as an M913 — the same vendor/product IDs are used by other mice, e.g. the Redragon M917 and K1NG M916.`,
+  };
+}
+
 export function detectHardware(device: HIDDevice): HardwareRevision {
   if (device.vendorId === M913_VENDOR_IDS.areson) return "areson";
   if (device.vendorId === M913_VENDOR_IDS.compx) return "compx";
@@ -54,10 +113,16 @@ export async function requestM913(): Promise<HIDDevice[]> {
   if (!isWebHidAvailable()) {
     throw new Error(WEBHID_UNAVAILABLE_MESSAGE);
   }
+  // Narrowed to the four documented M913 PIDs (docs/protocol-notes/m913.md,
+  // "Device identification") so unrelated Areson/Compx devices don't show
+  // up in the chooser. This does NOT exclude every non-M913 — 3554:f55e is
+  // shared with other models — so identifyM913() still gates writes.
   const devices = await navigator.hid.requestDevice({
     filters: [
-      { vendorId: M913_VENDOR_IDS.areson },
-      { vendorId: M913_VENDOR_IDS.compx },
+      { vendorId: M913_VENDOR_IDS.areson, productId: M913_PRODUCT_IDS.aresonWireless },
+      { vendorId: M913_VENDOR_IDS.areson, productId: M913_PRODUCT_IDS.aresonWired },
+      { vendorId: M913_VENDOR_IDS.compx, productId: M913_PRODUCT_IDS.compxWireless },
+      { vendorId: M913_VENDOR_IDS.compx, productId: M913_PRODUCT_IDS.compxWired },
     ],
   });
   if (devices.length === 0) {

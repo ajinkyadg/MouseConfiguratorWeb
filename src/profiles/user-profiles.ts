@@ -4,12 +4,18 @@
 // (see RedragonM913Configurator/Sources/M913Configurator/Profile.swift) so
 // a profile exported from one is structurally the same shape as the
 // other's, even though each app's own field currently isn't cross-loaded.
-import type { LedMode } from "./m913";
+import { DEFAULT_DPI_COLORS, type DpiColors, type LedMode } from "./m913";
+
+export type DpiColorsHex = [string, string, string, string, string];
 
 export interface MouseWebConfig {
   pollingRateHz: number;
   dpi: [number, number, number, number, number];
   dpiEnabled: [boolean, boolean, boolean, boolean, boolean];
+  // Per-stage DPI indicator colors, RRGGBB with no '#'. Optional: profiles
+  // saved/exported before this existed don't have it and load with
+  // DEFAULT_DPI_COLORS_HEX (see dpiColorsHexOf / normalizeConfig).
+  dpiColorsHex?: DpiColorsHex;
   ledMode: LedMode;
   ledColorHex: string; // no leading '#', matching the native app's convention
   ledBrightness: number;
@@ -17,11 +23,43 @@ export interface MouseWebConfig {
   buttonActions: Record<string, string>;
 }
 
+export function rgbToHex(rgb: number): string {
+  return (rgb & 0xffffff).toString(16).padStart(6, "0");
+}
+
+export const DEFAULT_DPI_COLORS_HEX: Readonly<DpiColorsHex> = DEFAULT_DPI_COLORS.map(rgbToHex) as DpiColorsHex;
+
+const HEX_COLOR = /^[0-9a-f]{6}$/i;
+
+/// The config's per-stage colors, with each missing or malformed entry
+/// replaced by its default — never throws on old or hand-edited profiles.
+export function dpiColorsHexOf(config: Pick<MouseWebConfig, "dpiColorsHex">): DpiColorsHex {
+  const saved: unknown = config.dpiColorsHex;
+  const list = Array.isArray(saved) ? saved : [];
+  return DEFAULT_DPI_COLORS_HEX.map((fallback, i) => {
+    const v = list[i];
+    if (typeof v !== "string") return fallback;
+    const hex = v.replace(/^#/, "");
+    return HEX_COLOR.test(hex) ? hex.toLowerCase() : fallback;
+  }) as DpiColorsHex;
+}
+
+export function dpiColorsFromHex(hex: Readonly<DpiColorsHex>): DpiColors {
+  return hex.map((h) => parseInt(h, 16)) as DpiColors;
+}
+
+/// Fills in fields added after a profile may have been saved, so every
+/// loaded/imported config has the current shape.
+export function normalizeConfig(config: MouseWebConfig): MouseWebConfig {
+  return { ...config, dpiColorsHex: dpiColorsHexOf(config) };
+}
+
 export function defaultConfig(): MouseWebConfig {
   return {
     pollingRateHz: 1000,
     dpi: [400, 800, 1600, 3200, 6400],
     dpiEnabled: [true, true, true, true, true],
+    dpiColorsHex: [...DEFAULT_DPI_COLORS_HEX],
     ledMode: "steady",
     ledColorHex: "0000ff",
     ledBrightness: 255,

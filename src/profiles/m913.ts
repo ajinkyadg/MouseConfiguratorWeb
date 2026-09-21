@@ -3,10 +3,22 @@
 
 export type LedMode = "off" | "steady" | "respiration" | "rainbow";
 
+export type DpiColors = [number, number, number, number, number]; // 0xRRGGBB per stage
+
 export interface DpiSettings {
   values: [number, number, number, number, number]; // 0 = leave slot unchanged
   enabled: [boolean, boolean, boolean, boolean, boolean];
+  // Per-stage indicator colors (the LED color shown when that DPI stage is
+  // selected). Optional: Areson falls back to DEFAULT_DPI_COLORS, Compx
+  // sends no color packets at all when this is absent.
+  colors?: DpiColors;
 }
+
+// Factory per-stage indicator colors — exactly what the old constant
+// "unknown_2" packets encoded (red, blue, green, yellow, pink). See
+// docs/protocol-notes/m913.md, "DPI indicator colors". Decoded from the
+// bytes, not yet verified on a real mouse.
+export const DEFAULT_DPI_COLORS: Readonly<DpiColors> = [0xff0000, 0x0000ff, 0x00ff00, 0xffff00, 0xff557d];
 
 function emptyPacket(): Uint8Array {
   const p = new Uint8Array(17);
@@ -76,11 +88,50 @@ export const ARESON_KNOWN_DPI_VALUES: number[] = Object.keys(ARESON_DPI_TABLE)
   .map(Number)
   .sort((a, b) => a - b);
 
-const UNKNOWN2_PACKETS: number[][] = [
-  [0x08, 0x07, 0x00, 0x00, 0x2c, 0x08, 0xff, 0x00, 0x00, 0x56, 0x00, 0x00, 0xff, 0x56, 0x00, 0x00, 0x68],
-  [0x08, 0x07, 0x00, 0x00, 0x34, 0x08, 0x00, 0xff, 0x00, 0x56, 0xff, 0xff, 0x00, 0x57, 0x00, 0x00, 0x60],
-  [0x08, 0x07, 0x00, 0x00, 0x3c, 0x04, 0xff, 0x55, 0x7d, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb1],
-];
+// ---------------------------------------------------------------------
+// DPI indicator colors (formerly the opaque "unknown_2" suffix)
+//
+// One 4-byte record per stage at addr 0x2c + stage*4: [r, g, b, inner]
+// with inner = (0x55 - r - g - b) & 0xFF — the same record shape as the
+// LED color and the DPI records at 0x0c + stage*4. Areson writes them two
+// per packet (0x2c, 0x34: 8 bytes; 0x3c: 4 bytes), mirroring its DPI value
+// packets; Compx writes one per packet.
+// ---------------------------------------------------------------------
+
+function writeColorRecord(p: Uint8Array, offset: number, rgb: number): void {
+  const r = (rgb >> 16) & 0xff;
+  const g = (rgb >> 8) & 0xff;
+  const b = rgb & 0xff;
+  p[offset] = r;
+  p[offset + 1] = g;
+  p[offset + 2] = b;
+  p[offset + 3] = (0x55 - r - g - b) & 0xff;
+}
+
+export function buildAresonDpiColorPackets(colors: Readonly<DpiColors> = DEFAULT_DPI_COLORS): Uint8Array[] {
+  const layout: Array<[addr: number, len: number, stages: number[]]> = [
+    [0x2c, 0x08, [0, 1]],
+    [0x34, 0x08, [2, 3]],
+    [0x3c, 0x04, [4]],
+  ];
+  return layout.map(([addr, len, stages]) => {
+    const p = emptyPacket();
+    p[4] = addr;
+    p[5] = len;
+    stages.forEach((stage, j) => writeColorRecord(p, 6 + j * 4, colors[stage]));
+    return finalize(p);
+  });
+}
+
+export function buildCompxDpiColorPackets(colors: Readonly<DpiColors>): Uint8Array[] {
+  return colors.map((rgb, i) => {
+    const p = emptyPacket();
+    p[4] = 0x2c + i * 0x04;
+    p[5] = 0x04;
+    writeColorRecord(p, 6, rgb);
+    return finalize(p);
+  });
+}
 
 export function buildAresonDpiPackets(dpi: DpiSettings): Uint8Array[] {
   const p0 = emptyPacket();
@@ -134,8 +185,9 @@ export function buildAresonDpiPackets(dpi: DpiSettings): Uint8Array[] {
   }
 
   const packets = [p0, p1, p2, p3].map(finalize);
-  const unknown2 = UNKNOWN2_PACKETS.map((raw) => Uint8Array.from(raw));
-  return [...packets, ...unknown2];
+  // The native tool always follows the DPI packets with the color packets;
+  // with no colors given these reproduce its fixed bytes exactly.
+  return [...packets, ...buildAresonDpiColorPackets(dpi.colors ?? DEFAULT_DPI_COLORS)];
 }
 
 // ---------------------------------------------------------------------
@@ -178,6 +230,8 @@ export function buildCompxDpiPackets(dpi: DpiSettings): Uint8Array[] {
   stagePacket[6] = count;
   stagePacket[7] = (0x55 - count) & 0xff;
   packets.push(finalize(stagePacket));
+
+  if (dpi.colors) packets.push(...buildCompxDpiColorPackets(dpi.colors));
 
   return packets;
 }

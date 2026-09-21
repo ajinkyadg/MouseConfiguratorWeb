@@ -6,12 +6,14 @@ import {
   closeDevice,
   findConfigDevice,
   detectHardware,
+  identifyM913,
   isWiredConnection,
   describeCollections,
   sendConfigPacket,
   waitForResponse,
   toHex,
   type HardwareRevision,
+  type M913Identification,
 } from "./core/hid-transport";
 import {
   macOSBlocksHidWrites,
@@ -35,7 +37,16 @@ import {
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
 import { KEY_COMBO_SPECIAL_GROUPS } from "./profiles/key-combo-keys";
-import { BUILT_IN_PRESETS, defaultConfig, type MouseWebConfig, type UserProfile } from "./profiles/user-profiles";
+import {
+  BUILT_IN_PRESETS,
+  DEFAULT_DPI_COLORS_HEX,
+  defaultConfig,
+  dpiColorsFromHex,
+  dpiColorsHexOf,
+  type DpiColorsHex,
+  type MouseWebConfig,
+  type UserProfile,
+} from "./profiles/user-profiles";
 import { ProfileStore } from "./profiles/profile-store";
 import { jmkToButtonActions } from "./profiles/jmk-import";
 
@@ -107,6 +118,66 @@ function announce(message: string, tone: "warning" | "" = "") {
   statusEl.classList.toggle("warning", tone === "warning");
 }
 
+// Safety guard: the M913's vendor/product IDs are shared with other mice
+// (see identifyM913()). For anything that doesn't identify as an M913,
+// warn and make the user explicitly confirm before Apply can send M913
+// packets to it. Returns true only if it's OK to enable Apply.
+// A confirmation of an "unconfirmed" device (generic name, known M913
+// IDs) is remembered for that exact vendor:product:name, so an M913 whose
+// firmware reports a generic name isn't asked on every connect. Devices
+// whose name points at a different model are always asked.
+const CONFIRMED_DEVICES_KEY = "mouseconfig.confirmedM913Devices";
+
+function deviceKey(device: HIDDevice): string {
+  return `${device.vendorId}:${device.productId}:${device.productName}`;
+}
+
+function readConfirmedDevices(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(CONFIRMED_DEVICES_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function isRememberedConfirmation(identity: M913Identification, device: HIDDevice): boolean {
+  return identity.kind === "unconfirmed" && readConfirmedDevices().includes(deviceKey(device));
+}
+
+function rememberConfirmation(identity: M913Identification, device: HIDDevice) {
+  if (identity.kind !== "unconfirmed") return;
+  try {
+    const keys = new Set(readConfirmedDevices()).add(deviceKey(device));
+    localStorage.setItem(CONFIRMED_DEVICES_KEY, JSON.stringify([...keys]));
+  } catch {
+    // Storage unavailable: the user is simply asked again next time.
+  }
+}
+
+// True when the device may be configured: identified as an M913, or
+// confirmed by the user now or on an earlier connect.
+function isApprovedDevice(identity: M913Identification, device: HIDDevice): boolean {
+  if (identity.kind === "m913" || isRememberedConfirmation(identity, device)) return true;
+  if (!confirmNonM913(identity, device.productName)) return false;
+  rememberConfirmation(identity, device);
+  return true;
+}
+
+function confirmNonM913(identity: M913Identification, productName: string): boolean {
+  const name = productName.trim() || "this device";
+  log("Not an identified M913 — Apply stays disabled unless you confirm it is one.");
+  announce(`"${name}" doesn't identify as a Redragon M913 — confirm before any settings are sent.`, "warning");
+  const opening =
+    identity.kind === "other-model"
+      ? `"${name}" looks like a DIFFERENT mouse, not a Redragon M913.`
+      : `"${name}" doesn't identify itself as a Redragon M913.`;
+  return window.confirm(
+    `${opening}\n\n${identity.reason}\n\n` +
+      "This page sends M913-specific commands. On a different mouse they can remap its buttons or change settings unpredictably.\n\n" +
+      "Only continue if this really is a Redragon M913. Configure it as an M913?"
+  );
+}
+
 async function sendAndLog(label: string, packet: Uint8Array) {
   if (!device) return;
   log(`→ ${label}: ${toHex(packet)}`);
@@ -159,11 +230,19 @@ connectBtn.addEventListener("click", async () => {
     const wired = isWiredConnection(device);
     log(`Using the collection with the config channel. Hardware revision detected: ${hardware} (${wired ? "wired" : "wireless receiver"})`);
     renderDpiRows();
+    const identity = identifyM913(device);
+    log(`Device check: ${identity.reason}`);
 
     if (!wired) {
       announce(`Connected: ${device.productName} — wireless receiver detected. Plug in the USB cable to apply settings.`, "warning");
       setConnected(false);
       log("The wireless receiver only relays mouse movement/clicks — configuration commands need the wired USB connection. Plug in the cable and reconnect.");
+    } else if (!isApprovedDevice(identity, device)) {
+      log(`Not configuring "${device.productName}": you didn't confirm it's an M913. Nothing was sent to it.`);
+      announce(`Not configuring "${device.productName || "this device"}" — it doesn't identify as an M913 and wasn't confirmed. Nothing was sent.`, "warning");
+      await closeDevice(device);
+      device = null;
+      setConnected(false);
     } else if (await macOSBlocksHidWrites()) {
       // Connected and correct in every respect the page can control — the
       // write is normally refused by the macOS kernel, not by the device.
@@ -175,6 +254,10 @@ connectBtn.addEventListener("click", async () => {
       if (macosTip) macosTip.open = true;
       setConnected(true);
       log(MACOS_WRITE_BLOCK_EXPLANATION);
+    } else if (identity.kind !== "m913") {
+      log(`You confirmed "${device.productName}" is an M913 — Apply enabled.`);
+      announce(`Connected: ${device.productName} (${hardware} hardware, wired) — not identified as an M913, enabled because you confirmed it is.`, "warning");
+      setConnected(true);
     } else {
       announce(`Connected: ${device.productName} (${hardware} hardware, wired)`);
       statusEl.classList.add("connected");
@@ -241,11 +324,16 @@ for (const hz of [125, 250, 500, 1000]) {
 
 const dpiValueInputs: HTMLInputElement[] = [];
 const dpiEnabledInputs: HTMLInputElement[] = [];
+const dpiColorInputs: HTMLInputElement[] = [];
 
 function renderDpiRows() {
+  // Re-rendered on connect (the step/hint depend on the hardware revision);
+  // carry over whatever the rows held so a loaded profile isn't wiped.
+  const previous = dpiValueInputs.length ? { ...readDpiSettings(), colorsHex: readDpiColorsHex() } : null;
   dpiRowsEl.innerHTML = "";
   dpiValueInputs.length = 0;
   dpiEnabledInputs.length = 0;
+  dpiColorInputs.length = 0;
 
   if (hardware === "areson") {
     dpiHintEl.textContent = `Areson hardware only accepts specific table values, e.g. ${ARESON_KNOWN_DPI_VALUES.slice(0, 6).join(", ")}, … (see the datalist on each field).`;
@@ -271,24 +359,34 @@ function renderDpiRows() {
       <label>Stage ${i + 1}</label>
       <input type="checkbox" checked aria-label="Enable stage ${i + 1}" />
       <input type="number" aria-label="Stage ${i + 1} DPI" step="${hardware === "compx" ? COMPX_DPI_STEP : 50}" placeholder="e.g. 1600" list="${datalistId}" />
+      <input type="color" aria-label="Stage ${i + 1} indicator color" value="#${DEFAULT_DPI_COLORS_HEX[i]}" />
     `;
     dpiRowsEl.appendChild(row);
     dpiEnabledInputs.push(row.querySelector('input[type="checkbox"]')!);
     dpiValueInputs.push(row.querySelector('input[type="number"]')!);
+    dpiColorInputs.push(row.querySelector('input[type="color"]')!);
   }
+  if (previous) setDpiSettings(previous.values, previous.enabled, previous.colorsHex);
 }
 renderDpiRows();
+
+function readDpiColorsHex(): DpiColorsHex {
+  // <input type="color"> always yields "#rrggbb"; dpiColorsHexOf guards anyway.
+  return dpiColorsHexOf({ dpiColorsHex: dpiColorInputs.map((el) => el.value) as DpiColorsHex });
+}
 
 function readDpiSettings(): DpiSettings {
   return {
     values: dpiValueInputs.map((el) => Number(el.value) || 0) as DpiSettings["values"],
     enabled: dpiEnabledInputs.map((el) => el.checked) as DpiSettings["enabled"],
+    colors: dpiColorsFromHex(readDpiColorsHex()),
   };
 }
 
-function setDpiSettings(values: readonly number[], enabled: readonly boolean[]) {
+function setDpiSettings(values: readonly number[], enabled: readonly boolean[], colorsHex: Readonly<DpiColorsHex>) {
   dpiValueInputs.forEach((el, i) => (el.value = values[i] ? String(values[i]) : ""));
   dpiEnabledInputs.forEach((el, i) => (el.checked = enabled[i] ?? true));
+  dpiColorInputs.forEach((el, i) => (el.value = `#${colorsHex[i]}`));
 }
 
 // --- LED -------------------------------------------------------------
@@ -513,6 +611,7 @@ function getCurrentConfig(): MouseWebConfig {
     pollingRateHz,
     dpi: dpi.values,
     dpiEnabled: dpi.enabled,
+    dpiColorsHex: readDpiColorsHex(),
     ledMode: ledModeEl.value as LedMode,
     ledColorHex: ledColorEl.value.slice(1),
     ledBrightness: Number(ledBrightnessEl.value),
@@ -523,7 +622,7 @@ function getCurrentConfig(): MouseWebConfig {
 
 function applyConfigToUI(config: MouseWebConfig) {
   setPollingRate(config.pollingRateHz);
-  setDpiSettings(config.dpi, config.dpiEnabled);
+  setDpiSettings(config.dpi, config.dpiEnabled, dpiColorsHexOf(config));
   ledModeEl.value = config.ledMode;
   ledColorEl.value = `#${config.ledColorHex}`;
   ledBrightnessEl.value = String(config.ledBrightness);

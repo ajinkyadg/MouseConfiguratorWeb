@@ -3,7 +3,7 @@
 // needs. Built-in presets (BUILT_IN_PRESETS) are never persisted here —
 // they're a static list the UI shows alongside these. Mirrors
 // RedragonM913Configurator's ProfileStore.swift.
-import { type UserProfile, type MouseWebConfig, type PersistedProfiles, type ProfileExportFile, uniqueProfileName } from "./user-profiles";
+import { type UserProfile, type MouseWebConfig, type PersistedProfiles, type ProfileExportFile, uniqueProfileName, normalizeConfig } from "./user-profiles";
 
 // Matches the subset of the DOM Storage interface this needs — lets tests
 // inject an in-memory fake instead of requiring a real browser/jsdom
@@ -32,7 +32,9 @@ export class ProfileStore {
     if (!raw) return;
     try {
       const state = JSON.parse(raw) as PersistedProfiles;
-      this.profiles = state.profiles ?? [];
+      // Older saves may predate newer fields (e.g. dpiColorsHex) — fill
+      // them with defaults rather than dropping or rejecting the profile.
+      this.profiles = (state.profiles ?? []).map((p) => (p?.config ? { ...p, config: normalizeConfig(p.config) } : p));
       this.selectedProfileID = state.selectedProfileID ?? null;
     } catch {
       // Corrupt/foreign data under this key — start fresh rather than throw.
@@ -91,7 +93,7 @@ export class ProfileStore {
     const profile: UserProfile = {
       id: crypto.randomUUID(), // never trust an id from an external file
       name: uniqueProfileName(exportFile.profile.name, this.profiles.map((p) => p.name)),
-      config: exportFile.profile.config,
+      config: normalizeConfig(exportFile.profile.config),
     };
     this.profiles.push(profile);
     this.selectedProfileID = profile.id;

@@ -4,6 +4,9 @@ import {
   buildAresonDpiPackets,
   buildCompxDpiPackets,
   buildLedPackets,
+  buildAresonDpiColorPackets,
+  buildCompxDpiColorPackets,
+  DEFAULT_DPI_COLORS,
   aresonDpiSupported,
   compxDpiSupported,
   compxActiveStageCount,
@@ -56,7 +59,7 @@ describe("Areson DPI", () => {
       values: [400, 800, 1600, 4000, 6400],
       enabled: [true, true, true, true, true],
     });
-    expect(packets).toHaveLength(7); // 4 DPI packets + 3 fixed "unknown_2"
+    expect(packets).toHaveLength(7); // 4 DPI packets + 3 indicator-color packets
 
     const [p0, p1, p2, p3] = packets;
     // slot 1 (400) at p0 offset 6, slot 2 (800) at p0 offset 10
@@ -89,6 +92,57 @@ describe("Areson DPI", () => {
       enabled: [true, false, true, true, true], // enabled[1]=false should win
     });
     expect([packets[3][6], packets[3][7]]).toEqual([0x01, 0x54]);
+  });
+});
+
+describe("DPI indicator colors", () => {
+  // The fixed "unknown_2" suffix this app (and m913-ctl) always sent after
+  // the Areson DPI packets, copied verbatim before it was replaced by a
+  // builder. Default colors must keep reproducing it byte for byte.
+  const OLD_UNKNOWN2_PACKETS = [
+    [0x08, 0x07, 0x00, 0x00, 0x2c, 0x08, 0xff, 0x00, 0x00, 0x56, 0x00, 0x00, 0xff, 0x56, 0x00, 0x00, 0x68],
+    [0x08, 0x07, 0x00, 0x00, 0x34, 0x08, 0x00, 0xff, 0x00, 0x56, 0xff, 0xff, 0x00, 0x57, 0x00, 0x00, 0x60],
+    [0x08, 0x07, 0x00, 0x00, 0x3c, 0x04, 0xff, 0x55, 0x7d, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xb1],
+  ];
+
+  it("default colors reproduce the old constant unknown_2 packets exactly", () => {
+    expect(buildAresonDpiColorPackets().map((p) => Array.from(p))).toEqual(OLD_UNKNOWN2_PACKETS);
+    expect(buildAresonDpiColorPackets(DEFAULT_DPI_COLORS).map((p) => Array.from(p))).toEqual(OLD_UNKNOWN2_PACKETS);
+  });
+
+  it("Areson DPI packets without colors still end with the old constant suffix", () => {
+    const packets = buildAresonDpiPackets({ values: [400, 800, 1600, 4000, 6400], enabled: [true, true, true, true, true] });
+    expect(packets.slice(4).map((p) => Array.from(p))).toEqual(OLD_UNKNOWN2_PACKETS);
+  });
+
+  it("custom Areson colors land in 2+2+1 records with inner checksums", () => {
+    const colors: [number, number, number, number, number] = [0x123456, 0xabcdef, 0x000000, 0xffffff, 0x010203];
+    const packets = buildAresonDpiPackets({ values: [0, 0, 0, 0, 0], enabled: [true, true, true, true, true], colors });
+    expect(packets).toHaveLength(7);
+    const [c0, c1, c2] = packets.slice(4);
+    const inner = (r: number, g: number, b: number) => (0x55 - r - g - b) & 0xff;
+    expect([c0[4], c0[5]]).toEqual([0x2c, 0x08]);
+    expect(Array.from(c0.slice(6, 14))).toEqual([0x12, 0x34, 0x56, inner(0x12, 0x34, 0x56), 0xab, 0xcd, 0xef, inner(0xab, 0xcd, 0xef)]);
+    expect([c1[4], c1[5]]).toEqual([0x34, 0x08]);
+    expect(Array.from(c1.slice(6, 14))).toEqual([0, 0, 0, 0x55, 0xff, 0xff, 0xff, inner(0xff, 0xff, 0xff)]);
+    expect([c2[4], c2[5]]).toEqual([0x3c, 0x04]);
+    expect(Array.from(c2.slice(6, 14))).toEqual([0x01, 0x02, 0x03, inner(1, 2, 3), 0, 0, 0, 0]);
+    for (const p of packets) expectValidChecksum(p);
+  });
+
+  it("Compx writes one color record per stage at 0x2c + stage*4", () => {
+    const packets = buildCompxDpiColorPackets([...DEFAULT_DPI_COLORS] as [number, number, number, number, number]);
+    expect(packets.map((p) => p[4])).toEqual([0x2c, 0x30, 0x34, 0x38, 0x3c]);
+    expect(Array.from(packets[4].slice(5, 10))).toEqual([0x04, 0xff, 0x55, 0x7d, 0x84]);
+    for (const p of packets) expectValidChecksum(p);
+  });
+
+  it("Compx DPI sends color packets only when colors are given", () => {
+    const base = { values: [800, 0, 0, 0, 0] as [number, number, number, number, number], enabled: [true, true, true, true, true] as [boolean, boolean, boolean, boolean, boolean] };
+    expect(buildCompxDpiPackets(base)).toHaveLength(2);
+    const withColors = buildCompxDpiPackets({ ...base, colors: [0xff0000, 0, 0, 0, 0] });
+    expect(withColors).toHaveLength(7);
+    expect(withColors.slice(2).map((p) => p[4])).toEqual([0x2c, 0x30, 0x34, 0x38, 0x3c]);
   });
 });
 
