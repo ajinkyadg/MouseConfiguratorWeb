@@ -1,4 +1,4 @@
-import { initMouseMenu } from "./mouse-menu";
+import { initDropdowns } from "./dropdowns";
 import { initRangeSliders, syncRangeSliders } from "./range-slider";
 import {
   requestM913,
@@ -777,5 +777,5 @@ applyBtn.addEventListener("click", async () => {
   applyBtn.textContent = "Apply Configuration";
 });
 
-initMouseMenu();
+initDropdowns();
 initRangeSliders();

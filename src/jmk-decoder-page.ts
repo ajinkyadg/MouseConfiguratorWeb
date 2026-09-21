@@ -3,6 +3,7 @@
 // browser — no fetch(), no analytics on file content, nothing sent
 // anywhere. See profiles/jmk-import.ts for the actual decode logic; this
 // file is just input handling, validation, and safe rendering.
+import "./site-nav";
 import { decodeJmkButtonTable, type JmkButtonMapping } from "./profiles/jmk-import";
 
 // Real .jmk exports are ~11KB. Capped generously above that to reject an

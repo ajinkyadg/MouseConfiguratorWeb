@@ -55,13 +55,38 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">M</span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908.html"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Configurator — beta</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu is-active">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker.html"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter.html"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder.html" aria-current="page"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup.html"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+    </nav>
     <header>
       <div>
         <p class="eyebrow">Panther Tech</p>
         <h1>.jmk File Decoder</h1>
         <p>Open and read a Redragon .jmk profile's button mappings on Mac or Linux — entirely in your browser.</p>
       </div>
-      <a class="btn" href="/">← Back to MouseConfig</a>
     </header>
 
     <main id="main">
@@ -119,7 +144,7 @@
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and format names are used only to identify what this tool works with.</p>
-      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/productivity-setup.html">Productivity button mapping</a> · <a href="/jmk-decoder.html">.jmk file decoder</a></p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908.html">M908 configurator (beta)</a> · <a href="/dpi-checker.html">DPI checker</a> · <a href="/sensitivity-converter.html">Sensitivity converter</a> · <a href="/jmk-decoder.html">.jmk file decoder</a> · <a href="/productivity-setup.html">Productivity button mapping</a></p>
     </footer>
 
     <script type="module" src="/src/jmk-decoder-page.ts"></script>

@@ -1,6 +1,6 @@
 // Wires the M908 configurator page (m908.html) to the M908 protocol
 // modules. UNVERIFIED AGAINST REAL HARDWARE — see docs/protocol-notes/m908.md.
-import { initMouseMenu } from "./mouse-menu";
+import { initDropdowns } from "./dropdowns";
 import { initRangeSliders, syncRangeSliders } from "./range-slider";
 import {
   closeDevice,
@@ -368,5 +368,5 @@ if (!isWebHidAvailable()) {
   log(WEBHID_UNAVAILABLE_MESSAGE);
 }
 
-initMouseMenu();
+initDropdowns();
 initRangeSliders();
