@@ -1,8 +1,9 @@
 // Built-in M908 presets. A "preset" is a single profile's settings — the
-// site's UI (once wired up) is expected to slot it into whichever of the
-// device's 5 onboard profile slots the user picks, leaving the other 4 at
-// M908_NEUTRAL_PROFILE (a plain, inoffensive default) since the protocol
-// always writes all 5 profiles together (see m908.md).
+// M908 page loads it into whichever of the 5 onboard profile slots is
+// being edited and leaves the other 4 slots as they are (the protocol
+// always writes all 5 together, so the page holds all 5 — see
+// m908-profile-store.ts and m908.md). M908_NEUTRAL_PROFILE is the plain
+// default a fresh slot starts from.
 import type { M908ProfileSettings } from "./m908";
 
 export const M908_NEUTRAL_PROFILE: M908ProfileSettings = {

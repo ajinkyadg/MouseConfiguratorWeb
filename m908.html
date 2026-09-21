@@ -20,6 +20,32 @@
 
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23e2001a'/%3E%3Ctext x='32' y='44' font-family='-apple-system,Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+      /* 5-slot onboard profile editor (M908 only). */
+      .slot-switcher { margin-top: 0.35rem; }
+      .slot-switcher button { min-width: 5.5rem; }
+      .slot-switcher .slot-active-mark {
+        display: inline-block;
+        width: 0.45rem;
+        height: 0.45rem;
+        margin-left: 0.4rem;
+        border-radius: 50%;
+        background: var(--success);
+        vertical-align: middle;
+      }
+      .slot-switcher button.active .slot-active-mark { background: white; }
+      .slot-tools { margin-top: 0.75rem; }
+      .slot-tools select { min-width: 7rem; }
+      .editing-slot {
+        margin: 0.75rem 0 0;
+        font-size: var(--fs-sm);
+        color: var(--accent-text);
+      }
+      @media (max-width: 520px) {
+        .slot-switcher { display: flex; flex-wrap: wrap; }
+        .slot-switcher button { flex: 1 1 30%; min-width: 0; border-radius: 0; }
+      }
+    </style>
   </head>
   <body>
     <nav class="site-nav" aria-label="Main">
@@ -91,6 +117,28 @@
       </p>
     </section>
 
+    <section aria-labelledby="slots-heading">
+      <h2 id="slots-heading">Onboard Profiles</h2>
+      <p class="hint">The M908 stores five profiles on the mouse and switches between them with its profile button. Pick one to edit — every section below edits only that profile.</p>
+      <div class="segmented slot-switcher" id="slot-buttons" role="group" aria-labelledby="slots-heading"></div>
+      <p class="editing-slot" id="editing-slot"></p>
+      <div class="row slot-tools">
+        <label for="active-profile">Active on the mouse</label>
+        <select id="active-profile"></select>
+      </div>
+      <div class="row">
+        <label for="copy-target">Copy this profile to</label>
+        <select id="copy-target"></select>
+        <button type="button" id="copy-slot">Copy</button>
+      </div>
+      <div class="row">
+        <button type="button" id="export-set">Export all 5…</button>
+        <button type="button" id="import-set">Import all 5…</button>
+        <input type="file" id="import-set-input" accept="application/json,.json" hidden />
+      </div>
+      <p class="hint">Your five profiles are saved in this browser automatically. This page can't read what's currently on the mouse, so if you set profiles up in Redragon's Windows software, recreate them here (or keep an export) before applying.</p>
+    </section>
+
     <section>
       <h2>Preset</h2>
       <div class="row">
@@ -98,7 +146,7 @@
           <option value="">Custom</option>
         </select>
       </div>
-      <p class="hint">Loads DPI, LED, and button mappings below — tweak anything after, then Apply.</p>
+      <p class="hint">Loads DPI, LED, and button mappings into the profile you're editing — the other four stay as they are.</p>
     </section>
 
     <section>
@@ -151,7 +199,7 @@
 
     <section class="apply-row">
       <button class="primary" id="apply" disabled>Apply Configuration</button>
-      <p id="apply-hint">Writes this as onboard profile 1; profiles 2-5 get a neutral default.</p>
+      <p id="apply-hint">Writes all five profiles shown here to the mouse (the M908 only accepts them together), then switches it to the active profile.</p>
     </section>
 
     <section>

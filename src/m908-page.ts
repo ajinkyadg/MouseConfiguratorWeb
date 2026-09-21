@@ -7,19 +7,30 @@ import {
   findM908ConfigDevice,
   openDevice,
   requestM908,
-  sendM908Row,
   sendM908Rows,
 } from "./core/m908-transport";
 import {
-  buildM908ProfileSelectRows,
-  buildM908SettingsRows,
+  buildM908ApplySequence,
   M908_KNOWN_DPI_VALUES,
   m908DpiSupported,
   type M908LightMode,
+  type M908ProfileIndex,
   type M908ProfileSettings,
 } from "./profiles/m908";
 import { M908_BUTTON_NAMES, m908ActionSupported, type M908ButtonName } from "./profiles/m908-buttons";
 import { M908_BUILT_IN_PRESETS, M908_NEUTRAL_PROFILE } from "./profiles/m908-presets";
+import {
+  copyM908Slot,
+  defaultM908ProfileSet,
+  isM908ProfileIndex,
+  loadM908ProfileSet,
+  M908_PROFILE_COUNT,
+  parseM908ProfileSet,
+  saveM908ProfileSet,
+  serializeM908ProfileSet,
+  type KeyValueStorage,
+  type M908ProfileSet,
+} from "./profiles/m908-profile-store";
 import { isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
@@ -37,6 +48,14 @@ const scrollSpeedEl = document.querySelector<HTMLInputElement>("#scroll-speed")!
 const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
 const showActionReferenceBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionReferenceEl = document.querySelector<HTMLDivElement>("#action-reference")!;
+const slotButtonsEl = document.querySelector<HTMLDivElement>("#slot-buttons")!;
+const editingSlotEl = document.querySelector<HTMLParagraphElement>("#editing-slot")!;
+const activeProfileEl = document.querySelector<HTMLSelectElement>("#active-profile")!;
+const copyTargetEl = document.querySelector<HTMLSelectElement>("#copy-target")!;
+const copySlotBtn = document.querySelector<HTMLButtonElement>("#copy-slot")!;
+const exportSetBtn = document.querySelector<HTMLButtonElement>("#export-set")!;
+const importSetBtn = document.querySelector<HTMLButtonElement>("#import-set")!;
+const importSetInput = document.querySelector<HTMLInputElement>("#import-set-input")!;
 
 const REPORT_RATES = [125, 250, 500, 1000];
 const LIGHT_MODES: { value: M908LightMode; label: string }[] = [
@@ -59,7 +78,37 @@ function log(msg: string) {
 }
 
 let device: HIDDevice | null = null;
-let profile: M908ProfileSettings = structuredClone(M908_NEUTRAL_PROFILE);
+
+// --- Five-slot profile state ---
+// Every Apply writes all five onboard profiles (see buildM908ApplySequence),
+// so the page holds all five. `profile` always points at the slot being
+// edited — it's an alias into `profileSet.profiles`, not a copy, so the
+// existing section handlers edit the right slot by mutating it.
+
+// localStorage can be absent or throw (private windows, blocked site
+// data); the page keeps working in memory without it.
+function getStorage(): KeyValueStorage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+const storage = getStorage();
+
+let profileSet: M908ProfileSet = loadM908ProfileSet(storage) ?? defaultM908ProfileSet();
+let editingSlot: M908ProfileIndex = profileSet.activeProfile;
+let profile: M908ProfileSettings = profileSet.profiles[editingSlot];
+
+let storageWarned = false;
+function persist() {
+  if (saveM908ProfileSet(storage, profileSet) || storageWarned) return;
+  storageWarned = true;
+  log("Couldn't save your profiles in this browser (storage unavailable) — use Export to keep a copy.");
+}
+
+// Set once the user has OK'd the first full five-profile write this page load.
+let fullWriteConfirmed = false;
 
 const applyHintEl = document.querySelector<HTMLParagraphElement>("#apply-hint")!;
 const APPLY_HINT = applyHintEl.textContent ?? "";
@@ -110,6 +159,7 @@ function renderReportRateButtons() {
     btn.addEventListener("click", () => {
       profile.reportRateHz = hz;
       syncReportRateButtons();
+      persist();
     });
     reportRateButtonsEl.append(btn);
   }
@@ -141,6 +191,7 @@ function renderDpiRows() {
     enabledCheckbox.setAttribute("aria-label", `Enable stage ${i + 1}`);
     enabledCheckbox.addEventListener("change", () => {
       profile.dpiEnabled[i] = enabledCheckbox.checked;
+      persist();
     });
 
     const select = document.createElement("select");
@@ -155,6 +206,7 @@ function renderDpiRows() {
     select.addEventListener("change", () => {
       const value = Number(select.value);
       if (m908DpiSupported(value)) profile.dpiValues[i] = value;
+      persist();
     });
 
     row.append(label, enabledCheckbox, select);
@@ -198,6 +250,7 @@ function renderButtonRows() {
       if (value) profile.buttonActions[name as M908ButtonName] = value;
       else delete profile.buttonActions[name as M908ButtonName];
       updateValidity();
+      persist();
     });
 
     row.append(label, input, validity);
@@ -212,6 +265,71 @@ function renderLedControls() {
   ledBrightnessEl.value = String(profile.brightness);
   ledSpeedEl.value = String(profile.speed);
   syncRangeSliders();
+}
+
+// Slot switcher buttons are built once and then updated in place (same
+// reason as syncReportRateButtons: rebuilding would drop keyboard focus).
+function renderSlotControls() {
+  slotButtonsEl.replaceChildren();
+  activeProfileEl.replaceChildren();
+  for (let i = 0; i < M908_PROFILE_COUNT; i++) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.slot = String(i);
+    btn.addEventListener("click", () => selectSlot(i as M908ProfileIndex));
+    slotButtonsEl.append(btn);
+
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `Profile ${i + 1}`;
+    activeProfileEl.append(opt);
+  }
+  syncSlotControls();
+}
+
+function syncSlotControls() {
+  for (const btn of slotButtonsEl.querySelectorAll<HTMLButtonElement>("button")) {
+    const i = Number(btn.dataset.slot);
+    const selected = i === editingSlot;
+    btn.classList.toggle("active", selected);
+    btn.setAttribute("aria-pressed", String(selected));
+    btn.replaceChildren(`Profile ${i + 1}`);
+    if (i === profileSet.activeProfile) {
+      const mark = document.createElement("span");
+      mark.className = "slot-active-mark";
+      mark.setAttribute("aria-hidden", "true");
+      const srText = document.createElement("span");
+      srText.className = "visually-hidden";
+      srText.textContent = " (active on mouse)";
+      btn.append(mark, srText);
+      btn.title = "Active on the mouse after Apply";
+    } else {
+      btn.removeAttribute("title");
+    }
+  }
+  activeProfileEl.value = String(profileSet.activeProfile);
+  editingSlotEl.textContent = `Editing profile ${editingSlot + 1} of ${M908_PROFILE_COUNT}.`;
+
+  // Copy targets: every slot except the one being edited.
+  const previousTarget = copyTargetEl.value;
+  copyTargetEl.replaceChildren();
+  for (let i = 0; i < M908_PROFILE_COUNT; i++) {
+    if (i === editingSlot) continue;
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `Profile ${i + 1}`;
+    copyTargetEl.append(opt);
+  }
+  if (previousTarget && Number(previousTarget) !== editingSlot) copyTargetEl.value = previousTarget;
+}
+
+function selectSlot(slot: M908ProfileIndex) {
+  if (slot === editingSlot) return;
+  editingSlot = slot;
+  profile = profileSet.profiles[slot];
+  presetSelectEl.value = "";
+  renderAll();
+  syncSlotControls();
 }
 
 function renderAll() {
@@ -242,25 +360,90 @@ function buildActionReferenceText(): string {
 presetSelectEl.addEventListener("change", () => {
   const preset = M908_BUILT_IN_PRESETS.find((p) => p.id === presetSelectEl.value);
   profile = structuredClone(preset ? preset.profile : M908_NEUTRAL_PROFILE);
+  profileSet.profiles[editingSlot] = profile;
   renderAll();
-  log(preset ? `Loaded preset "${preset.name}".` : "Reset to a neutral profile.");
+  persist();
+  log(
+    preset
+      ? `Loaded preset "${preset.name}" into profile ${editingSlot + 1}.`
+      : `Reset profile ${editingSlot + 1} to a neutral profile.`
+  );
 });
 
 ledModeEl.addEventListener("change", () => {
   profile.lightMode = ledModeEl.value as M908LightMode;
+  persist();
 });
 ledColorEl.addEventListener("input", () => {
   const hex = ledColorEl.value.replace("#", "");
   profile.color = [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+  persist();
 });
 ledBrightnessEl.addEventListener("input", () => {
   profile.brightness = Number(ledBrightnessEl.value);
+  persist();
 });
 ledSpeedEl.addEventListener("input", () => {
   profile.speed = Number(ledSpeedEl.value);
+  persist();
 });
 scrollSpeedEl.addEventListener("input", () => {
   profile.scrollSpeed = Math.max(0, Math.min(255, Number(scrollSpeedEl.value) || 0));
+  persist();
+});
+
+// --- Slot tools ---
+
+activeProfileEl.addEventListener("change", () => {
+  const index = Number(activeProfileEl.value);
+  if (!isM908ProfileIndex(index)) return;
+  profileSet.activeProfile = index;
+  syncSlotControls();
+  persist();
+});
+
+copySlotBtn.addEventListener("click", () => {
+  const target = Number(copyTargetEl.value);
+  if (!isM908ProfileIndex(target) || target === editingSlot) return;
+  if (!confirm(`Replace profile ${target + 1} with a copy of profile ${editingSlot + 1}?`)) return;
+  profileSet = copyM908Slot(profileSet, editingSlot, target);
+  profile = profileSet.profiles[editingSlot];
+  persist();
+  log(`Copied profile ${editingSlot + 1} to profile ${target + 1}.`);
+  announce(`Copied profile ${editingSlot + 1} to profile ${target + 1}.`);
+});
+
+exportSetBtn.addEventListener("click", () => {
+  const blob = new Blob([serializeM908ProfileSet(profileSet)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "m908-profiles.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  log("Exported all five profiles to m908-profiles.json.");
+});
+
+importSetBtn.addEventListener("click", () => importSetInput.click());
+
+importSetInput.addEventListener("change", async () => {
+  const file = importSetInput.files?.[0];
+  importSetInput.value = ""; // allow re-importing the same file later
+  if (!file) return;
+  const imported = parseM908ProfileSet(await file.text());
+  if (!imported) {
+    log(`Import failed: "${file.name}" isn't an M908 five-profile export.`);
+    announce(`Import failed: "${file.name}" isn't an M908 five-profile export.`, "warning");
+    return;
+  }
+  profileSet = imported;
+  profile = profileSet.profiles[editingSlot];
+  presetSelectEl.value = "";
+  renderAll();
+  syncSlotControls();
+  persist();
+  log(`Imported five profiles from "${file.name}" (active: profile ${profileSet.activeProfile + 1}).`);
+  announce(`Imported five profiles from "${file.name}".`);
 });
 
 showActionReferenceBtn.addEventListener("click", () => {
@@ -310,40 +493,43 @@ async function applySection(name: string, fn: () => Promise<void>): Promise<bool
 // the user just activated would drop keyboard focus to <body>.
 let applying = false;
 
+const FULL_WRITE_WARNING =
+  "Apply writes all five onboard profiles at once — the M908 has no way to update just one.\n\n" +
+  "Whatever is stored in profiles 1-5 right now (including anything set up in Redragon's Windows software) " +
+  "will be replaced by the five profiles shown on this page.\n\nContinue?";
+
 applyBtn.addEventListener("click", async () => {
   if (!device || applying) return;
+  if (!fullWriteConfirmed) {
+    if (!confirm(FULL_WRITE_WARNING)) {
+      log("Apply cancelled — nothing was written.");
+      return;
+    }
+    fullWriteConfirmed = true;
+  }
   applying = true;
   applyBtn.setAttribute("aria-disabled", "true");
   applyBtn.textContent = "Applying…";
 
-  const profiles = [profile, M908_NEUTRAL_PROFILE, M908_NEUTRAL_PROFILE, M908_NEUTRAL_PROFILE, M908_NEUTRAL_PROFILE] as const;
-  const results: boolean[] = [];
+  const steps = buildM908ApplySequence(profileSet.profiles, profileSet.activeProfile);
+  let okCount = 0;
+  for (const step of steps) {
+    const ok = await applySection(step.label, () => sendM908Rows(device!, step.rows));
+    if (!ok) {
+      // The blocks are one framed write sequence; don't keep sending the
+      // rest of it after a failure.
+      log(`Stopped after "${step.label}" failed; the remaining ${steps.length - okCount - 1} step(s) weren't sent.`);
+      break;
+    }
+    okCount++;
+  }
 
-  results.push(
-    await applySection("Profile select", async () => {
-      const rows = buildM908ProfileSelectRows(0);
-      await sendM908Rows(device!, rows);
-    })
-  );
-
-  results.push(
-    await applySection("Settings", async () => {
-      const { settings1, settings2, settings3 } = buildM908SettingsRows(
-        profiles as unknown as Parameters<typeof buildM908SettingsRows>[0]
-      );
-      await sendM908Rows(device!, settings1);
-      await sendM908Row(device!, settings2);
-      await sendM908Rows(device!, settings3);
-    })
-  );
-
-  const okCount = results.filter(Boolean).length;
-  log(`Apply Configuration: ${okCount}/${results.length} sections ok.`);
-  if (okCount === results.length) {
-    announce("Configuration applied.");
+  log(`Apply Configuration: ${okCount}/${steps.length} steps ok.`);
+  if (okCount === steps.length) {
+    announce(`Configuration applied — all five profiles written, profile ${profileSet.activeProfile + 1} active.`);
     statusEl.classList.add("connected");
   } else {
-    announce(`Apply finished with errors: ${okCount}/${results.length} sections ok — see the log.`, "warning");
+    announce(`Apply finished with errors: ${okCount}/${steps.length} steps ok — see the log.`, "warning");
   }
   applying = false;
   applyBtn.removeAttribute("aria-disabled");
@@ -354,6 +540,7 @@ applyBtn.addEventListener("click", async () => {
 
 renderPresetOptions();
 renderLedModeOptions();
+renderSlotControls();
 renderAll();
 setConnected(false);
 
