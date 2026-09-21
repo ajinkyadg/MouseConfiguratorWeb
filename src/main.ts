@@ -12,6 +12,13 @@ import {
   type HardwareRevision,
 } from "./core/hid-transport";
 import {
+  macOSBlocksHidWrites,
+  isWriteRefusedError,
+  isWebHidAvailable,
+  MACOS_WRITE_BLOCK_EXPLANATION,
+  WEBHID_UNAVAILABLE_MESSAGE,
+} from "./core/platform";
+import {
   buildPollingRatePacket,
   buildAresonDpiPackets,
   buildCompxDpiPackets,
@@ -141,6 +148,15 @@ connectBtn.addEventListener("click", async () => {
       statusEl.classList.remove("connected");
       setConnected(false);
       log("The wireless receiver only relays mouse movement/clicks — configuration commands need the wired USB connection. Plug in the cable and reconnect.");
+    } else if (await macOSBlocksHidWrites()) {
+      // Connected and correct in every respect the page can control — the
+      // write is refused by the macOS kernel, not by the device. Say so
+      // before the user fills in a whole config and hits Apply, rather
+      // than after 27 identical failures.
+      statusEl.textContent = `Connected: ${device.productName} — but macOS blocks browser writes to this mouse. Use the native app.`;
+      statusEl.classList.remove("connected");
+      setConnected(false);
+      log(MACOS_WRITE_BLOCK_EXPLANATION);
     } else {
       statusEl.textContent = `Connected: ${device.productName} (${hardware} hardware, wired)`;
       statusEl.classList.add("connected");
@@ -582,6 +598,16 @@ const restoredProfile = profileStore.selectedProfileID
   : undefined;
 loadProfile(restoredProfile ?? BUILT_IN_PRESETS[0]); // loadProfile() already calls renderProfileSelect()
 
+// Say up front that this browser can't do it, rather than letting the user
+// click Connect and get a raw TypeError from deep inside requestM913().
+if (!isWebHidAvailable()) {
+  statusEl.textContent = "This browser doesn't support WebHID — open this page in Chrome or Edge.";
+  statusEl.classList.remove("connected");
+  connectBtn.disabled = true;
+  applyBtn.disabled = true;
+  log(WEBHID_UNAVAILABLE_MESSAGE);
+}
+
 // --- Apply ---------------------------------------------------------------
 
 // Each section is tried independently and keeps going even if an earlier
@@ -589,12 +615,21 @@ loadProfile(restoredProfile ?? BUILT_IN_PRESETS[0]); // loadProfile() already ca
 // practice, whichever came first) silently prevented every section after
 // it from ever being attempted, which made it impossible to tell whether
 // a failure was specific to one command or affected everything.
+// Set once per Apply so the explanation is logged once, not once per
+// failing section — every section fails for the same single reason, and
+// repeating a paragraph four times buries the packet trace above it.
+let explainedWriteBlock = false;
+
 async function applySection(label: string, send: () => Promise<void>): Promise<boolean> {
   try {
     await send();
     return true;
   } catch (err) {
     log(`${label} failed: ${(err as Error).message}`);
+    if (!explainedWriteBlock && isWriteRefusedError(err) && (await macOSBlocksHidWrites())) {
+      explainedWriteBlock = true;
+      log(MACOS_WRITE_BLOCK_EXPLANATION);
+    }
     return false;
   }
 }
@@ -602,6 +637,7 @@ async function applySection(label: string, send: () => Promise<void>): Promise<b
 applyBtn.addEventListener("click", async () => {
   if (!device) return;
   applyBtn.disabled = true;
+  explainedWriteBlock = false;
   const results: Record<string, boolean> = {};
 
   results.pollingRate = await applySection("Polling rate", () => sendAndLog("polling rate", buildPollingRatePacket(pollingRateHz)));

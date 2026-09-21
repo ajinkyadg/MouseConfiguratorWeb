@@ -2,6 +2,8 @@
 // commands (that's profiles/m913.ts) — just how to find/open a device, dump
 // its report descriptor, and move 17-byte packets in and out.
 
+import { isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./platform";
+
 export type HardwareRevision = "areson" | "compx" | "unknown";
 
 export const M913_VENDOR_IDS = {
@@ -49,6 +51,9 @@ export function isWiredConnection(device: HIDDevice): boolean {
 // wrong one and produced "Failed to write the feature report" — not a
 // device problem, a "trusted array order that isn't stable" bug.
 export async function requestM913(): Promise<HIDDevice[]> {
+  if (!isWebHidAvailable()) {
+    throw new Error(WEBHID_UNAVAILABLE_MESSAGE);
+  }
   const devices = await navigator.hid.requestDevice({
     filters: [
       { vendorId: M913_VENDOR_IDS.areson },

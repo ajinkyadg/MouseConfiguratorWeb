@@ -3,6 +3,8 @@
 // the already-working, hardware-verified M913 flow.
 //
 // UNVERIFIED AGAINST REAL HARDWARE — see docs/protocol-notes/m908.md.
+import { isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./platform";
+
 import { toFeatureReportPayload } from "../profiles/m908";
 
 export const M908_VENDOR_ID = 0x04d9;
@@ -11,6 +13,9 @@ export const M908_PRODUCT_ID = 0xfc4d;
 // it's not yet confirmed whether a separate wireless-receiver PID exists.
 
 export async function requestM908(): Promise<HIDDevice[]> {
+  if (!isWebHidAvailable()) {
+    throw new Error(WEBHID_UNAVAILABLE_MESSAGE);
+  }
   const devices = await navigator.hid.requestDevice({
     filters: [{ vendorId: M908_VENDOR_ID, productId: M908_PRODUCT_ID }],
   });

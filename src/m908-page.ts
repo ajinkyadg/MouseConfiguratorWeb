@@ -18,6 +18,7 @@ import {
 } from "./profiles/m908";
 import { M908_BUTTON_NAMES, m908ActionSupported, type M908ButtonName } from "./profiles/m908-buttons";
 import { M908_BUILT_IN_PRESETS, M908_NEUTRAL_PROFILE } from "./profiles/m908-presets";
+import { isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
@@ -306,3 +307,11 @@ applyBtn.addEventListener("click", async () => {
 renderPresetOptions();
 renderLedModeOptions();
 renderAll();
+
+if (!isWebHidAvailable()) {
+  statusEl.textContent = "This browser doesn't support WebHID — open this page in Chrome or Edge.";
+  statusEl.classList.remove("connected");
+  connectBtn.disabled = true;
+  log(WEBHID_UNAVAILABLE_MESSAGE);
+}
+
