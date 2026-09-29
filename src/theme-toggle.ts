@@ -55,7 +55,7 @@ export function initThemeToggle() {
 
   group.addEventListener("keydown", (event) => {
     const keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"];
-    if (!keys.includes(event.key)) return;
+    if (!keys.includes(event.key) || event.altKey || event.ctrlKey || event.metaKey) return;
     event.preventDefault();
     const index = options.findIndex((o) => o.dataset.themeValue === current());
     const next =

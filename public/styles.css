@@ -419,7 +419,8 @@ input[type="range"]:focus-visible { outline-offset: 4px; }
   padding: 0.15rem 0.45rem; border-radius: 4px; background: var(--surface-elevated); text-align: center;
 }
 @media (prefers-reduced-motion: reduce) {
-  input[type="range"]::-webkit-slider-thumb, input[type="range"]::-moz-range-thumb { transition: none; }
+  input[type="range"]::-webkit-slider-thumb { transition: none; }
+  input[type="range"]::-moz-range-thumb { transition: none; }
 }
 input[type="color"] {
   inline-size: 2.75rem; block-size: 2rem; padding: 3px; cursor: pointer;
@@ -568,10 +569,6 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
   padding: 0.85rem 0; border-bottom: 1px solid var(--border);
 }
 .brand { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--text); text-decoration: none; font-weight: 700; letter-spacing: -0.01em; }
-.brand-mark {
-  display: grid; place-items: center; inline-size: 1.75rem; block-size: 1.75rem;
-  border-radius: 8px; color: var(--accent);
-}
 .nav-menus { display: flex; gap: 0.25rem; list-style: none; margin: 0 0 0 auto; padding: 0; }
 .nav-menu summary {
   display: inline-flex; align-items: center; gap: 0.4rem;
@@ -633,8 +630,12 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
   letter-spacing: 0.05em; text-transform: uppercase;
 }
 .theme-switch button svg { inline-size: 0.95rem; block-size: 0.95rem; flex: none; }
-.theme-switch button:hover:not([aria-checked="true"]) { color: var(--text); border-color: transparent; }
-.theme-switch button[aria-checked="true"] {
+/* Lit from the theme, not aria-checked: the markup ships with Play checked
+   and JS only corrects it after load, so styling from the attribute flashed
+   the wrong pill for Pro visitors. */
+.theme-switch button:hover { color: var(--text); }
+:root:not([data-theme="pro"]) .theme-switch [data-theme-value="play"],
+:root[data-theme="pro"] .theme-switch [data-theme-value="pro"] {
   background: var(--accent); color: var(--on-accent); box-shadow: var(--accent-glow);
 }
 @media (max-width: 400px) { .theme-switch button { padding: 0.2rem 0.5rem; gap: 0.3rem; } }
@@ -674,7 +675,7 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 .hero-proof li { display: inline-flex; align-items: center; gap: 0.4rem; }
 .hero-proof svg { inline-size: 0.95rem; block-size: 0.95rem; color: var(--accent-text); flex: none; }
 .hero-art {
-  inline-size: clamp(9rem, 17vw, 13.5rem); block-size: auto;
+  inline-size: clamp(12rem, 24vw, 20rem); block-size: auto; overflow: visible; align-self: start;
   --art-top: #6a6a73; --art-mid: #4c4c54; --art-low: #333339; --art-deep: #141417;
   --art-key-hi: #5f5f69; --art-key-lo: #34343b; --art-key-mark: #141417;
   --art-seam: rgb(0 0 0 / 0.82); --art-seam-lo: rgb(255 255 255 / 0.09);
@@ -686,6 +687,7 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 .hero-art .low { fill: var(--art-low) }
 .hero-art .deep { fill: var(--art-deep) }
 .hero-art .grip { fill: var(--art-grip) }
+.hero-art .shelf { fill: var(--art-deep) }
 .hero-art .foot { fill: var(--art-foot) }
 .hero-art .btn { fill: var(--art-low) }
 .hero-art .cable { fill: none; stroke: var(--art-deep); stroke-width: 5.5; stroke-linecap: round }
@@ -693,7 +695,7 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 .hero-art .seamlo { fill: none; stroke: var(--art-seam-lo); stroke-width: 1.2; stroke-linecap: round }
 .hero-art .spec { fill: none; stroke: var(--art-spec); stroke-width: 1.3; stroke-linecap: round }
 .hero-art .cap { fill: url(#mcKey); stroke: var(--art-key-lo); stroke-width: 0.6; stroke-linejoin: round }
-.hero-art .hit { fill: rgb(0 0 0 / 0) }
+.hero-art .hit { fill: transparent }
 .hero-art .dimple { fill: var(--art-key-mark) }
 .hero-art .lip { fill: none; stroke: var(--art-key-hi); stroke-width: 1.2; stroke-linecap: round }
 .hero-art .wheel { fill: var(--accent) }
