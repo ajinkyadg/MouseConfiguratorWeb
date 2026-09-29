@@ -443,6 +443,34 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
 }
 .button-row:last-child { border-bottom: none; }
 
+/* Button keypad: 4 columns = the click row, then the 12 side buttons in
+   three rows. Each tile opens its editor row (.button-row) below. */
+.button-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; }
+.button-tile:nth-child(n+5):nth-child(-n+8) { margin-top: 0.4rem; }
+.button-tile {
+  display: grid; gap: 0.1rem; justify-items: start; text-align: start; min-inline-size: 0;
+  padding: 0.5rem 0.65rem; border: 1px solid var(--border-control); border-radius: 8px;
+  background: var(--surface-elevated); color: var(--text); font: inherit; cursor: pointer;
+}
+.button-tile:hover { border-color: var(--accent); }
+.button-tile[aria-expanded="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.button-tile > span { max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile-slot { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
+.tile-name { font-size: var(--fs-sm); font-weight: 600; }
+.tile-combo { font-size: var(--fs-xs); color: var(--text-secondary); min-block-size: 1.2em; }
+.button-tile.unchanged .tile-name { color: var(--text-secondary); font-weight: 500; }
+#button-hint { margin-top: 0.75rem; }
+.button-row[hidden], #button-hint[hidden] { display: none; }
+/* The open tile already shows the current mapping; keep this text for
+   screen readers (it describes the pickers) but not on screen. */
+.config-main #button-rows .current-value { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+#button-rows .button-row { margin-top: 0.75rem; padding: 0.75rem 0 0; border-top: 1px solid var(--border-subtle); border-bottom: none; }
+@media (max-width: 480px) {
+  .button-grid { gap: 0.35rem; }
+  .button-tile { padding: 0.4rem 0.4rem; }
+  .button-tile > .tile-name { white-space: normal; font-size: var(--fs-xs); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; hyphens: auto; }
+}
+
 /* Configurator dashboard (index.html). The page widens so settings sit
    side by side instead of in one long column; prose pages keep 900px. */
 body.wide { max-width: 1320px; }
@@ -768,6 +796,9 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 #editing-slot { min-block-size: 1.35rem; }
 #dpi-rows { min-block-size: 12rem; }
 #button-rows { min-block-size: 40rem; }
+/* The M913 page shows a tile grid instead of the long row list. */
+.config-main #button-rows { min-block-size: 0; }
+#button-grid { min-block-size: 21rem; }
 
 /* The DPI checker reveals its "this test needs a mouse" callout from JS on
    touch-only devices, which pushed the whole page down after first paint.

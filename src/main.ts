@@ -38,7 +38,7 @@ import {
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
-import { describeShortcut, type ShortcutOS } from "./profiles/shortcut-names";
+import { describeShortcut, formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 
 // Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
 // Search on Windows). Follows the loaded preset when it targets an OS,
@@ -80,6 +80,8 @@ const ledBrightnessEl = document.querySelector<HTMLInputElement>("#led-brightnes
 const ledSpeedRow = document.querySelector<HTMLDivElement>("#led-speed-row")!;
 const ledSpeedEl = document.querySelector<HTMLInputElement>("#led-speed")!;
 const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
+const buttonGridEl = document.querySelector<HTMLDivElement>("#button-grid")!;
+const buttonHintEl = document.querySelector<HTMLParagraphElement>("#button-hint")!;
 const applyBtn = document.querySelector<HTMLButtonElement>("#apply")!;
 const showActionRefBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionRefEl = document.querySelector<HTMLDivElement>("#action-reference")!;
@@ -430,10 +432,46 @@ updateLedVisibility();
 // single <select> with <optgroup>s, which browsers still render as one
 // long flat list regardless of the grouping.
 
+// Buttons are shown as a keypad-style grid of tiles (short name + what it's
+// mapped to); clicking a tile opens that button's editor row below the grid.
+// Only one editor is open at a time, which keeps the card short.
+function openButtonEditor(slotId: string | null) {
+  for (const tile of buttonGridEl.querySelectorAll<HTMLButtonElement>(".button-tile")) {
+    const open = tile.dataset.slot === slotId;
+    tile.setAttribute("aria-expanded", String(open));
+    document.getElementById(tile.getAttribute("aria-controls")!)!.hidden = !open;
+  }
+  buttonHintEl.hidden = slotId !== null;
+}
+
+function shortSlotName(slot: { id: string; displayName: string }): string {
+  const side = /^side(\d+)$/.exec(slot.id);
+  return side ? `Side ${side[1]}` : slot.displayName.replace(/ (Click|Button)$/, "");
+}
+
 function renderButtonRows() {
   for (const slot of BUTTON_SLOTS) {
     const row = document.createElement("div");
     row.className = "button-row";
+    row.id = `editor-${slot.id}`;
+    row.hidden = true;
+
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "button-tile";
+    tile.dataset.slot = slot.id;
+    tile.setAttribute("aria-expanded", "false");
+    tile.setAttribute("aria-controls", row.id);
+    tile.innerHTML = `<span class="tile-slot"></span><span class="tile-name"></span><span class="tile-combo"></span>`;
+    tile.querySelector(".tile-slot")!.textContent = shortSlotName(slot);
+    const tileName = tile.querySelector<HTMLSpanElement>(".tile-name")!;
+    const tileCombo = tile.querySelector<HTMLSpanElement>(".tile-combo")!;
+    tile.addEventListener("click", () => {
+      const opening = tile.getAttribute("aria-expanded") !== "true";
+      openButtonEditor(opening ? slot.id : null);
+      if (opening) row.querySelector<HTMLSelectElement>(".category-select")?.focus({ preventScroll: true });
+    });
+    buttonGridEl.appendChild(tile);
 
     const label = document.createElement("label");
     label.textContent = slot.displayName;
@@ -507,6 +545,12 @@ function renderButtonRows() {
       buttonActions[slot.id] = value;
       currentValue.textContent = value ? describeShortcut(value, namingOS) ?? displayLabel(value) ?? value : "Unchanged";
       currentValue.title = currentValue.textContent; // full text when the column ellipsizes it
+      const name = value ? shortcutName(value, namingOS) : undefined;
+      tileName.textContent = value ? name ?? displayLabel(value) ?? value : "Default";
+      const combo = name ? formatCombo(value, namingOS) : "";
+      tileCombo.textContent = combo === name ? "" : combo;
+      tile.classList.toggle("unchanged", !value);
+      tile.setAttribute("aria-label", `${slot.displayName}: ${currentValue.textContent}`);
     }
 
     // Full programmatic load: also re-syncs the category/action pickers
