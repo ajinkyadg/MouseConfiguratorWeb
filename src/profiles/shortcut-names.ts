@@ -92,6 +92,19 @@ const KEYS: Record<string, string> = {
   space: "Space", tab: "Tab", enter: "Enter", comma: ",", printscreen: "PrtSc",
 };
 
+/// The combo as separate keycaps: ["⌘", "⇧", "Z"] on macOS,
+/// ["Ctrl", "Shift", "Z"] elsewhere.
+export function comboKeys(value: string, os: ShortcutOS): string[] {
+  const superName = os === "windows" ? "Win" : "Super";
+  return value.trim().toLowerCase().split("+").filter(Boolean).map((t) =>
+    os === "macos" ? MAC_GLYPHS[t] ?? KEYS[t] ?? t.toUpperCase()
+    : t === "super" ? superName : PC_MODS[t] ?? KEYS[t] ?? t.toUpperCase());
+}
+
+/// Modifier order used everywhere a combo string is built, so a recorded
+/// shortcut matches the preset/name tables ("super+shift+z", "ctrl+alt+…").
+export const MODIFIER_ORDER = ["ctrl", "alt", "super", "shift"] as const;
+
 /// Renders "super+shift+z" the way the OS writes it: "⌘⇧Z" on macOS,
 /// "Ctrl+Shift+Z" style elsewhere.
 export function formatCombo(value: string, os: ShortcutOS): string {

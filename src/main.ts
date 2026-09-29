@@ -37,8 +37,10 @@ import {
   type LedMode,
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
-import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
-import { describeShortcut, formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
+import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog";
+import { comboKeys, formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
+import { createButtonEditor, type ActionDescription } from "./button-editor";
+import { parseAction } from "./profiles/m913-buttons";
 
 // Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
 // Search on Windows). Follows the loaded preset when it targets an OS,
@@ -53,13 +55,13 @@ let namingOS: ShortcutOS = (() => {
   const os = detectDesktopOS();
   return os === "unknown" ? "windows" : os;
 })();
-import { KEY_COMBO_SPECIAL_GROUPS } from "./profiles/key-combo-keys";
 import {
   BUILT_IN_PRESETS,
   DEFAULT_DPI_COLORS_HEX,
   defaultConfig,
   dpiColorsFromHex,
   dpiColorsHexOf,
+  normalizeConfig,
   type DpiColorsHex,
   type MouseWebConfig,
   type UserProfile,
@@ -79,9 +81,9 @@ const ledBrightnessRow = document.querySelector<HTMLDivElement>("#led-brightness
 const ledBrightnessEl = document.querySelector<HTMLInputElement>("#led-brightness")!;
 const ledSpeedRow = document.querySelector<HTMLDivElement>("#led-speed-row")!;
 const ledSpeedEl = document.querySelector<HTMLInputElement>("#led-speed")!;
-const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
-const buttonGridEl = document.querySelector<HTMLDivElement>("#button-grid")!;
-const buttonHintEl = document.querySelector<HTMLParagraphElement>("#button-hint")!;
+const buttonEditorEl = document.querySelector<HTMLDivElement>("#button-editor")!;
+const changeStatusEl = document.querySelector<HTMLParagraphElement>("#change-status")!;
+const revertBtn = document.querySelector<HTMLButtonElement>("#revert")!;
 const applyBtn = document.querySelector<HTMLButtonElement>("#apply")!;
 const showActionRefBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionRefEl = document.querySelector<HTMLDivElement>("#action-reference")!;
@@ -99,11 +101,6 @@ let device: HIDDevice | null = null;
 let hardware: HardwareRevision = "unknown";
 let pollingRateHz = 1000;
 const buttonActions: Record<string, string> = {};
-// Per-button-id "load a value into this row's UI" functions, populated by
-// renderButtonRows() — lets applyConfigToUI() below set a button row's
-// picker/label state the same way a user's own interaction would, instead
-// of only ever updating buttonActions directly.
-const buttonRowLoaders: Record<string, (value: string) => void> = {};
 
 const profileStore = new ProfileStore();
 // Which profile (preset or user-saved) the working configuration was last
@@ -426,231 +423,130 @@ updateLedVisibility();
 
 // --- Buttons -----------------------------------------------------------
 //
-// Two-step picker: a category select (a real, short list — "Clicks",
-// "DPI & Light", etc. — plus Key Combination/Custom) followed by an
-// action select scoped to whichever category was chosen. This replaces a
-// single <select> with <optgroup>s, which browsers still render as one
-// long flat list regardless of the grouping.
+// The keypad grid + editor panel (src/button-editor.ts). This page supplies
+// the M913's rules: what parses, the 3-key combo limit, and how an action
+// is named for the visitor's OS.
 
-// Buttons are shown as a keypad-style grid of tiles (short name + what it's
-// mapped to); clicking a tile opens that button's editor row below the grid.
-// Only one editor is open at a time, which keeps the card short.
-function openButtonEditor(slotId: string | null) {
-  for (const tile of buttonGridEl.querySelectorAll<HTMLButtonElement>(".button-tile")) {
-    const open = tile.dataset.slot === slotId;
-    tile.setAttribute("aria-expanded", String(open));
-    document.getElementById(tile.getAttribute("aria-controls")!)!.hidden = !open;
+function catalogEntry(value: string) {
+  for (const category of ACTION_CATEGORIES) {
+    const action = category.actions.find((a) => a.value === value);
+    if (action) return action;
   }
-  buttonHintEl.hidden = slotId !== null;
+  return undefined;
 }
 
-function shortSlotName(slot: { id: string; displayName: string }): string {
-  const side = /^side(\d+)$/.exec(slot.id);
-  return side ? `Side ${side[1]}` : slot.displayName.replace(/ (Click|Button)$/, "");
+function describeAction(value: string): ActionDescription {
+  const name = shortcutName(value, namingOS);
+  if (name) return { name, keys: comboKeys(value, namingOS) };
+  const entry = catalogEntry(value);
+  if (entry) return { name: entry.label, keys: entry.os ? comboKeys(value, entry.os) : [] };
+  // Any other keyboard combo is named by its keys ("⌃⇧K").
+  return { name: parseAction(value)?.keyboard ? formatCombo(value, namingOS) : value, keys: [] };
 }
 
-function renderButtonRows() {
+function validateAction(value: string): string | null {
+  if (!parseAction(value)) return `"${value}" isn't an action the M913 understands.`;
+  const tokens = actionComboTokens(value);
+  if (tokens > MAX_COMBO_TOKENS) return `That uses ${tokens} keys — the M913 allows at most ${MAX_COMBO_TOKENS}.`;
+  return null;
+}
+
+// The profile as last loaded/saved; edits are compared against it (see
+// "Unsaved-change tracking" below).
+let baseline: MouseWebConfig | null = null;
+
+const buttonEditor = createButtonEditor({
+  root: buttonEditorEl,
+  groups: [
+    { id: "clicks", label: "Clicks" },
+    { id: "side", label: "Side panel" },
+  ],
+  slots: BUTTON_SLOTS.map((slot) => {
+    const side = /^side(\d+)$/.exec(slot.id);
+    return {
+      id: slot.id,
+      short: side ? `Side ${side[1]}` : slot.displayName.replace(/ (Click|Button)$/, ""),
+      full: slot.displayName,
+      group: side ? "side" : "clicks",
+    };
+  }),
+  categories: ACTION_CATEGORIES,
+  getValue: (id) => buttonActions[id] ?? "",
+  setValue: (id, value) => {
+    buttonActions[id] = value;
+    updateChangeState();
+  },
+  isChanged: (id) => (buttonActions[id] ?? "") !== (baseline?.buttonActions[id] ?? ""),
+  validate: validateAction,
+  describe: describeAction,
+  categoryKeys: (value, category) => {
+    const os = category.actions.find((a) => a.value === value)?.os;
+    return os ? comboKeys(value, os) : [];
+  },
+  announce: (message) => announce(message),
+  customPlaceholder: "e.g. ctrl+shift+k, media_play, fire:58:3",
+});
+
+// --- Unsaved-change tracking --------------------------------------------
+//
+// "Changed" means different from the profile last loaded or saved — shown
+// as a dot on each changed tile, a count in the toolbar, and "(modified)"
+// on the profile picker — so edits are never lost silently.
+
+
+function configsDiffer(a: MouseWebConfig, b: MouseWebConfig): number {
+  let count = 0;
+  const same = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
+  for (const key of ["pollingRateHz", "dpi", "dpiEnabled", "dpiColorsHex", "ledMode", "ledColorHex", "ledBrightness", "ledSpeed"] as const) {
+    if (!same(a[key], b[key])) count++;
+  }
   for (const slot of BUTTON_SLOTS) {
-    const row = document.createElement("div");
-    row.className = "button-row";
-    row.id = `editor-${slot.id}`;
-    row.hidden = true;
-
-    const tile = document.createElement("button");
-    tile.type = "button";
-    tile.className = "button-tile";
-    tile.dataset.slot = slot.id;
-    tile.setAttribute("aria-expanded", "false");
-    tile.setAttribute("aria-controls", row.id);
-    tile.innerHTML = `<span class="tile-slot"></span><span class="tile-name"></span><span class="tile-combo"></span>`;
-    tile.querySelector(".tile-slot")!.textContent = shortSlotName(slot);
-    const tileName = tile.querySelector<HTMLSpanElement>(".tile-name")!;
-    const tileCombo = tile.querySelector<HTMLSpanElement>(".tile-combo")!;
-    tile.addEventListener("click", () => {
-      const opening = tile.getAttribute("aria-expanded") !== "true";
-      openButtonEditor(opening ? slot.id : null);
-      if (opening) row.querySelector<HTMLSelectElement>(".category-select")?.focus({ preventScroll: true });
-    });
-    buttonGridEl.appendChild(tile);
-
-    const label = document.createElement("label");
-    label.textContent = slot.displayName;
-
-    const currentValue = document.createElement("span");
-    currentValue.className = "current-value";
-    currentValue.id = `current-${slot.id}`;
-    currentValue.textContent = "Unchanged";
-
-    const categorySelect = document.createElement("select");
-    categorySelect.className = "category-select";
-    categorySelect.setAttribute("aria-label", `${slot.displayName} action category`);
-    categorySelect.innerHTML =
-      `<option value="">Unchanged</option>` +
-      ACTION_CATEGORIES.map((c) => `<option value="${c.name}">${c.name}</option>`).join("") +
-      `<option value="__combo__">Key Combination…</option>` +
-      `<option value="__custom__">Custom…</option>`;
-
-    const actionSelect = document.createElement("select");
-    actionSelect.className = "action-select";
-    actionSelect.setAttribute("aria-label", `${slot.displayName} action`);
-    actionSelect.style.display = "none";
-
-    const comboBuilder = document.createElement("div");
-    comboBuilder.className = "combo-builder";
-    comboBuilder.setAttribute("role", "group");
-    comboBuilder.setAttribute("aria-label", `${slot.displayName} key combination`);
-    // The special-key <option>s (~77 per row) are filled in on first open
-    // by openComboBuilder() — building them for all 16 rows up front was
-    // most of the page's DOM, for a picker that's rarely opened.
-    comboBuilder.innerHTML = `
-      <label><input type="checkbox" data-mod="ctrl" /> Ctrl</label>
-      <label><input type="checkbox" data-mod="shift" /> Shift</label>
-      <label><input type="checkbox" data-mod="alt" /> ⌥ Option/Alt</label>
-      <label><input type="checkbox" data-mod="super" /> ⌘/Super</label>
-      <input type="text" placeholder="key, e.g. c" class="combo-key" aria-label="${slot.displayName} key" />
-      <select class="combo-special-key" aria-label="${slot.displayName} special key">
-        <option value="" selected>Special key…</option>
-      </select>
-      <button type="button" class="combo-apply" aria-label="Use combination for ${slot.displayName}">Use</button>
-    `;
-    function openComboBuilder() {
-      const specialKeySelect = comboBuilder.querySelector<HTMLSelectElement>(".combo-special-key")!;
-      if (specialKeySelect.options.length === 1) {
-        specialKeySelect.insertAdjacentHTML(
-          "beforeend",
-          KEY_COMBO_SPECIAL_GROUPS.map(
-            (group) =>
-              `<optgroup label="${group.name}">` +
-              group.keys.map((k) => `<option value="${k}">${k}</option>`).join("") +
-              `</optgroup>`
-          ).join("")
-        );
-      }
-      comboBuilder.classList.add("open");
-    }
-
-    const customWrap = document.createElement("div");
-    customWrap.className = "custom-wrap";
-    const customInput = document.createElement("input");
-    customInput.type = "text";
-    customInput.placeholder = "e.g. ctrl+alt+super+d";
-    customInput.setAttribute("aria-label", `${slot.displayName} custom action`);
-    for (const el of [categorySelect, actionSelect, customInput]) el.setAttribute("aria-describedby", currentValue.id);
-    customWrap.appendChild(customInput);
-
-    // Updates the model + visible label only — used for direct
-    // interaction within this row, where the picker UI driving the change
-    // is already showing the right thing.
-    function setCurrent(value: string) {
-      buttonActions[slot.id] = value;
-      currentValue.textContent = value ? describeShortcut(value, namingOS) ?? displayLabel(value) ?? value : "Unchanged";
-      currentValue.title = currentValue.textContent; // full text when the column ellipsizes it
-      const name = value ? shortcutName(value, namingOS) : undefined;
-      tileName.textContent = value ? name ?? displayLabel(value) ?? value : "Default";
-      const combo = name ? formatCombo(value, namingOS) : "";
-      tileCombo.textContent = combo === name ? "" : combo;
-      tile.classList.toggle("unchanged", !value);
-      tile.setAttribute("aria-label", `${slot.displayName}: ${currentValue.textContent}`);
-    }
-
-    // Full programmatic load: also re-syncs the category/action pickers
-    // and the custom field to match `value`, for when a profile is loaded
-    // rather than the user picking something interactively.
-    function loadRowValue(value: string) {
-      comboBuilder.classList.remove("open");
-      customWrap.classList.remove("open");
-      actionSelect.style.display = "none";
-
-      if (!value) {
-        categorySelect.value = "";
-        setCurrent("");
-        return;
-      }
-      const owningCategory = ACTION_CATEGORIES.find((c) => c.actions.some((a) => a.value === value));
-      if (owningCategory) {
-        categorySelect.value = owningCategory.name;
-        actionSelect.innerHTML =
-          `<option value="" disabled>Choose action…</option>` +
-          owningCategory.actions.map((a) => `<option value="${a.value}">${a.label}</option>`).join("");
-        actionSelect.value = value;
-        actionSelect.style.display = "inline-block";
-      } else {
-        categorySelect.value = "__custom__";
-        customWrap.classList.add("open");
-        customInput.value = value;
-      }
-      setCurrent(value);
-    }
-    buttonRowLoaders[slot.id] = loadRowValue;
-
-    categorySelect.addEventListener("change", () => {
-      actionSelect.style.display = "none";
-      comboBuilder.classList.remove("open");
-      customWrap.classList.remove("open");
-      const value = categorySelect.value;
-
-      if (value === "") {
-        setCurrent("");
-      } else if (value === "__combo__") {
-        openComboBuilder();
-      } else if (value === "__custom__") {
-        customWrap.classList.add("open");
-        customInput.value = "";
-        setCurrent("");
-      } else {
-        const category = ACTION_CATEGORIES.find((c) => c.name === value)!;
-        actionSelect.innerHTML =
-          `<option value="" disabled selected>Choose action…</option>` +
-          category.actions.map((a) => `<option value="${a.value}">${a.label}</option>`).join("");
-        actionSelect.style.display = "inline-block";
-      }
-    });
-
-    actionSelect.addEventListener("change", () => setCurrent(actionSelect.value));
-
-    customInput.addEventListener("input", () => setCurrent(customInput.value.trim()));
-
-    const comboKeyInput = comboBuilder.querySelector<HTMLInputElement>(".combo-key")!;
-    const comboSpecialKeySelect = comboBuilder.querySelector<HTMLSelectElement>(".combo-special-key")!;
-    comboSpecialKeySelect.addEventListener("change", () => {
-      if (comboSpecialKeySelect.value) comboKeyInput.value = comboSpecialKeySelect.value;
-      comboSpecialKeySelect.value = ""; // acts as a quick-insert, not a persistent selection
-    });
-
-    comboBuilder.querySelector(".combo-apply")!.addEventListener("click", () => {
-      const mods: string[] = [];
-      comboBuilder.querySelectorAll<HTMLInputElement>("input[data-mod]").forEach((el) => {
-        if (el.checked) mods.push(el.dataset.mod!);
-      });
-      const key = comboKeyInput.value.trim().toLowerCase();
-      const action = [...mods, key].filter(Boolean).join("+");
-      if (!action) {
-        announce(`${slot.displayName}: pick a modifier or type a key first.`, "warning");
-        comboKeyInput.focus();
-        return;
-      }
-      const tokens = actionComboTokens(action);
-      if (tokens > MAX_COMBO_TOKENS) {
-        log(`Combo "${action}" uses ${tokens} modifiers+keys — hardware allows at most ${MAX_COMBO_TOKENS}.`);
-        announce(`${slot.displayName}: that combination uses ${tokens} keys — the mouse allows at most ${MAX_COMBO_TOKENS}.`, "warning");
-        return;
-      }
-      setCurrent(action);
-      comboBuilder.classList.remove("open");
-      comboKeyInput.value = "";
-      comboBuilder.querySelectorAll<HTMLInputElement>("input[data-mod]").forEach((el) => (el.checked = false));
-    });
-
-    row.appendChild(label);
-    row.appendChild(currentValue);
-    row.appendChild(categorySelect);
-    row.appendChild(actionSelect);
-    row.appendChild(comboBuilder);
-    row.appendChild(customWrap);
-    buttonRowsEl.appendChild(row);
+    if ((a.buttonActions[slot.id] ?? "") !== (b.buttonActions[slot.id] ?? "")) count++;
   }
+  return count;
 }
-renderButtonRows();
+
+function unsavedChanges(): number {
+  return baseline ? configsDiffer(normalizeConfig(getCurrentConfig()), baseline) : 0;
+}
+
+function updateChangeState() {
+  const count = unsavedChanges();
+  const noun = `${count} unsaved change${count === 1 ? "" : "s"}`;
+  // Presets can't be overwritten, so say how to keep the edits.
+  changeStatusEl.textContent = !count ? "All changes saved" : currentUserProfile() ? noun : `${noun} · Save As to keep`;
+  changeStatusEl.classList.toggle("dirty", count > 0);
+  revertBtn.hidden = count === 0 || !baseline;
+  profileUpdateBtn.disabled = !currentUserProfile() || count === 0;
+  const selectedOption = profileSelectEl.selectedOptions[0];
+  if (selectedOption && selectedOption.value) {
+    const base = selectedOption.dataset.name ?? selectedOption.textContent ?? "";
+    selectedOption.dataset.name = base;
+    selectedOption.textContent = count ? `${base} (modified)` : base;
+  }
+  buttonEditor.refresh();
+}
+
+function markSaved() {
+  baseline = normalizeConfig(getCurrentConfig());
+  updateChangeState();
+}
+
+// Every settings control reports through input/change/click; recompute on
+// the next frame so the control's own handler has updated state first.
+let changeFrame = 0;
+for (const type of ["input", "change", "click"]) {
+  document.querySelector(".settings-row")!.addEventListener(type, () => {
+    cancelAnimationFrame(changeFrame);
+    changeFrame = requestAnimationFrame(updateChangeState);
+  });
+}
+
+revertBtn.addEventListener("click", () => {
+  if (baseline) applyConfigToUI(baseline);
+  updateChangeState();
+  announce("Changes reverted.");
+});
 
 showActionRefBtn.addEventListener("click", () => {
   actionRefEl.classList.toggle("open");
@@ -695,9 +591,8 @@ function applyConfigToUI(config: MouseWebConfig) {
   ledSpeedEl.value = String(config.ledSpeed);
   syncRangeSliders();
   updateLedVisibility();
-  for (const slot of BUTTON_SLOTS) {
-    buttonRowLoaders[slot.id]?.(config.buttonActions[slot.id] ?? "");
-  }
+  for (const slot of BUTTON_SLOTS) buttonActions[slot.id] = config.buttonActions[slot.id] ?? "";
+  buttonEditor.refresh();
 }
 
 function currentUserProfile(): UserProfile | undefined {
@@ -725,8 +620,8 @@ function renderProfileSelect() {
         `</optgroup>`
       : "");
   profileSelectEl.value = current;
-  profileUpdateBtn.disabled = !currentUserProfile();
   profileDeleteBtn.disabled = !currentUserProfile();
+  updateChangeState();
 }
 
 function loadProfile(profile: UserProfile) {
@@ -734,11 +629,17 @@ function loadProfile(profile: UserProfile) {
   namingOS = PRESET_OS[profile.id] ?? (detected === "unknown" ? "windows" : detected);
   applyConfigToUI(profile.config);
   loadedProfileID = profile.id;
+  baseline = normalizeConfig(profile.config);
   renderProfileSelect();
 }
 
 profileSelectEl.addEventListener("change", () => {
   const id = profileSelectEl.value;
+  const pending = unsavedChanges();
+  if (pending && !window.confirm(`Discard ${pending} unsaved change${pending === 1 ? "" : "s"} to "${currentProfileLabel()}"?`)) {
+    profileSelectEl.value = loadedProfileID ?? "";
+    return;
+  }
   if (!id) {
     loadedProfileID = null;
     renderProfileSelect();
@@ -755,6 +656,7 @@ profileSaveAsBtn.addEventListener("click", () => {
   const saved = profileStore.addProfile(trimmed || "Untitled", getCurrentConfig());
   loadedProfileID = saved.id;
   renderProfileSelect();
+  markSaved();
   log(`Saved profile "${saved.name}".`);
 });
 
@@ -762,6 +664,7 @@ profileUpdateBtn.addEventListener("click", () => {
   const profile = currentUserProfile();
   if (!profile) return;
   profileStore.updateProfile(profile.id, getCurrentConfig());
+  markSaved();
   log(`Updated profile "${profile.name}".`);
 });
 
@@ -871,7 +774,7 @@ if (!isWebHidAvailable()) {
   applyBtn.disabled = true;
   document.querySelector<HTMLElement>("#unsupported")!.hidden = false;
   // Apply can never enable here, so don't keep it floating over the page.
-  applyBtn.closest(".apply-row")?.classList.add("unstuck");
+  applyBtn.closest(".config-toolbar")?.classList.add("unstuck");
   if (macosTip) macosTip.open = false;
   log(WEBHID_UNAVAILABLE_MESSAGE);
 }

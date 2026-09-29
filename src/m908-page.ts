@@ -32,7 +32,9 @@ import {
   type M908ProfileSet,
 } from "./profiles/m908-profile-store";
 import { detectDesktopOS, isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
-import { formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
+import { comboKeys, formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
+import { createButtonEditor, type ActionDescription } from "./button-editor";
+import { ACTION_CATEGORIES, type ActionCategory } from "./profiles/m913-action-catalog";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
@@ -46,9 +48,7 @@ const ledBrightnessEl = document.querySelector<HTMLInputElement>("#led-brightnes
 const ledSpeedEl = document.querySelector<HTMLInputElement>("#led-speed")!;
 const reportRateButtonsEl = document.querySelector<HTMLDivElement>("#report-rate-buttons")!;
 const scrollSpeedEl = document.querySelector<HTMLInputElement>("#scroll-speed")!;
-const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
-const buttonGridEl = document.querySelector<HTMLDivElement>("#button-grid")!;
-const buttonHintEl = document.querySelector<HTMLParagraphElement>("#button-hint")!;
+const buttonEditorEl = document.querySelector<HTMLDivElement>("#button-editor")!;
 const showActionReferenceBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionReferenceEl = document.querySelector<HTMLDivElement>("#action-reference")!;
 const slotButtonsEl = document.querySelector<HTMLDivElement>("#slot-buttons")!;
@@ -217,115 +217,110 @@ function renderDpiRows() {
   }
 }
 
-// Buttons are a keypad-style grid of tiles (short name + what it does);
-// clicking one opens its action field below the grid. Grid order follows
-// the mouse: clicks, then DPI and scroll, then the 12 side buttons.
+// --- Buttons ---------------------------------------------------------------
+//
+// Same keypad grid + editor panel as the M913 page (src/button-editor.ts),
+// with the M908's own action vocabulary: its special actions plus the OS
+// shortcut lists, filtered to what the M908 parser accepts.
+
+const NAMING_OS: ShortcutOS = (() => {
+  const os = detectDesktopOS();
+  return os === "unknown" ? "windows" : os;
+})();
+
+const named = (label: string, value: string) => ({ label, value });
+const M908_CATEGORIES: ActionCategory[] = [
+  {
+    name: "Clicks",
+    actions: [
+      named("Left click", "left"), named("Right click", "right"), named("Middle click", "middle"),
+      named("Forward", "forward"), named("Back", "backward"), named("Do nothing", "none"),
+    ],
+  },
+  {
+    name: "DPI, Profile & Wheel",
+    actions: [
+      named("DPI up", "dpi+"), named("DPI down", "dpi-"), named("DPI cycle", "dpi-cycle"),
+      named("Next profile", "profile+"), named("Previous profile", "profile-"), named("Cycle profiles", "profile_switch"),
+      named("Polling rate up", "report_rate+"), named("Polling rate down", "report_rate-"),
+      named("DPI light on/off", "dpi_led_toggle"), named("Next lighting mode", "led_mode_switch"),
+      named("Scroll up", "scroll_up"), named("Scroll down", "scroll_down"),
+    ],
+  },
+  {
+    name: "Media",
+    actions: [
+      named("Play / pause", "media_play"), named("Stop media", "media_stop"),
+      named("Previous track", "media_previous"), named("Next track", "media_next"),
+      named("Volume up", "media_volume_up"), named("Volume down", "media_volume_down"), named("Mute", "media_mute"),
+    ],
+  },
+  ...ACTION_CATEGORIES.filter((c) => c.name.endsWith("Shortcuts")).map((c) => ({
+    name: c.name,
+    actions: c.actions.filter((a) => m908ActionSupported(a.value)),
+  })),
+];
+
+function describeAction(value: string): ActionDescription {
+  const name = shortcutName(value, NAMING_OS);
+  if (name) return { name, keys: comboKeys(value, NAMING_OS) };
+  for (const category of M908_CATEGORIES) {
+    const action = category.actions.find((a) => a.value === value);
+    if (action) return { name: action.label, keys: action.os ? comboKeys(value, action.os) : [] };
+  }
+  const macro = /^macro(\d+)/.exec(value);
+  if (macro) return { name: `Macro ${macro[1]}`, keys: [] };
+  if (value.startsWith("fire:")) return { name: "Rapid fire", keys: [] };
+  // Keyboard combos are named by their keys; anything else (raw codes)
+  // shows as typed.
+  return { name: /^[a-z0-9_]+(\+[a-z0-9_]+)+$/.test(value) ? formatCombo(value, NAMING_OS) : value, keys: [] };
+}
+
+function tileLabel(name: M908ButtonName): { short: string; full: string; group: string } {
+  const side = /^button_(\d+)$/.exec(name);
+  if (side) return { short: `Side ${side[1]}`, full: `Side button ${side[1]}`, group: "side" };
+  const labels: Record<string, [string, string, string]> = {
+    button_left: ["Left", "Left click", "clicks"], button_right: ["Right", "Right click", "clicks"],
+    button_middle: ["Middle", "Middle click", "clicks"], button_fire: ["Fire", "Fire button", "clicks"],
+    button_dpi_up: ["DPI +", "DPI up button", "wheel"], button_dpi_down: ["DPI −", "DPI down button", "wheel"],
+    scroll_up: ["Scroll ↑", "Wheel scroll up", "wheel"], scroll_down: ["Scroll ↓", "Wheel scroll down", "wheel"],
+  };
+  const [short, full, group] = labels[name]!;
+  return { short, full, group };
+}
+
 const TILE_ORDER: M908ButtonName[] = [
   "button_left", "button_right", "button_middle", "button_fire",
   "button_dpi_up", "button_dpi_down", "scroll_up", "scroll_down",
   "button_1", "button_2", "button_3", "button_4", "button_5", "button_6",
   "button_7", "button_8", "button_9", "button_10", "button_11", "button_12",
 ];
-const NAMING_OS: ShortcutOS = (() => {
-  const os = detectDesktopOS();
-  return os === "unknown" ? "windows" : os;
-})();
-let openButton: M908ButtonName | null = null; // survives re-renders on profile switch
 
-function tileLabel(name: M908ButtonName): { short: string; full: string } {
-  const side = /^button_(\d+)$/.exec(name);
-  if (side) return { short: `Side ${side[1]}`, full: `Side button ${side[1]}` };
-  const short = {
-    button_left: "Left", button_right: "Right", button_middle: "Middle", button_fire: "Fire",
-    button_dpi_up: "DPI +", button_dpi_down: "DPI −", scroll_up: "Scroll ↑", scroll_down: "Scroll ↓",
-  }[name as string]!;
-  return { short, full: name.replace(/^button_/, "").replace(/_/g, " ") };
-}
-
-function openButtonEditor(name: M908ButtonName | null) {
-  openButton = name;
-  for (const tile of buttonGridEl.querySelectorAll<HTMLButtonElement>(".button-tile")) {
-    const open = tile.dataset.slot === name;
-    tile.setAttribute("aria-expanded", String(open));
-    document.getElementById(tile.getAttribute("aria-controls")!)!.hidden = !open;
-  }
-  buttonHintEl.hidden = name !== null;
-}
-
-function renderButtonRows() {
-  buttonRowsEl.replaceChildren();
-  buttonGridEl.replaceChildren();
-  for (const name of TILE_ORDER) {
-    const { short, full } = tileLabel(name);
-    const row = document.createElement("div");
-    row.className = "button-row";
-    row.id = `editor-${name}`;
-    row.hidden = true;
-
-    const label = document.createElement("label");
-    label.textContent = full;
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.placeholder = "e.g. ctrl+c, fire:a:5:10, macro3";
-    input.value = profile.buttonActions[name] ?? "";
-    input.style.flex = "1";
-    input.setAttribute("aria-label", `${full} action`);
-    label.htmlFor = input.id = `action-${name}`;
-
-    const validity = document.createElement("span");
-    validity.className = "current-value";
-    validity.id = `validity-${name}`;
-    input.setAttribute("aria-describedby", validity.id);
-
-    const tile = document.createElement("button");
-    tile.type = "button";
-    tile.className = "button-tile";
-    tile.dataset.slot = name;
-    tile.setAttribute("aria-expanded", "false");
-    tile.setAttribute("aria-controls", row.id);
-    tile.innerHTML = `<span class="tile-slot"></span><span class="tile-name"></span><span class="tile-combo"></span>`;
-    tile.querySelector(".tile-slot")!.textContent = short;
-    const tileName = tile.querySelector<HTMLSpanElement>(".tile-name")!;
-    const tileCombo = tile.querySelector<HTMLSpanElement>(".tile-combo")!;
-    tile.addEventListener("click", () => {
-      const opening = tile.getAttribute("aria-expanded") !== "true";
-      openButtonEditor(opening ? name : null);
-      if (opening) input.focus({ preventScroll: true });
-    });
-
-    function updateValidity() {
-      const value = input.value.trim();
-      const valid = !value || m908ActionSupported(value);
-      validity.textContent = !value ? "(unchanged)" : valid ? "✓ valid" : "✗ unrecognized";
-      validity.classList.toggle("is-valid", !!value && valid);
-      validity.classList.toggle("is-invalid", !valid);
-      input.setAttribute("aria-invalid", String(!valid));
-
-      const known = value && valid ? shortcutName(value, NAMING_OS) : undefined;
-      const combo = known ? formatCombo(value, NAMING_OS) : "";
-      tileName.textContent = !value ? "Default" : known ?? value;
-      tileCombo.textContent = !valid ? "Not recognised" : combo === known ? "" : combo;
-      tile.classList.toggle("unchanged", !value);
-      tile.classList.toggle("invalid", !valid);
-      tile.setAttribute("aria-label", `${full}: ${!value ? "default" : known ?? value}${valid ? "" : ", not recognised"}`);
-    }
-    updateValidity();
-
-    input.addEventListener("input", () => {
-      const value = input.value.trim();
-      if (value) profile.buttonActions[name] = value;
-      else delete profile.buttonActions[name];
-      updateValidity();
-      persist();
-    });
-
-    row.append(label, input, validity);
-    buttonRowsEl.append(row);
-    buttonGridEl.append(tile);
-  }
-  openButtonEditor(openButton);
-}
+const buttonEditor = createButtonEditor({
+  root: buttonEditorEl,
+  groups: [
+    { id: "clicks", label: "Clicks" },
+    { id: "wheel", label: "Wheel & DPI" },
+    { id: "side", label: "Side panel" },
+  ],
+  slots: TILE_ORDER.map((id) => ({ id, ...tileLabel(id) })),
+  categories: M908_CATEGORIES,
+  getValue: (id) => profile.buttonActions[id as M908ButtonName] ?? "",
+  setValue: (id, value) => {
+    if (value) profile.buttonActions[id as M908ButtonName] = value;
+    else delete profile.buttonActions[id as M908ButtonName];
+    persist();
+  },
+  isChanged: () => false, // the M908's five profiles save automatically
+  validate: (value) => (m908ActionSupported(value) ? null : `"${value}" isn't an action the M908 understands.`),
+  describe: describeAction,
+  categoryKeys: (value, category) => {
+    const os = category.actions.find((a) => a.value === value)?.os;
+    return os ? comboKeys(value, os) : [];
+  },
+  announce: (message) => announce(message),
+  customPlaceholder: "e.g. ctrl+c, fire:a:5:10, macro3",
+});
 
 function renderLedControls() {
   ledModeEl.value = profile.lightMode;
@@ -406,7 +401,7 @@ function renderAll() {
   renderLedControls();
   renderReportRateButtons();
   scrollSpeedEl.value = String(profile.scrollSpeed);
-  renderButtonRows();
+  buttonEditor.refresh();
 }
 
 function buildActionReferenceText(): string {
@@ -620,7 +615,7 @@ if (!isWebHidAvailable()) {
   applyBtn.disabled = true;
   document.querySelector<HTMLElement>("#unsupported")!.hidden = false;
   // Apply can never enable here, so don't keep it floating over the page.
-  applyBtn.closest(".apply-row")?.classList.add("unstuck");
+  applyBtn.closest(".config-toolbar")?.classList.add("unstuck");
   log(WEBHID_UNAVAILABLE_MESSAGE);
 }
 

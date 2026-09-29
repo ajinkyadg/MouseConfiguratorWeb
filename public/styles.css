@@ -373,7 +373,7 @@ button.primary:disabled { background: var(--surface-elevated); border-color: var
 .segmented button.active { background: var(--accent); color: var(--on-accent); }
 
 label { display: inline-block; min-width: 90px; font-size: var(--fs-sm); color: var(--text-secondary); }
-select, input[type="text"], input[type="number"] {
+select, input[type="text"], input[type="number"], input[type="search"] {
   background: var(--surface-elevated);
   color: var(--text);
   border: 1px solid var(--border-control);
@@ -443,56 +443,151 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
 }
 .button-row:last-child { border-bottom: none; }
 
-/* Button keypad: 4 columns = the click row, then the 12 side buttons in
-   three rows. Each tile opens its editor row (.button-row) below. */
-.button-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; }
-.button-tile:nth-child(n+5):nth-child(-n+8) { margin-top: 0.4rem; }
-.button-tile {
-  display: grid; gap: 0.1rem; justify-items: start; text-align: start; min-inline-size: 0;
-  padding: 0.5rem 0.65rem; border: 1px solid var(--border-control); border-radius: 8px;
-  background: var(--surface-elevated); color: var(--text); font: inherit; cursor: pointer;
+/* ===== Configurator (index.html, m908.html) ============================
+   Sticky toolbar (profile · unsaved state · Apply), then the Buttons card
+   (keypad grid beside an editor panel), then DPI / LED / Polling in a row.
+   The page widens for this; prose pages keep 900px. */
+body.wide { max-width: 1320px; }
+
+.config-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem;
+  padding: 0.7rem 1rem;
 }
-.button-tile:hover { border-color: var(--accent); }
-.button-tile[aria-expanded="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.button-tile > span { max-inline-size: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tile-slot { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
-.tile-name { font-size: var(--fs-sm); font-weight: 600; }
-.tile-combo { font-size: var(--fs-xs); color: var(--text-secondary); min-block-size: 1.2em; }
-.button-tile.unchanged .tile-name { color: var(--text-secondary); font-weight: 500; }
-.button-tile.invalid { border-color: var(--danger); }
-.button-tile.invalid .tile-combo { color: var(--danger); }
-#button-hint { margin-top: 0.75rem; }
-.button-row[hidden], #button-hint[hidden] { display: none; }
-/* The open tile already shows the current mapping; keep this text for
-   screen readers (it describes the pickers) but not on screen. */
-.config-main #button-rows .current-value { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-#button-rows .button-row { margin-top: 0.75rem; padding: 0.75rem 0 0; border-top: 1px solid var(--border-subtle); border-bottom: none; }
-@media (max-width: 480px) {
-  .button-grid { gap: 0.35rem; }
-  .button-tile { padding: 0.4rem 0.4rem; }
-  .button-tile > .tile-name { white-space: normal; font-size: var(--fs-xs); line-height: 1.2; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; hyphens: auto; }
+.toolbar-profile { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; flex: 1 1 28rem; }
+.toolbar-profile label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
+.toolbar-profile select { min-inline-size: 14rem; }
+.toolbar-apply { display: flex; align-items: center; gap: 0.6rem; margin-inline-start: auto; }
+.toolbar-apply .primary { padding-inline: 1.25rem; }
+.change-status { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+.change-status.dirty { color: var(--accent-text); font-weight: 700; }
+.toolbar-hint { flex-basis: 100%; margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+.config-toolbar > .toolbar-hint:first-child { flex: 1 1 20rem; }
+.toolbar-more { position: relative; }
+.toolbar-more summary {
+  list-style: none; cursor: pointer; padding: 0.35rem 0.75rem; border: 1px solid var(--border-control);
+  border-radius: 6px; font-size: var(--fs-sm); background: var(--surface-elevated);
+}
+.toolbar-more summary::-webkit-details-marker { display: none; }
+.toolbar-more .dropdown-panel { display: grid; min-inline-size: 13rem; }
+.toolbar-more .dropdown-panel :is(button, a) {
+  display: block; inline-size: 100%; text-align: start; border: none; background: none;
+  padding: 0.5rem 0.65rem; border-radius: 5px; font-size: var(--fs-sm); color: var(--text); text-decoration: none;
+}
+.toolbar-more .dropdown-panel :is(button, a):hover:not(:disabled) { background: var(--hover-wash); }
+@media (min-width: 761px) {
+  .config-toolbar { position: sticky; top: 0.5rem; z-index: 15; box-shadow: var(--shadow-apply); }
+  .config-toolbar.unstuck { position: static; box-shadow: none; }
 }
 
-/* Configurator dashboard (index.html). The page widens so settings sit
-   side by side instead of in one long column; prose pages keep 900px. */
-body.wide { max-width: 1320px; }
-@media (min-width: 1100px) {
-  .config-layout {
-    display: grid; grid-template-columns: minmax(22rem, 26rem) minmax(0, 1fr);
-    grid-template-rows: auto 1fr; gap: 0 0.85rem; align-items: start;
-  }
-  .config-side { grid-area: 1 / 1; }
-  .config-main { grid-area: 1 / 2 / 3 / 3; }
-  /* Apply fills the space under LED, so it no longer floats over the
-     button list; the sticky bar is only needed on the stacked layout. */
-  .config-layout .apply-row { grid-area: 2 / 1; position: static; box-shadow: none; flex-direction: column; align-items: stretch; }
-  .config-layout .apply-row button { inline-size: 100%; }
-  .config-main .button-row { padding: 0.2rem 0; }
-  .config-main .button-row :is(select, input) { padding-block: 0.2rem; }
-  body.wide .hero { padding-block: 1.5rem 1.25rem; }
-  .config-side input[type="range"] { flex: 1 1 6rem; inline-size: auto; min-inline-size: 0; }
-  .config-side .row { flex-wrap: nowrap; }
+/* Buttons card: grid left, editor panel right. */
+.button-editor { display: grid; gap: 1.25rem; min-block-size: 24rem; }
+@media (min-width: 900px) {
+  .button-editor { grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem); align-items: start; }
 }
+.tile-group-label {
+  margin: 0 0 0.4rem; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.button-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.45rem; }
+.button-grid + .tile-group-label { margin-top: 0.9rem; }
+.button-grid.group-side { padding: 0.45rem; border: 1px solid var(--border-subtle); border-radius: 12px; }
+
+/* Tile: slot label, action name, keycaps. States: unchanged (quiet,
+   dashed), remapped (accent edge), selected (tinted), changed (dot). */
+.button-tile {
+  position: relative; display: grid; align-content: start; gap: 0.2rem; justify-items: start;
+  min-inline-size: 0; min-block-size: 4.4rem; padding: 0.5rem 0.65rem; text-align: start;
+  border: 1px solid var(--border-control); border-radius: 8px;
+  background: var(--surface-elevated); color: var(--text); font: inherit; cursor: pointer;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.button-tile.unchanged { background: var(--surface-sunken); border-style: dashed; border-color: var(--border-control); box-shadow: none; }
+.button-tile:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
+.button-tile.selected { background: var(--accent-soft); border: 1px solid var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.button-tile.invalid { border-color: var(--danger); box-shadow: inset 3px 0 0 var(--danger); }
+.button-tile.changed::after {
+  content: ""; position: absolute; inset-block-start: 0.45rem; inset-inline-end: 0.45rem;
+  inline-size: 0.45rem; block-size: 0.45rem; border-radius: 50%; background: var(--accent);
+}
+.button-tile > span { max-inline-size: 100%; }
+.tile-slot { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
+.tile-name {
+  font-size: var(--fs-sm); font-weight: 600; line-height: 1.2;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; hyphens: auto;
+}
+.button-tile.unchanged .tile-name { color: var(--text-secondary); font-weight: 500; }
+.tile-note { font-size: var(--fs-2xs); color: var(--danger); font-weight: 600; }
+.keycaps { display: inline-flex; flex-wrap: wrap; gap: 0.2rem; }
+.keycaps kbd {
+  font-family: var(--font-mono); font-size: var(--fs-2xs); line-height: 1.4;
+  padding: 0 0.35rem; border-radius: 4px; color: var(--text-secondary);
+  background: var(--surface-sunken); border: 1px solid var(--border-subtle); border-bottom-width: 2px;
+}
+
+/* Editor panel. */
+.btn-panel {
+  display: grid; gap: 0.65rem; padding: 0.9rem; border-radius: 12px;
+  background: var(--surface-sunken); border: 1px solid var(--border-subtle);
+}
+@media (min-width: 900px) { .btn-panel { position: sticky; top: 7rem; } }
+.panel-head { display: flex; align-items: center; gap: 0.5rem; }
+.panel-title-wrap { flex: 1; min-inline-size: 0; }
+.panel-title { margin: 0; font-size: var(--fs-md); }
+.panel-current { margin: 0.1rem 0 0; font-size: var(--fs-xs); color: var(--text-secondary); display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.panel-current strong { color: var(--text); }
+.panel-step { inline-size: 2rem; block-size: 2rem; padding: 0; font-size: 1.1rem; line-height: 1; }
+.panel-close { display: none; }
+.panel-search { inline-size: 100%; }
+.action-list {
+  max-block-size: 15rem; overflow-y: auto; display: grid; gap: 0.5rem;
+  padding: 0.25rem; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface);
+}
+.action-group-label {
+  margin: 0.2rem 0.35rem 0.1rem; font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.action-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; inline-size: 100%;
+  padding: 0.35rem 0.5rem; border: 1px solid transparent; border-radius: 6px;
+  background: none; color: var(--text); font-size: var(--fs-sm); text-align: start;
+}
+.action-option:hover { background: var(--hover-wash); }
+.action-option[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+.action-group[hidden], .action-option[hidden] { display: none; }
+.action-empty { margin: 0; }
+.record-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.record-row .hint { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+.record-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); box-shadow: 0 0 0 3px var(--accent-soft); }
+.custom-action summary { cursor: pointer; font-size: var(--fs-sm); color: var(--text-secondary); }
+.custom-action .row { margin: 0.5rem 0 0; flex-wrap: nowrap; }
+.custom-action input { flex: 1; min-inline-size: 0; }
+.custom-error { margin: 0.3rem 0 0; font-size: var(--fs-xs); color: var(--danger); min-block-size: 1em; }
+.panel-reset { justify-self: start; }
+
+/* Phones: the panel is a bottom sheet opened by tapping a tile. */
+@media (max-width: 760px) {
+  .btn-panel {
+    position: fixed; inset: auto 0 0; z-index: 30; max-block-size: 80vh; overflow-y: auto;
+    border-radius: 16px 16px 0 0; background: var(--surface); box-shadow: var(--shadow-lg);
+    transform: translateY(105%); visibility: hidden; transition: transform 0.2s ease, visibility 0.2s;
+  }
+  body.sheet-open .btn-panel { transform: none; visibility: visible; }
+  .panel-close { display: inline-block; }
+  .button-grid { gap: 0.35rem; }
+  .button-tile { padding: 0.4rem; min-block-size: 4rem; }
+  .tile-name { font-size: var(--fs-xs); }
+  .toolbar-apply { inline-size: 100%; }
+  .toolbar-apply .primary { flex: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .btn-panel { transition: none; } }
+
+/* Settings under the buttons: DPI · LED · Polling. */
+.settings-row { display: grid; gap: 0 0.85rem; align-items: start; }
+@media (min-width: 1100px) { .settings-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.settings-row .segmented button { white-space: nowrap; padding-inline: 0.7rem; }
+@media (min-width: 761px) and (max-width: 1099px) { .settings-row { grid-template-columns: 1fr 1fr; } }
+.settings-row input[type="range"] { flex: 1 1 6rem; inline-size: auto; min-inline-size: 0; }
+body.wide .hero { padding-block: 1.5rem 1.25rem; }
 .button-row label { flex: 0 0 110px; color: var(--text); font-weight: 500; text-transform: capitalize; }
 .current-value {
   flex: 0 0 13rem;
@@ -797,10 +892,6 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 #poll-buttons, #report-rate-buttons, #slot-buttons { min-block-size: 2.25rem; }
 #editing-slot { min-block-size: 1.35rem; }
 #dpi-rows { min-block-size: 12rem; }
-#button-rows { min-block-size: 40rem; }
-/* The M913 page shows a tile grid instead of the long row list. */
-.config-main #button-rows { min-block-size: 0; }
-#button-grid { min-block-size: 21rem; }
 
 /* The DPI checker reveals its "this test needs a mouse" callout from JS on
    touch-only devices, which pushed the whole page down after first paint.
