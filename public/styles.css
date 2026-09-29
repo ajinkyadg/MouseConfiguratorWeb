@@ -673,11 +673,50 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 }
 .hero-proof li { display: inline-flex; align-items: center; gap: 0.4rem; }
 .hero-proof svg { inline-size: 0.95rem; block-size: 0.95rem; color: var(--accent-text); flex: none; }
-.hero-art { inline-size: clamp(9rem, 17vw, 13.5rem); block-size: auto; color: var(--text-secondary); }
-.hero-art .shell { fill: var(--surface-elevated); stroke: var(--border-control); }
-.hero-art .line { stroke: var(--border-control); }
-.hero-art .lit { fill: var(--accent); }
-.hero-art .pad { fill: var(--accent-soft); }
+.hero-art {
+  inline-size: clamp(9rem, 17vw, 13.5rem); block-size: auto;
+  --art-top: #6a6a73; --art-mid: #4c4c54; --art-low: #333339; --art-deep: #141417;
+  --art-key-hi: #5f5f69; --art-key-lo: #34343b; --art-key-mark: #141417;
+  --art-seam: rgb(0 0 0 / 0.82); --art-seam-lo: rgb(255 255 255 / 0.09);
+  --art-spec: rgb(255 255 255 / 0.34); --art-foot: #8e8e97; --art-cast: rgb(0 0 0 / 0.55); --art-grip: #26262b;
+}
+.hero-art .cast { fill: var(--art-cast) }
+.hero-art .mid { fill: var(--art-mid) }
+.hero-art .lit { fill: url(#mcTop) }
+.hero-art .low { fill: var(--art-low) }
+.hero-art .deep { fill: var(--art-deep) }
+.hero-art .grip { fill: var(--art-grip) }
+.hero-art .foot { fill: var(--art-foot) }
+.hero-art .btn { fill: var(--art-low) }
+.hero-art .cable { fill: none; stroke: var(--art-deep); stroke-width: 5.5; stroke-linecap: round }
+.hero-art .seam { fill: none; stroke: var(--art-seam); stroke-width: 1.5; stroke-linecap: round }
+.hero-art .seamlo { fill: none; stroke: var(--art-seam-lo); stroke-width: 1.2; stroke-linecap: round }
+.hero-art .spec { fill: none; stroke: var(--art-spec); stroke-width: 1.3; stroke-linecap: round }
+.hero-art .cap { fill: url(#mcKey); stroke: var(--art-key-lo); stroke-width: 0.6; stroke-linejoin: round }
+.hero-art .hit { fill: rgb(0 0 0 / 0) }
+.hero-art .dimple { fill: var(--art-key-mark) }
+.hero-art .lip { fill: none; stroke: var(--art-key-hi); stroke-width: 1.2; stroke-linecap: round }
+.hero-art .wheel { fill: var(--accent) }
+.hero-art .wheelhi { fill: none; stroke: rgb(255 255 255 / 0.45); stroke-width: 1.1; stroke-linecap: round }
+.hero-art .glow { fill: var(--accent); opacity: 0.45 }
+.hero-art .bloom { opacity: 0.34 }
+.hero-art .trim { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; display: none }
+:root[data-theme="pro"] .hero-art .glow { display: none }
+:root[data-theme="pro"] .hero-art .trim { display: block }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="play"]) .hero-art {
+    --art-top: #fbfbfc; --art-mid: #ccd1d8; --art-low: #a3a9b3; --art-deep: #7b818b;
+    --art-key-hi: #cfd3da; --art-key-lo: #9aa0aa; --art-key-mark: #6f757e;
+    --art-seam: rgb(21 23 28 / 0.2); --art-seam-lo: rgb(255 255 255 / 0.62);
+    --art-spec: rgb(255 255 255 / 0.85); --art-foot: #f2f4f7; --art-cast: rgb(21 23 28 / 0.14); --art-grip: #949aa4;
+  }
+}
+:root[data-theme="pro"] .hero-art {
+  --art-top: #fbfbfc; --art-mid: #ccd1d8; --art-low: #a3a9b3; --art-deep: #7b818b;
+  --art-key-hi: #cfd3da; --art-key-lo: #9aa0aa; --art-key-mark: #6f757e;
+  --art-seam: rgb(21 23 28 / 0.2); --art-seam-lo: rgb(255 255 255 / 0.62);
+  --art-spec: rgb(255 255 255 / 0.85); --art-foot: #f2f4f7; --art-cast: rgb(21 23 28 / 0.14); --art-grip: #949aa4;
+}
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; gap: 1.25rem; padding-top: 1.75rem; }
   .hero-art { display: none; }
