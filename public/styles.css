@@ -442,6 +442,25 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
   flex-wrap: wrap;
 }
 .button-row:last-child { border-bottom: none; }
+
+/* Configurator dashboard (index.html). The page widens so settings sit
+   side by side instead of in one long column; prose pages keep 900px. */
+body.wide { max-width: 1320px; }
+@media (min-width: 1100px) {
+  .config-layout {
+    display: grid; grid-template-columns: minmax(22rem, 26rem) minmax(0, 1fr);
+    grid-template-rows: auto 1fr; gap: 0 0.85rem; align-items: start;
+  }
+  .config-side { grid-area: 1 / 1; }
+  .config-main { grid-area: 1 / 2 / 3 / 3; }
+  /* Apply fills the space under LED, so it no longer floats over the
+     button list; the sticky bar is only needed on the stacked layout. */
+  .config-layout .apply-row { grid-area: 2 / 1; position: static; box-shadow: none; flex-direction: column; align-items: stretch; }
+  .config-layout .apply-row button { inline-size: 100%; }
+  .config-main .button-row { padding: 0.35rem 0; }
+  .config-side input[type="range"] { flex: 1 1 6rem; inline-size: auto; min-inline-size: 0; }
+  .config-side .row { flex-wrap: nowrap; }
+}
 .button-row label { flex: 0 0 110px; color: var(--text); font-weight: 500; text-transform: capitalize; }
 .current-value {
   flex: 0 0 140px;
