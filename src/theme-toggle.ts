@@ -15,15 +15,6 @@ function store(theme: Theme) {
   }
 }
 
-function stored(): Theme | null {
-  try {
-    const v = localStorage.getItem(KEY);
-    return v === "play" || v === "pro" ? v : null;
-  } catch {
-    return null;
-  }
-}
-
 export function initThemeToggle() {
   const group = document.querySelector<HTMLElement>(".theme-switch");
   if (!group) return;
@@ -64,13 +55,6 @@ export function initThemeToggle() {
       : event.key === "ArrowRight" || event.key === "ArrowDown" ? (index + 1) % options.length
       : (index - 1 + options.length) % options.length;
     select(options[next]!.dataset.themeValue as Theme, true);
-  });
-
-  // No stored choice yet? Keep following the OS if it changes mid-session.
-  window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", (event) => {
-    if (stored()) return;
-    document.documentElement.setAttribute("data-theme", event.matches ? "pro" : "play");
-    reflect();
   });
 
   reflect();

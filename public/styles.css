@@ -8,9 +8,9 @@
    white, and no glow. Same hue, two temperaments.
 
    <html data-theme> is set by a tiny inline script in every <head> before
-   first paint (stored choice, else prefers-color-scheme). The media query
-   below repeats the "pro" tokens so a light-preferring visitor with no JS
-   still gets the light face instead of a mismatched dark one.
+   first paint (stored choice, else Pro). The media query below repeats the
+   "pro" tokens so a light-preferring visitor with no JS still gets the
+   light face instead of a mismatched dark one.
 --------------------------------------------------------------------------- */
 :root {
   --bg: #0a0a0c;

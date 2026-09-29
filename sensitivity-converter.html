@@ -62,14 +62,12 @@
     <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
     <script>
       /* Theme before first paint, so neither face ever flashes: the stored
-         choice if there is one, otherwise the visitor's OS preference. */
-      try { var mcTheme = localStorage.getItem("mouseconfig.theme"); } catch (e) { /* blocked storage */ }
-      document.documentElement.setAttribute(
-        "data-theme",
-        mcTheme === "pro" || mcTheme === "play"
-          ? mcTheme
-          : matchMedia("(prefers-color-scheme: light)").matches ? "pro" : "play"
-      );
+         choice if there is one, otherwise Pro — the brand's default face. */
+      (function () {
+        var theme = null;
+        try { theme = localStorage.getItem("mouseconfig.theme"); } catch (e) { /* blocked storage */ }
+        document.documentElement.setAttribute("data-theme", theme === "play" ? "play" : "pro");
+      })();
     </script>
     <link rel="stylesheet" href="/styles.css" />
     <style>
