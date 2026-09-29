@@ -457,13 +457,15 @@ body.wide { max-width: 1320px; }
      button list; the sticky bar is only needed on the stacked layout. */
   .config-layout .apply-row { grid-area: 2 / 1; position: static; box-shadow: none; flex-direction: column; align-items: stretch; }
   .config-layout .apply-row button { inline-size: 100%; }
-  .config-main .button-row { padding: 0.35rem 0; }
+  .config-main .button-row { padding: 0.2rem 0; }
+  .config-main .button-row :is(select, input) { padding-block: 0.2rem; }
+  body.wide .hero { padding-block: 1.5rem 1.25rem; }
   .config-side input[type="range"] { flex: 1 1 6rem; inline-size: auto; min-inline-size: 0; }
   .config-side .row { flex-wrap: nowrap; }
 }
 .button-row label { flex: 0 0 110px; color: var(--text); font-weight: 500; text-transform: capitalize; }
 .current-value {
-  flex: 0 0 140px;
+  flex: 0 0 13rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -756,7 +758,7 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
   font-size: var(--fs-xs); color: var(--text-secondary);
 }
 .preview-note svg { inline-size: 1rem; block-size: 1rem; flex: none; color: var(--accent-text); }
-body:has(#status.connected) .preview-note { display: none; }
+
 
 /* ===== Reserved space for JS-rendered controls ========================== */
 /* These containers are filled by the page script after first paint. Without

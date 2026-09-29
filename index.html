@@ -194,8 +194,7 @@
     </details>
 
 
-    <p class="preview-note"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 9.2v5M10 6.1v.1"/></svg><span>Preview mode — no mouse connected. You can edit, import and export profiles freely down here; connecting unlocks <strong>Apply</strong> so the settings reach the hardware.</span></p>
-    <section>
+    <section id="settings">
       <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 3h9v14.2L10 14l-4.5 3.2V3Z"/></svg>Profile</h2>
       <div class="row">
         <select id="profile-select" aria-label="Profile"></select>
@@ -209,12 +208,8 @@
         <input type="file" id="profile-import-jmk-input" accept=".jmk" hidden />
       </div>
       <p class="hint">
-        Have a .jmk file (Redragon's Windows profile export) shared by
-        someone on a forum or Discord? There's no way to open a .jmk file on
-        Mac or Linux with Redragon's own software — import it here instead
-        to bring in its button mappings. DPI, polling rate, and LED aren't
-        decoded yet, so those stay at defaults. Just want to see what's
-        inside a .jmk file without connecting a mouse? Try the standalone
+        <strong>Import .jmk…</strong> brings in the button mappings from a
+        Redragon Windows profile. Just want to look inside one? Use the
         <a href="/jmk-decoder">.jmk file decoder</a>.
       </p>
     </section>

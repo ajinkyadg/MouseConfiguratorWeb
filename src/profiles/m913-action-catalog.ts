@@ -4,6 +4,8 @@
 // "Custom…" in the UI accepts anything parseAction() recognizes, not just
 // what's listed here.
 
+import { describeShortcut, type ShortcutOS } from "./shortcut-names";
+
 export interface NamedAction {
   label: string;
   value: string;
@@ -14,8 +16,12 @@ export interface ActionCategory {
   actions: NamedAction[];
 }
 
-const named = (label: string, value: string): NamedAction => ({ label, value });
 const plain = (value: string): NamedAction => ({ label: value, value });
+// Shortcut entries are labelled with what they do on that OS ("Copy · ⌘C").
+const shortcut = (os: ShortcutOS) => (value: string): NamedAction => ({
+  label: describeShortcut(value, os) ?? value,
+  value,
+});
 
 export const ACTION_CATEGORIES: ActionCategory[] = [
   {
@@ -49,15 +55,12 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
     // "super+c" is macOS's standard ⌘C.
     name: "Mac Shortcuts",
     actions: [
-      plain("super+c"), plain("super+v"), plain("super+x"), plain("super+z"), plain("super+shift+z"),
-      plain("super+a"), plain("super+s"), plain("super+f"), plain("super+w"), plain("super+q"),
-      plain("super+tab"), plain("super+space"), plain("super+h"), plain("super+m"), plain("super+comma"),
-      plain("super+shift+3"), plain("super+shift+4"), plain("super+shift+5"),
-      named("Mission Control (toggle)", "ctrl+arrow_up"),
-      named("App Windows / Exposé (toggle)", "ctrl+arrow_down"),
-      named("Show Desktop", "f11"),
-      named("Launchpad", "f4"),
-    ],
+      "super+c", "super+v", "super+x", "super+z", "super+shift+z",
+      "super+a", "super+s", "super+f", "super+w", "super+q",
+      "super+tab", "super+space", "super+h", "super+m", "super+comma",
+      "super+shift+3", "super+shift+4", "super+shift+5",
+      "ctrl+arrow_up", "ctrl+arrow_down", "f11", "f4",
+    ].map(shortcut("macos")),
   },
   {
     name: "Windows Shortcuts",
@@ -65,7 +68,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
       "ctrl+c", "ctrl+v", "ctrl+x", "ctrl+z", "ctrl+shift+z",
       "ctrl+a", "ctrl+s", "ctrl+f", "alt+tab",
       "super+e", "super+d", "super+l",
-    ].map(plain),
+    ].map(shortcut("windows")),
     // Note: "ctrl+alt+super+d" (Task Manager-style combo) is NOT included
     // here — 3 modifiers + 1 key = 4 tokens, one over the hardware's
     // MAX_COMBO_TOKENS(3) cap for keyboard-key sub-packets. It cannot

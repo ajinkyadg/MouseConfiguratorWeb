@@ -38,6 +38,21 @@ import {
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS, displayLabel } from "./profiles/m913-action-catalog";
+import { describeShortcut, type ShortcutOS } from "./profiles/shortcut-names";
+
+// Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
+// Search on Windows). Follows the loaded preset when it targets an OS,
+// otherwise the visitor's own machine.
+const PRESET_OS: Record<string, ShortcutOS> = {
+  "preset-office-macos": "macos",
+  "preset-office-windows": "windows",
+  "preset-office-linux": "linux",
+  "preset-default": "macos",
+};
+let namingOS: ShortcutOS = (() => {
+  const os = detectDesktopOS();
+  return os === "unknown" ? "windows" : os;
+})();
 import { KEY_COMBO_SPECIAL_GROUPS } from "./profiles/key-combo-keys";
 import {
   BUILT_IN_PRESETS,
@@ -264,6 +279,11 @@ connectBtn.addEventListener("click", async () => {
       announce(`Connected: ${device.productName} (${hardware} hardware, wired)`);
       statusEl.classList.add("connected");
       setConnected(true);
+      // Connect lives in the hero, the settings below the fold — take the
+      // user to them. Not done in the warning branches, whose message sits
+      // up top and needs reading first.
+      const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelector("#settings")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }
   } catch (err) {
     log(`Connect failed: ${(err as Error).message}`);
@@ -485,7 +505,7 @@ function renderButtonRows() {
     // is already showing the right thing.
     function setCurrent(value: string) {
       buttonActions[slot.id] = value;
-      currentValue.textContent = value ? displayLabel(value) ?? value : "Unchanged";
+      currentValue.textContent = value ? describeShortcut(value, namingOS) ?? displayLabel(value) ?? value : "Unchanged";
       currentValue.title = currentValue.textContent; // full text when the column ellipsizes it
     }
 
@@ -666,6 +686,8 @@ function renderProfileSelect() {
 }
 
 function loadProfile(profile: UserProfile) {
+  const detected = detectDesktopOS();
+  namingOS = PRESET_OS[profile.id] ?? (detected === "unknown" ? "windows" : detected);
   applyConfigToUI(profile.config);
   loadedProfileID = profile.id;
   renderProfileSelect();
