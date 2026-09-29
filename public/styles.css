@@ -1,34 +1,142 @@
+/* ---------------------------------------------------------------------------
+   Themes. Two token sets, one layout.
+
+   "play" (default): the dark, red-accent gaming face — deep surfaces, a
+   restrained accent glow on the primary action, hairline accent rules.
+   "pro": a light, neutral face for the same brand — white cards on a cool
+   grey page, the same crimson hue taken darker so it passes AA as text on
+   white, and no glow. Same hue, two temperaments.
+
+   <html data-theme> is set by a tiny inline script in every <head> before
+   first paint (stored choice, else prefers-color-scheme). The media query
+   below repeats the "pro" tokens so a light-preferring visitor with no JS
+   still gets the light face instead of a mismatched dark one.
+--------------------------------------------------------------------------- */
 :root {
-  --bg: #0b0b0c;
-  --surface: #18181a;
-  --surface-elevated: #222224;
+  --bg: #0a0a0c;
+  --surface: #151518;
+  --surface-elevated: #222226;
+  --surface-sunken: #0e0e10;
   --accent: #e2001a;
   /* --accent fails WCAG contrast as small text on the dark surfaces; use
      this lighter red wherever the accent is the text color. */
   --accent-text: #ff5a6a;
-  --divider: rgba(226, 0, 26, 0.35);
+  --accent-strong: #ff2b3d;
+  --accent-soft: rgb(226 0 26 / 0.14);
+  --on-accent: #ffffff;
+  --divider: rgb(226 0 26 / 0.35);
   --text: #f2f2f3;
   --text-secondary: #9a9a9d;
   --border: #2a2a2d;          /* cards, list items */
   --border-control: #46464b;  /* buttons, inputs */
   --border-subtle: #232326;   /* row dividers */
-  --surface-sunken: #0e0e10;
   --success: #6fe07a;
   --warning: #ffb454;
   --danger: #ff6b6b;
+  /* Everything that used to hard-code a dark-only value. */
+  --focus-ring: #ffffff;
+  --log-bg: #000000;
+  --log-text: #6fe07a;
+  --thumb: #ffffff;
+  --hover-wash: rgb(255 255 255 / 0.06);
+  --hover-wash-weak: rgb(255 255 255 / 0.03);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.55);
+  --shadow-apply: 0 -8px 24px rgb(0 0 0 / 0.6);
+  /* Depth: a hairline top-light on cards and a soft accent halo on the
+     primary action. Both are swapped out (not just dimmed) in "pro". */
+  --card-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0) 90px);
+  --accent-glow: 0 6px 20px -8px rgb(226 0 26 / 0.85);
+  --accent-rule: linear-gradient(90deg, var(--accent) 0%, rgb(226 0 26 / 0.15) 38%, transparent 72%);
+  --hero-grid: rgb(255 255 255 / 0.035);
   /* Native widgets (range tracks, select popups, scrollbars) follow this. */
   color-scheme: dark;
 
   /* Type: the platform UI font (SF Pro on macOS, Segoe UI Variable on
-     Windows) — no web-font download — on a five-step scale. */
+     Windows) — no web-font download — on a seven-step scale. */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   --fs-2xs: 0.75rem;    /* 12px: uppercase section labels, table headers */
   --fs-xs: 0.8125rem;   /* 13px: hints, status, meta, code, log */
   --fs-sm: 0.875rem;    /* 14px: controls, labels, card copy */
   --fs-md: 0.9375rem;   /* 15px: body prose, primary buttons */
+  --fs-lg: 1.0625rem;   /* 17px: hero lede */
   --fs-xl: 1.625rem;    /* 26px: page title */
+  --fs-2xl: clamp(2rem, 1.35rem + 2.8vw, 3.1rem); /* hero headline */
 }
+
+/* The "pro" token set, kept in one place and applied by two selectors. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="play"]) {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-sunken: #eceef1;
+    --accent: #b01020;
+    --accent-text: #a30f1d;
+    --accent-strong: #8c0c19;
+    --accent-soft: rgb(176 16 32 / 0.08);
+    --on-accent: #ffffff;
+    --divider: #dfe2e7;
+    --text: #15171c;
+    --text-secondary: #55595f;
+    --border: #dde0e5;
+    --border-control: #b9bec6;
+    --border-subtle: #e7e9ed;
+    --success: #14713a;
+    --warning: #8a5200;
+    --danger: #b3261e;
+    --focus-ring: #15171c;
+    --log-bg: #f1f3f6;
+    --log-text: #14532d;
+    --thumb: #ffffff;
+    --hover-wash: rgb(21 23 28 / 0.055);
+    --hover-wash-weak: rgb(21 23 28 / 0.025);
+    --shadow-sm: 0 1px 2px rgb(21 23 28 / 0.12);
+    --shadow-lg: 0 10px 28px rgb(21 23 28 / 0.14);
+    --shadow-apply: 0 -6px 20px rgb(21 23 28 / 0.1);
+    --card-sheen: none;
+    --accent-glow: none;
+    --accent-rule: linear-gradient(90deg, var(--accent) 0%, rgb(176 16 32 / 0.2) 38%, transparent 72%);
+    --hero-grid: rgb(21 23 28 / 0.045);
+    color-scheme: light;
+  }
+}
+:root[data-theme="pro"] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-sunken: #eceef1;
+  --accent: #b01020;
+  --accent-text: #a30f1d;
+  --accent-strong: #8c0c19;
+  --accent-soft: rgb(176 16 32 / 0.08);
+  --on-accent: #ffffff;
+  --divider: #dfe2e7;
+  --text: #15171c;
+  --text-secondary: #55595f;
+  --border: #dde0e5;
+  --border-control: #b9bec6;
+  --border-subtle: #e7e9ed;
+  --success: #14713a;
+  --warning: #8a5200;
+  --danger: #b3261e;
+  --focus-ring: #15171c;
+  --log-bg: #f1f3f6;
+  --log-text: #14532d;
+  --thumb: #ffffff;
+  --hover-wash: rgb(21 23 28 / 0.055);
+  --hover-wash-weak: rgb(21 23 28 / 0.025);
+  --shadow-sm: 0 1px 2px rgb(21 23 28 / 0.12);
+  --shadow-lg: 0 10px 28px rgb(21 23 28 / 0.14);
+  --shadow-apply: 0 -6px 20px rgb(21 23 28 / 0.1);
+  --card-sheen: none;
+  --accent-glow: none;
+  --accent-rule: linear-gradient(90deg, var(--accent) 0%, rgb(176 16 32 / 0.2) 38%, transparent 72%);
+  --hero-grid: rgb(21 23 28 / 0.045);
+  color-scheme: light;
+}
+
 * { box-sizing: border-box; }
 body {
   font-family: var(--font-sans);
@@ -47,7 +155,7 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 0;
+  padding: 1.35rem 0 1.5rem;
   border-bottom: 1px solid var(--divider);
   margin-bottom: 1.5rem;
 }
@@ -59,11 +167,28 @@ header {
   color: var(--accent-text);
   margin: 0 0 0.2rem;
 }
-header h1 { font-size: var(--fs-xl); font-weight: 700; margin: 0; letter-spacing: -0.02em; line-height: 1.2; }
+header h1 { font-size: var(--fs-xl); font-weight: 750; margin: 0; letter-spacing: -0.025em; line-height: 1.15; }
 header p { margin: 0.3rem 0 0; font-size: var(--fs-sm); color: var(--text-secondary); max-width: 52ch; line-height: 1.5; }
-#status { font-size: var(--fs-xs); color: var(--text-secondary); margin-top: 0.4rem; }
-#status.connected { color: var(--success); }
-#status.warning { color: var(--warning); }
+/* A pill, not a flex row: the status text is replaced wholesale by JS
+   (textContent), so it has to stay a plain text container that wraps. */
+#status {
+  position: relative; display: inline-block;
+  font-size: var(--fs-xs); color: var(--text-secondary);
+  margin-top: 0.7rem; padding: 0.35rem 0.8rem 0.35rem 1.55rem;
+  max-inline-size: 60ch;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-sunken);
+}
+/* The dot repeats the state the sentence already gives; never the only cue. */
+#status::before {
+  content: ""; position: absolute; inset-inline-start: 0.7rem; inset-block-start: 0.78em;
+  inline-size: 0.5rem; block-size: 0.5rem; border-radius: 50%;
+  background: var(--text-secondary);
+}
+#status.connected { color: var(--success); border-color: color-mix(in srgb, var(--success) 45%, var(--border)); }
+#status.connected::before { background: var(--success); }
+#status.warning { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 45%, var(--border)); }
+#status.warning::before { background: var(--warning); }
 
 footer {
   margin-top: 2rem;
@@ -77,19 +202,32 @@ footer a { color: var(--text-secondary); }
 a { color: var(--accent-text); }
 
 section, details.section {
+  position: relative;
   background: var(--surface);
+  background-image: var(--card-sheen);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 1.1rem 1.25rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
 }
 section h2, details.section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin: 0 0 0.85rem;
   font-size: var(--fs-2xs);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent-text);
+}
+/* Section iconography: one 16px hand-built glyph per card heading, so a
+   long settings page can be scanned by shape instead of read top to
+   bottom. currentColor, so it follows the heading in both themes. */
+.sec-icon { inline-size: 1.05rem; block-size: 1.05rem; flex: none; }
+/* Hairline accent rule: fades out of the accent, reads as depth not neon. */
+section > h2::after {
+  content: ""; flex: 1; block-size: 1px; background: var(--accent-rule);
 }
 .macos-tip, .callout { border-left: 3px solid var(--accent); }
 .callout p { font-size: var(--fs-sm); line-height: 1.55; margin: 0; }
@@ -101,7 +239,7 @@ details.expander summary {
   border-radius: 10px;
 }
 details.expander summary::-webkit-details-marker { display: none; }
-details.expander summary:hover { background: rgb(255 255 255 / 0.025); }
+details.expander summary:hover { background: var(--hover-wash-weak); }
 details.expander summary h2 {
   flex: 1; margin: 0;
   font-size: var(--fs-sm); font-weight: 400; letter-spacing: 0; text-transform: none;
@@ -154,7 +292,7 @@ details.expander[open] summary { border-bottom: 1px solid var(--border); border-
   min-inline-size: 100%; inline-size: max-content; max-inline-size: min(24rem, calc(100vw - 2rem));
   padding: 0.35rem; background: var(--surface-elevated);
   border: 1px solid var(--border-control); border-radius: 8px;
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.55);
+  box-shadow: var(--shadow-lg);
 }
 .dropdown-panel ul { list-style: none; margin: 0; padding: 0; }
 .dropdown-item {
@@ -163,7 +301,7 @@ details.expander[open] summary { border-bottom: 1px solid var(--border); border-
   font-size: var(--fs-sm); color: var(--text); text-decoration: none;
 }
 .mouse-option > span:first-child { flex: 1; }
-a.dropdown-item:hover, a.dropdown-item:focus-visible { background: rgb(255 255 255 / 0.06); }
+a.dropdown-item:hover, a.dropdown-item:focus-visible { background: var(--hover-wash); }
 .mouse-option[aria-current="page"] { font-weight: 600; }
 .mouse-option .check { inline-size: 1rem; block-size: 1rem; color: var(--accent-text); flex: none; }
 .mouse-option.is-disabled { color: var(--text-secondary); cursor: default; }
@@ -210,7 +348,8 @@ button[aria-disabled="true"] { opacity: 0.6; cursor: progress; }
 button.primary, .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
+  color: var(--on-accent);
+  box-shadow: var(--accent-glow);
   font-weight: 600;
   padding: 0.65rem 1.4rem;
   font-size: var(--fs-md);
@@ -220,7 +359,7 @@ button.primary:hover:not(:disabled), .btn.primary:hover { filter: brightness(1.1
    action shows at a time: Connect before connecting, Apply after. */
 button.primary:disabled { background: var(--surface-elevated); border-color: var(--border-control); color: var(--text-secondary); }
 
-:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 .segmented { display: inline-flex; border-radius: 6px; border: 1px solid var(--border-control); }
 .segmented button {
@@ -231,7 +370,7 @@ button.primary:disabled { background: var(--surface-elevated); border-color: var
 .segmented button:first-child { border-radius: 5px 0 0 5px; }
 .segmented button:last-child { border-right: none; border-radius: 0 5px 5px 0; }
 .segmented button:focus-visible { position: relative; z-index: 1; }
-.segmented button.active { background: var(--accent); color: white; }
+.segmented button.active { background: var(--accent); color: var(--on-accent); }
 
 label { display: inline-block; min-width: 90px; font-size: var(--fs-sm); color: var(--text-secondary); }
 select, input[type="text"], input[type="number"] {
@@ -261,15 +400,15 @@ input[type="range"]::-webkit-slider-runnable-track {
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   inline-size: 18px; block-size: 18px; margin-top: -6px; border-radius: 50%;
-  background: #fff; border: 3px solid var(--accent);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+  background: var(--thumb); border: 3px solid var(--accent);
+  box-shadow: var(--shadow-sm);
   transition: transform 0.12s ease;
 }
 input[type="range"]::-moz-range-track { block-size: 6px; border-radius: 999px; background: var(--border-control); }
 input[type="range"]::-moz-range-progress { block-size: 6px; border-radius: 999px; background: var(--accent); }
 input[type="range"]::-moz-range-thumb {
   inline-size: 12px; block-size: 12px; border-radius: 50%;
-  background: #fff; border: 3px solid var(--accent); box-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+  background: var(--thumb); border: 3px solid var(--accent); box-shadow: var(--shadow-sm);
   transition: transform 0.12s ease;
 }
 input[type="range"]:hover::-webkit-slider-thumb, input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
@@ -325,8 +464,8 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
 .combo-key { width: 70px; }
 
 #log {
-  background: #000;
-  color: var(--success);
+  background: var(--log-bg);
+  color: var(--log-text);
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   padding: 0.75rem;
@@ -357,7 +496,7 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
   /* Apply sits several screens below Connect; keep it reachable while editing. */
   position: sticky; bottom: 0.75rem; z-index: 10;
   background: var(--surface-elevated); border-color: var(--divider);
-  box-shadow: 0 -8px 24px rgb(0 0 0 / 0.6);
+  box-shadow: var(--shadow-apply);
 }
 .apply-row.unstuck { position: static; box-shadow: none; }
 .apply-row p { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
@@ -431,7 +570,7 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 .brand { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--text); text-decoration: none; font-weight: 700; letter-spacing: -0.01em; }
 .brand-mark {
   display: grid; place-items: center; inline-size: 1.75rem; block-size: 1.75rem;
-  border-radius: 7px; background: var(--accent); color: #fff; font-size: var(--fs-sm); font-weight: 800;
+  border-radius: 8px; color: var(--accent);
 }
 .nav-menus { display: flex; gap: 0.25rem; list-style: none; margin: 0 0 0 auto; padding: 0; }
 .nav-menu summary {
@@ -454,12 +593,127 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 .nav-item { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
 .nav-item-title { font-weight: 600; }
 .nav-item-desc { font-size: var(--fs-xs); color: var(--text-secondary); }
-.nav-item[aria-current="page"] { background: rgb(255 255 255 / 0.04); }
+.nav-item[aria-current="page"] { background: var(--hover-wash); }
 .nav-item[aria-current="page"] .nav-item-title { color: var(--accent-text); }
 @media (max-width: 480px) {
-  .brand-name { display: none; }
+  /* Hidden visually, not from assistive tech: display:none here would leave
+     the brand link with no accessible name (the mark is aria-hidden). */
+  .brand-name {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   .nav-menus { gap: 0; }
   .nav-menu summary { padding: 0.45rem 0.55rem; }
   .nav-menu .dropdown-panel { position: fixed; inset-inline: 1rem; inset-block-start: 3.6rem; min-inline-size: 0; max-inline-size: none; inline-size: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .nav-menu summary::after { transition: none; } }
+
+
+/* ===== Brand mark ======================================================= */
+.brand-mark {
+  display: grid; place-items: center;
+  inline-size: 1.85rem; block-size: 1.85rem; flex: none;
+  color: var(--accent);
+}
+.brand-mark svg { inline-size: 100%; block-size: 100%; display: block; }
+.brand-name { font-size: var(--fs-md); }
+.brand:hover .brand-name { color: var(--accent-text); }
+
+/* ===== Theme switch (site nav, every page) ============================== */
+.theme-switch {
+  display: inline-flex; align-items: center; gap: 0.15rem;
+  padding: 0.15rem; border: 1px solid var(--border-control); border-radius: 999px;
+  background: var(--surface-sunken);
+}
+.theme-switch button {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  min-height: 1.75rem; padding: 0.2rem 0.6rem;
+  border: none; border-radius: 999px; background: none;
+  color: var(--text-secondary); font-size: var(--fs-2xs); font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+.theme-switch button svg { inline-size: 0.95rem; block-size: 0.95rem; flex: none; }
+.theme-switch button:hover:not([aria-checked="true"]) { color: var(--text); border-color: transparent; }
+.theme-switch button[aria-checked="true"] {
+  background: var(--accent); color: var(--on-accent); box-shadow: var(--accent-glow);
+}
+@media (max-width: 400px) { .theme-switch button { padding: 0.2rem 0.5rem; gap: 0.3rem; } }
+
+/* ===== Homepage hero ==================================================== */
+.hero {
+  position: relative; isolation: isolate;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2rem;
+  padding: 2.75rem 0 2rem; margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--divider);
+}
+/* Depth without a texture file: a hairline grid on a pseudo-element, faded
+   out by a radial mask so it never competes with the headline. */
+.hero::before {
+  content: ""; position: absolute; z-index: -1; inset: -1rem -1rem 0;
+  background-image:
+    linear-gradient(var(--hero-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hero-grid) 1px, transparent 1px);
+  background-size: 34px 34px, 34px 34px;
+  -webkit-mask-image: radial-gradient(115% 90% at 18% 10%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(115% 90% at 18% 10%, #000 0%, transparent 70%);
+}
+.hero h1 {
+  font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -0.035em;
+  line-height: 1.02; margin: 0.5rem 0 0; text-wrap: balance;
+}
+.hero h1 .accent { color: var(--accent-text); }
+.hero-lede {
+  margin: 0.9rem 0 0; max-width: 46ch;
+  font-size: var(--fs-lg); line-height: 1.5; color: var(--text-secondary); text-wrap: pretty;
+}
+.hero-cta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.4rem; }
+.hero-proof {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; list-style: none;
+  margin: 1.35rem 0 0; padding: 0; font-size: var(--fs-xs); color: var(--text-secondary);
+}
+.hero-proof li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.hero-proof svg { inline-size: 0.95rem; block-size: 0.95rem; color: var(--accent-text); flex: none; }
+.hero-art { inline-size: clamp(9rem, 17vw, 13.5rem); block-size: auto; color: var(--text-secondary); }
+.hero-art .shell { fill: var(--surface-elevated); stroke: var(--border-control); }
+.hero-art .line { stroke: var(--border-control); }
+.hero-art .lit { fill: var(--accent); }
+.hero-art .pad { fill: var(--accent-soft); }
+@media (max-width: 760px) {
+  .hero { grid-template-columns: 1fr; gap: 1.25rem; padding-top: 1.75rem; }
+  .hero-art { display: none; }
+}
+.hero .hero-cta button { flex: none; }
+@media (max-width: 420px) { .hero-cta > * { inline-size: 100%; justify-content: center; } }
+
+/* ===== Disconnected vs connected ======================================= */
+/* Until a mouse is connected the settings cards are a preview, not live
+   controls — say so once, above them, and retire the line on connect. */
+.preview-note {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin: 0 0 0.85rem; padding: 0.6rem 0.9rem;
+  border: 1px dashed var(--border-control); border-radius: 10px;
+  background: var(--surface-sunken);
+  font-size: var(--fs-xs); color: var(--text-secondary);
+}
+.preview-note svg { inline-size: 1rem; block-size: 1rem; flex: none; color: var(--accent-text); }
+body:has(#status.connected) .preview-note { display: none; }
+
+/* ===== Reserved space for JS-rendered controls ========================== */
+/* These containers are filled by the page script after first paint. Without
+   a floor, every card below them jumps down as they populate (measurable
+   CLS). min-block-size only reserves — a taller render still grows. */
+#poll-buttons, #report-rate-buttons, #slot-buttons { min-block-size: 2.25rem; }
+#editing-slot { min-block-size: 1.35rem; }
+#dpi-rows { min-block-size: 12rem; }
+#button-rows { min-block-size: 40rem; }
+
+/* The DPI checker reveals its "this test needs a mouse" callout from JS on
+   touch-only devices, which pushed the whole page down after first paint.
+   Same condition, expressed in CSS: reserve the slot up front and let the
+   script only make it visible. Still out of the accessibility tree while
+   hidden, and the rule stops applying the moment [hidden] is removed. */
+@media not all and (any-pointer: fine) {
+  /* Scoped to the DPI checker (#pad is only on that page) — the other
+     pages' #unsupported card has a different trigger. */
+  body:has(#pad) #unsupported[hidden] { display: block; visibility: hidden; }
+}

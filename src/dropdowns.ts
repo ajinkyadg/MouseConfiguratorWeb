@@ -1,3 +1,9 @@
+// The theme switch lives in the same site nav as these dropdowns, and
+// every page's entry module imports this file — so importing it here is
+// what makes the switch work on all six pages without a second <script>
+// tag (Vite only emits one module entry per HTML page).
+import "./theme-toggle";
+
 // Dropdowns (the top nav menus and the "Mouse" picker) are <details>
 // disclosures of plain links, so they work — and are crawlable — without
 // JS. This adds what a native <details> lacks: only one open at a time,
