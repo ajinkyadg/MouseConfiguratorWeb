@@ -19,8 +19,10 @@ import {
   macOSBlocksHidWrites,
   isWriteRefusedError,
   isWebHidAvailable,
+  detectDesktopOS,
   MACOS_WRITE_BLOCK_EXPLANATION,
   WEBHID_UNAVAILABLE_MESSAGE,
+  type DesktopOS,
 } from "./core/platform";
 import {
   buildPollingRatePacket,
@@ -771,13 +773,27 @@ profileExportBtn.addEventListener("click", () => {
 });
 
 // Restore whatever was selected last time; otherwise start from the
-// Default preset, so the page's initial state actually matches what
-// "Default" claims to be instead of whatever raw HTML happens to be
-// hardcoded in index.html (e.g. a placeholder LED color no preset uses).
-const restoredProfile = profileStore.selectedProfileID
-  ? profileStore.profiles.find((p) => p.id === profileStore.selectedProfileID)
-  : undefined;
-loadProfile(restoredProfile ?? BUILT_IN_PRESETS[0]); // loadProfile() already calls renderProfileSelect()
+// productivity preset for this OS, so a first-time visitor sees shortcuts
+// that exist on their machine (Cmd bindings are useless on Windows, and
+// vice versa) rather than whatever raw HTML is hardcoded in index.html.
+const OFFICE_PRESET_BY_OS: Record<DesktopOS, string> = {
+  macos: "preset-office-macos",
+  windows: "preset-office-windows",
+  linux: "preset-office-linux",
+  unknown: "preset-office-windows", // the most common desktop, and all-Ctrl
+};
+
+function startingProfile(): UserProfile {
+  const remembered = profileStore.selectedProfileID;
+  const restored = remembered
+    ? profileStore.profiles.find((p) => p.id === remembered) ??
+      BUILT_IN_PRESETS.find((p) => p.id === remembered)
+    : undefined;
+  const forThisOS = BUILT_IN_PRESETS.find((p) => p.id === OFFICE_PRESET_BY_OS[detectDesktopOS()]);
+  return restored ?? forThisOS ?? BUILT_IN_PRESETS[0];
+}
+
+loadProfile(startingProfile()); // loadProfile() already calls renderProfileSelect()
 setConnected(false);
 
 // Say up front that this browser can't do it, rather than letting the user

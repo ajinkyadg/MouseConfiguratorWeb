@@ -95,18 +95,91 @@ export interface ProfileExportFile {
   profile: UserProfile;
 }
 
-// Same four presets as the native app (RedragonM913Configurator's
-// BuiltInPresets.all), so switching between the two products feels
-// consistent. Not persisted, not editable in place.
+// Built-in presets. The three Office Essentials presets lead because the
+// shortcuts a mouse should send are OS-specific — Cmd vs Ctrl, Spotlight vs
+// Windows Search vs the GNOME overview — so one "default" mapping is wrong
+// for two thirds of visitors. main.ts picks the one matching the visitor's
+// OS on first load; all of them stay selectable, since people configure a
+// mouse for a machine they aren't sitting at.
+//
+// Slot assignment follows the thumb-reachability model in
+// docs/professional-presets.md: the inner columns (side4/5/7/8) are where
+// the thumb rests, so the highest-frequency harmless pairs live there, while
+// anything whose misfire is annoying sits further out.
 export const BUILT_IN_PRESETS: UserProfile[] = [
   {
-    id: "preset-default",
-    name: "Default",
+    id: "preset-office-macos",
+    name: "Productivity — macOS",
     config: {
       ...defaultConfig(),
-      // The user's own real-world mapping (same as their "My Setup"
-      // profile) — genuinely useful general-purpose bindings rather than
-      // an invented generic scheme.
+      buttonActions: {
+        side4: "super+c", // Copy
+        side5: "super+v", // Paste
+        side7: "ctrl+tab", // Next tab
+        side8: "ctrl+shift+tab", // Previous tab
+        side1: "super+z", // Undo
+        side2: "super+w", // Close tab/window
+        side6: "super+space", // Spotlight
+        side9: "super+tab", // Switch application
+        side3: "super+shift+z", // Redo
+        side10: "super+shift+t", // Reopen closed tab — the antidote to side2
+        side11: "super+shift+4", // Screenshot a region
+        side12: "ctrl+arrow_up", // Mission Control
+        fire: "enter",
+      },
+    },
+  },
+  {
+    id: "preset-office-windows",
+    name: "Productivity — Windows",
+    config: {
+      ...defaultConfig(),
+      buttonActions: {
+        side4: "ctrl+c",
+        side5: "ctrl+v",
+        side7: "ctrl+tab",
+        side8: "ctrl+shift+tab",
+        side1: "ctrl+z",
+        side2: "ctrl+w",
+        side6: "super+s", // Windows Search
+        side9: "alt+tab", // Switch window
+        side3: "ctrl+y", // Redo (Office/Explorer convention)
+        side10: "ctrl+shift+t",
+        side11: "super+shift+s", // Snipping Tool region capture
+        side12: "super+tab", // Task View
+        fire: "enter",
+      },
+    },
+  },
+  {
+    id: "preset-office-linux",
+    name: "Productivity — Linux (GNOME)",
+    config: {
+      ...defaultConfig(),
+      buttonActions: {
+        side4: "ctrl+c",
+        side5: "ctrl+v",
+        side7: "ctrl+tab",
+        side8: "ctrl+shift+tab",
+        side1: "ctrl+z",
+        side2: "ctrl+w",
+        side6: "super", // Activities overview — a bare modifier tap
+        side9: "alt+tab", // Switch application
+        side3: "ctrl+y", // Redo
+        side10: "ctrl+alt+arrow_left", // Previous workspace
+        side11: "printscreen", // Screenshot
+        side12: "ctrl+alt+arrow_right", // Next workspace
+        fire: "enter",
+      },
+    },
+  },
+  {
+    id: "preset-default",
+    name: "My Setup (macOS)",
+    config: {
+      ...defaultConfig(),
+      // The site owner's own real-world mapping, kept as a preset because
+      // it's a genuinely used layout rather than an invented scheme.
       buttonActions: {
         side1: "super+c", // Copy
         side2: "super+v", // Paste
@@ -137,7 +210,10 @@ export const BUILT_IN_PRESETS: UserProfile[] = [
   },
   {
     id: "preset-productivity",
-    name: "Productivity / Low DPI",
+    // Renamed from "Productivity / Low DPI" so it doesn't read as a sibling
+    // of the Productivity — <OS> button presets; this one is about sensor
+    // and LED settings, not button mappings.
+    name: "Low DPI / Precision",
     config: {
       pollingRateHz: 125,
       dpi: [400, 800, 1200, 1600, 1600],

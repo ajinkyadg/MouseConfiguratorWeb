@@ -43,6 +43,24 @@ export function isMacOS(): boolean {
   return /Mac/i.test(navigator.platform || navigator.userAgent);
 }
 
+export type DesktopOS = "macos" | "windows" | "linux" | "unknown";
+
+// Which desktop the visitor is on, for picking the productivity preset whose
+// shortcuts actually exist there (Cmd vs Ctrl, Spotlight vs Windows Search).
+// Only ever used to choose a default the user can change, so "unknown" is
+// harmless — never gate behaviour on it.
+export function detectDesktopOS(): DesktopOS {
+  const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+  const platform = uaData?.platform || navigator.platform || navigator.userAgent;
+  if (/mac/i.test(platform)) return "macos";
+  if (/win/i.test(platform)) return "windows";
+  // Android reports "Linux" in the legacy UA string; it can't run WebHID, but
+  // the preset shown on a phone should still not claim to be a desktop one.
+  if (/android/i.test(navigator.userAgent)) return "unknown";
+  if (/linux|x11|cros/i.test(platform)) return "linux";
+  return "unknown";
+}
+
 // True only for macOS versions known to block the write. Returns false when
 // the version can't be determined, so an unknown platform degrades to
 // "let the user try" rather than blocking something that might work.
