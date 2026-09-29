@@ -117,6 +117,12 @@ Useful contributions, roughly in order of value:
 Please don't add support for a device you can't test; an untested device
 that appears supported is worse than one that's absent.
 
+## License
+
+[Apache License 2.0](LICENSE) — you may use, modify and redistribute this,
+including commercially, provided you keep the licence and attribution. It
+also grants an explicit patent licence, which a bare MIT licence does not.
+
 ## Disclaimer
 
 MouseConfig is an independent project and is not affiliated with, endorsed
