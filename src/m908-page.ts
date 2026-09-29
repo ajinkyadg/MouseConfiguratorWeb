@@ -17,7 +17,7 @@ import {
   type M908ProfileIndex,
   type M908ProfileSettings,
 } from "./profiles/m908";
-import { M908_BUTTON_NAMES, m908ActionSupported, type M908ButtonName } from "./profiles/m908-buttons";
+import { m908ActionSupported, type M908ButtonName } from "./profiles/m908-buttons";
 import { M908_BUILT_IN_PRESETS, M908_NEUTRAL_PROFILE } from "./profiles/m908-presets";
 import {
   copyM908Slot,
@@ -31,7 +31,8 @@ import {
   type KeyValueStorage,
   type M908ProfileSet,
 } from "./profiles/m908-profile-store";
-import { isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
+import { detectDesktopOS, isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
+import { formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
@@ -46,6 +47,8 @@ const ledSpeedEl = document.querySelector<HTMLInputElement>("#led-speed")!;
 const reportRateButtonsEl = document.querySelector<HTMLDivElement>("#report-rate-buttons")!;
 const scrollSpeedEl = document.querySelector<HTMLInputElement>("#scroll-speed")!;
 const buttonRowsEl = document.querySelector<HTMLDivElement>("#button-rows")!;
+const buttonGridEl = document.querySelector<HTMLDivElement>("#button-grid")!;
+const buttonHintEl = document.querySelector<HTMLParagraphElement>("#button-hint")!;
 const showActionReferenceBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionReferenceEl = document.querySelector<HTMLDivElement>("#action-reference")!;
 const slotButtonsEl = document.querySelector<HTMLDivElement>("#slot-buttons")!;
@@ -214,26 +217,82 @@ function renderDpiRows() {
   }
 }
 
+// Buttons are a keypad-style grid of tiles (short name + what it does);
+// clicking one opens its action field below the grid. Grid order follows
+// the mouse: clicks, then DPI and scroll, then the 12 side buttons.
+const TILE_ORDER: M908ButtonName[] = [
+  "button_left", "button_right", "button_middle", "button_fire",
+  "button_dpi_up", "button_dpi_down", "scroll_up", "scroll_down",
+  "button_1", "button_2", "button_3", "button_4", "button_5", "button_6",
+  "button_7", "button_8", "button_9", "button_10", "button_11", "button_12",
+];
+const NAMING_OS: ShortcutOS = (() => {
+  const os = detectDesktopOS();
+  return os === "unknown" ? "windows" : os;
+})();
+let openButton: M908ButtonName | null = null; // survives re-renders on profile switch
+
+function tileLabel(name: M908ButtonName): { short: string; full: string } {
+  const side = /^button_(\d+)$/.exec(name);
+  if (side) return { short: `Side ${side[1]}`, full: `Side button ${side[1]}` };
+  const short = {
+    button_left: "Left", button_right: "Right", button_middle: "Middle", button_fire: "Fire",
+    button_dpi_up: "DPI +", button_dpi_down: "DPI −", scroll_up: "Scroll ↑", scroll_down: "Scroll ↓",
+  }[name as string]!;
+  return { short, full: name.replace(/^button_/, "").replace(/_/g, " ") };
+}
+
+function openButtonEditor(name: M908ButtonName | null) {
+  openButton = name;
+  for (const tile of buttonGridEl.querySelectorAll<HTMLButtonElement>(".button-tile")) {
+    const open = tile.dataset.slot === name;
+    tile.setAttribute("aria-expanded", String(open));
+    document.getElementById(tile.getAttribute("aria-controls")!)!.hidden = !open;
+  }
+  buttonHintEl.hidden = name !== null;
+}
+
 function renderButtonRows() {
   buttonRowsEl.replaceChildren();
-  for (const name of M908_BUTTON_NAMES) {
+  buttonGridEl.replaceChildren();
+  for (const name of TILE_ORDER) {
+    const { short, full } = tileLabel(name);
     const row = document.createElement("div");
     row.className = "button-row";
+    row.id = `editor-${name}`;
+    row.hidden = true;
 
     const label = document.createElement("label");
-    label.textContent = name.replace(/^button_/, "").replace(/_/g, " ");
+    label.textContent = full;
 
     const input = document.createElement("input");
     input.type = "text";
     input.placeholder = "e.g. ctrl+c, fire:a:5:10, macro3";
     input.value = profile.buttonActions[name] ?? "";
     input.style.flex = "1";
-    input.setAttribute("aria-label", `${label.textContent} action`);
+    input.setAttribute("aria-label", `${full} action`);
+    label.htmlFor = input.id = `action-${name}`;
 
     const validity = document.createElement("span");
     validity.className = "current-value";
     validity.id = `validity-${name}`;
     input.setAttribute("aria-describedby", validity.id);
+
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "button-tile";
+    tile.dataset.slot = name;
+    tile.setAttribute("aria-expanded", "false");
+    tile.setAttribute("aria-controls", row.id);
+    tile.innerHTML = `<span class="tile-slot"></span><span class="tile-name"></span><span class="tile-combo"></span>`;
+    tile.querySelector(".tile-slot")!.textContent = short;
+    const tileName = tile.querySelector<HTMLSpanElement>(".tile-name")!;
+    const tileCombo = tile.querySelector<HTMLSpanElement>(".tile-combo")!;
+    tile.addEventListener("click", () => {
+      const opening = tile.getAttribute("aria-expanded") !== "true";
+      openButtonEditor(opening ? name : null);
+      if (opening) input.focus({ preventScroll: true });
+    });
 
     function updateValidity() {
       const value = input.value.trim();
@@ -242,20 +301,30 @@ function renderButtonRows() {
       validity.classList.toggle("is-valid", !!value && valid);
       validity.classList.toggle("is-invalid", !valid);
       input.setAttribute("aria-invalid", String(!valid));
+
+      const known = value && valid ? shortcutName(value, NAMING_OS) : undefined;
+      const combo = known ? formatCombo(value, NAMING_OS) : "";
+      tileName.textContent = !value ? "Default" : known ?? value;
+      tileCombo.textContent = !valid ? "Not recognised" : combo === known ? "" : combo;
+      tile.classList.toggle("unchanged", !value);
+      tile.classList.toggle("invalid", !valid);
+      tile.setAttribute("aria-label", `${full}: ${!value ? "default" : known ?? value}${valid ? "" : ", not recognised"}`);
     }
     updateValidity();
 
     input.addEventListener("input", () => {
       const value = input.value.trim();
-      if (value) profile.buttonActions[name as M908ButtonName] = value;
-      else delete profile.buttonActions[name as M908ButtonName];
+      if (value) profile.buttonActions[name] = value;
+      else delete profile.buttonActions[name];
       updateValidity();
       persist();
     });
 
     row.append(label, input, validity);
     buttonRowsEl.append(row);
+    buttonGridEl.append(tile);
   }
+  openButtonEditor(openButton);
 }
 
 function renderLedControls() {

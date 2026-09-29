@@ -56,7 +56,7 @@
       }
     </style>
   </head>
-  <body>
+  <body class="wide">
     <nav class="site-nav" aria-label="Main">
       <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="currentColor"/><g stroke="var(--on-accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 13c-8.2 0-13.5 6.2-13.5 14.5v9C18.5 45 23.8 51 32 51s13.5-6 13.5-14.5v-9C45.5 19.2 40.2 13 32 13Z"/><path d="M18.8 32.4h26.4"/><path d="M32 20.5v6"/></g><g fill="var(--on-accent)"><circle cx="12" cy="27" r="2.1"/><circle cx="12" cy="33.5" r="2.1"/><circle cx="12" cy="40" r="2.1"/></g></svg></span><span class="brand-name">MouseConfig</span></a>
       <ul class="nav-menus">
@@ -158,68 +158,77 @@
       <p class="hint">Your five profiles are saved in this browser automatically. This page can't read what's currently on the mouse, so if you set profiles up in Redragon's Windows software, recreate them here (or keep an export) before applying.</p>
     </section>
 
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="2"/><circle cx="13" cy="14.5" r="2"/></svg>Preset</h2>
-      <div class="row">
-        <select id="preset-select" aria-label="Preset">
-          <option value="">Custom</option>
-        </select>
-      </div>
-      <p class="hint">Loads DPI, LED, and button mappings into the profile you're editing — the other four stay as they are.</p>
-    </section>
+    <!-- Desktop: settings left, button map right, so a profile fits in one
+         view. Stacks below 1100px. -->
+    <div class="config-layout">
+      <div class="config-side">
+        <section>
+          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="2"/><circle cx="13" cy="14.5" r="2"/></svg>Preset</h2>
+          <div class="row">
+            <select id="preset-select" aria-label="Preset">
+              <option value="">Custom</option>
+            </select>
+          </div>
+          <p class="hint">Loads DPI, LED, and button mappings into the profile you're editing — the other four stay as they are.</p>
+        </section>
 
-    <section>
-      <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>
-      <div class="segmented" id="report-rate-buttons" role="group" aria-labelledby="poll-heading"></div>
-    </section>
+        <section>
+          <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>
+          <div class="segmented" id="report-rate-buttons" role="group" aria-labelledby="poll-heading"></div>
+        </section>
 
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
-      <div id="dpi-rows"></div>
-      <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list.</p>
-    </section>
+        <section>
+          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
+          <div id="dpi-rows"></div>
+          <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list.</p>
+        </section>
 
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 16.4h4.4M8.2 13.5a4.8 4.8 0 1 1 3.6 0v1.3H8.2v-1.3Z"/></svg>LED</h2>
-      <div class="row">
-        <label for="led-mode">Mode</label>
-        <select id="led-mode"></select>
+        <section>
+          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.6" y="2.4" width="8.8" height="15.2" rx="4.4"/><path d="M10 5.6v3.2"/></svg>Scroll Speed</h2>
+          <div class="row">
+            <input type="number" id="scroll-speed" aria-label="Scroll speed" min="0" max="255" value="1" />
+          </div>
+          <p class="hint">Raw device value (0-255) — exact real-world scaling not yet confirmed.</p>
+        </section>
       </div>
-      <div class="row">
-        <label for="led-color">Color</label>
-        <input type="color" id="led-color" value="#00ff00" />
-      </div>
-      <div class="row">
-        <label for="led-brightness">Brightness</label>
-        <input type="range" id="led-brightness" min="0" max="255" value="200" data-format="percent" />
-        <output for="led-brightness" class="range-value"></output>
-      </div>
-      <div class="row">
-        <label for="led-speed">Speed</label>
-        <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
-        <output for="led-speed" class="range-value"></output>
-      </div>
-    </section>
+      <div class="config-main">
+        <section>
+          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="2.4" y="11.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="11.4" width="6.2" height="6.2" rx="1.6"/></svg>Buttons</h2>
+          <div id="button-grid" class="button-grid" role="group" aria-label="Mouse buttons"></div>
+          <p class="hint" id="button-hint">Click a button to change what it does.</p>
+          <div id="button-rows"></div>
+          <button id="show-action-reference" class="mt-3" aria-expanded="false" aria-controls="action-reference">Action Syntax Reference…</button>
+          <div id="action-reference" role="region" aria-label="Action syntax reference" tabindex="0"></div>
+        </section>
 
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.6" y="2.4" width="8.8" height="15.2" rx="4.4"/><path d="M10 5.6v3.2"/></svg>Scroll Speed</h2>
-      <div class="row">
-        <input type="number" id="scroll-speed" aria-label="Scroll speed" min="0" max="255" value="1" />
+        <section>
+          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 16.4h4.4M8.2 13.5a4.8 4.8 0 1 1 3.6 0v1.3H8.2v-1.3Z"/></svg>LED</h2>
+          <div class="row">
+            <label for="led-mode">Mode</label>
+            <select id="led-mode"></select>
+          </div>
+          <div class="row">
+            <label for="led-color">Color</label>
+            <input type="color" id="led-color" value="#00ff00" />
+          </div>
+          <div class="row">
+            <label for="led-brightness">Brightness</label>
+            <input type="range" id="led-brightness" min="0" max="255" value="200" data-format="percent" />
+            <output for="led-brightness" class="range-value"></output>
+          </div>
+          <div class="row">
+            <label for="led-speed">Speed</label>
+            <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
+            <output for="led-speed" class="range-value"></output>
+          </div>
+        </section>
       </div>
-      <p class="hint">Raw device value (0-255) — exact real-world scaling not yet confirmed.</p>
-    </section>
+      <section class="apply-row">
+        <button class="primary" id="apply" disabled>Apply Configuration</button>
+        <p id="apply-hint">Writes all five profiles shown here to the mouse (the M908 only accepts them together), then switches it to the active profile.</p>
+      </section>
+    </div>
 
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="2.4" y="11.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="11.4" width="6.2" height="6.2" rx="1.6"/></svg>Buttons</h2>
-      <div id="button-rows"></div>
-      <button id="show-action-reference" class="mt-3" aria-expanded="false" aria-controls="action-reference">Action Syntax Reference…</button>
-      <div id="action-reference" role="region" aria-label="Action syntax reference" tabindex="0"></div>
-    </section>
-
-    <section class="apply-row">
-      <button class="primary" id="apply" disabled>Apply Configuration</button>
-      <p id="apply-hint">Writes all five profiles shown here to the mouse (the M908 only accepts them together), then switches it to the active profile.</p>
-    </section>
 
     <section>
       <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.3" y="3.6" width="15.4" height="12.8" rx="2"/><path d="M5.8 8.2 8 10.4l-2.2 2.2M10.4 12.6h4"/></svg>Log</h2>

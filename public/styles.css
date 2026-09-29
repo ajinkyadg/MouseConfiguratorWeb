@@ -459,6 +459,8 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 3px; }
 .tile-name { font-size: var(--fs-sm); font-weight: 600; }
 .tile-combo { font-size: var(--fs-xs); color: var(--text-secondary); min-block-size: 1.2em; }
 .button-tile.unchanged .tile-name { color: var(--text-secondary); font-weight: 500; }
+.button-tile.invalid { border-color: var(--danger); }
+.button-tile.invalid .tile-combo { color: var(--danger); }
 #button-hint { margin-top: 0.75rem; }
 .button-row[hidden], #button-hint[hidden] { display: none; }
 /* The open tile already shows the current mapping; keep this text for
