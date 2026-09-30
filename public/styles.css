@@ -539,7 +539,7 @@ body.wide { max-width: 1320px; }
 .panel-close { display: none; }
 .panel-search { inline-size: 100%; }
 .action-list {
-  max-block-size: 15rem; overflow-y: auto; display: grid; gap: 0.5rem;
+  max-block-size: 13rem; overflow-y: auto; display: grid; gap: 0.5rem;
   padding: 0.25rem; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface);
 }
 .action-group-label {
@@ -555,13 +555,29 @@ body.wide { max-width: 1320px; }
 .action-option[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
 .action-group[hidden], .action-option[hidden] { display: none; }
 .action-empty { margin: 0; }
-.record-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.record-row .hint { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+.panel-tabs { display: flex; gap: 0.2rem; padding: 0.2rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-subtle); }
+.panel-tab {
+  flex: 1; padding: 0.35rem 0.5rem; border: none; border-radius: 6px; background: none;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary);
+}
+.panel-tab:hover { color: var(--text); }
+.panel-tab[aria-selected="true"] { background: var(--surface-elevated); color: var(--text); box-shadow: var(--shadow-sm); }
+.panel-pane { display: grid; gap: 0.55rem; }
+.panel-pane[hidden] { display: none; }
+.combo-mods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.35rem; }
+.mod-chip { padding: 0.35rem 0.5rem; font-size: var(--fs-sm); }
+.mod-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--text); font-weight: 600; }
+.combo-key-row { display: flex; align-items: center; gap: 0.5rem; }
+.combo-key-row label { min-width: 0; }
+.combo-key-row select { flex: 1; min-inline-size: 0; }
+.combo-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-block-size: 2rem; }
+.record-btn { justify-self: start; }
 .record-btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); box-shadow: 0 0 0 3px var(--accent-soft); }
-.custom-action summary { cursor: pointer; font-size: var(--fs-sm); color: var(--text-secondary); }
-.custom-action .row { margin: 0.5rem 0 0; flex-wrap: nowrap; }
-.custom-action input { flex: 1; min-inline-size: 0; }
-.custom-error { margin: 0.3rem 0 0; font-size: var(--fs-xs); color: var(--danger); min-block-size: 1em; }
+.combo-hint, .panel-pane .hint { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+.panel-pane .row { margin: 0; flex-wrap: nowrap; }
+.panel-pane .row input { flex: 1; min-inline-size: 0; }
+.panel-error { margin: 0; font-size: var(--fs-xs); color: var(--danger); }
+.panel-error:empty { display: none; }
 .panel-reset { justify-self: start; }
 
 /* Phones: the panel is a bottom sheet opened by tapping a tile. */
@@ -903,3 +919,10 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
      pages' #unsupported card has a different trigger. */
   body:has(#pad) #unsupported[hidden] { display: block; visibility: hidden; }
 }
+
+/* DPI stage colours as small round swatches — they were the loudest thing
+   on the page as 40×32 blocks. */
+#dpi-rows input[type="color"] { inline-size: 1.6rem; block-size: 1.6rem; padding: 2px; border-radius: 50%; }
+#dpi-rows input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+#dpi-rows input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+#dpi-rows input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }

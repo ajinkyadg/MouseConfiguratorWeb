@@ -32,8 +32,9 @@ import {
   type M908ProfileSet,
 } from "./profiles/m908-profile-store";
 import { detectDesktopOS, isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
-import { comboKeys, formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
+import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
+import { comboKeyGroups } from "./profiles/key-combo-keys";
 import { ACTION_CATEGORIES, type ActionCategory } from "./profiles/m913-action-catalog";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
@@ -320,6 +321,8 @@ const buttonEditor = createButtonEditor({
   },
   announce: (message) => announce(message),
   customPlaceholder: "e.g. ctrl+c, fire:a:5:10, macro3",
+  modifierLabel: (mod) => modifierLabel(mod, NAMING_OS),
+  comboKeyGroups: comboKeyGroups((key) => m908ActionSupported(`ctrl+${key}`)),
 });
 
 function renderLedControls() {

@@ -38,8 +38,9 @@ import {
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog";
-import { comboKeys, formatCombo, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
+import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
+import { comboKeyGroups } from "./profiles/key-combo-keys";
 import { parseAction } from "./profiles/m913-buttons";
 
 // Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
@@ -485,6 +486,8 @@ const buttonEditor = createButtonEditor({
   },
   announce: (message) => announce(message),
   customPlaceholder: "e.g. ctrl+shift+k, media_play, fire:58:3",
+  modifierLabel: (mod) => modifierLabel(mod, namingOS),
+  comboKeyGroups: comboKeyGroups((key) => parseAction(key) !== null),
 });
 
 // --- Unsaved-change tracking --------------------------------------------
