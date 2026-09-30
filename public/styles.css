@@ -480,7 +480,9 @@ body.wide { max-width: 1320px; }
 }
 
 /* Buttons card: grid left, editor panel right. */
-.button-editor { display: grid; gap: 1.25rem; min-block-size: 24rem; }
+/* Reserve the grid's height before the script fills it (no layout shift);
+   pages with more buttons override --editor-reserve. */
+.button-editor { display: grid; gap: 1.25rem; min-block-size: var(--editor-reserve, 31rem); }
 @media (min-width: 900px) { .button-editor { min-block-size: 21rem; } }
 @media (min-width: 900px) {
   .button-editor { grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem); align-items: start; }
@@ -980,3 +982,9 @@ footer .buy-links { font-size: var(--fs-xs); color: var(--text-secondary); }
 /* Play (dark): lift remapped tiles off the card so they read as filled. */
 :root:not([data-theme="pro"]) .button-tile:not(.unchanged) { background: var(--surface-elevated); }
 .settings-drawer .settings-row { align-items: stretch; }
+/* Phones: the five profile buttons get a fixed full-width row, so the
+   toolbar is the same height before and after the script fills it. */
+@media (max-width: 760px) {
+  .config-toolbar .slot-switcher { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); flex-basis: 100%; min-block-size: 2.25rem; }
+  .config-toolbar .slot-switcher button { padding-inline: 0.25rem; font-size: var(--fs-xs); white-space: nowrap; }
+}

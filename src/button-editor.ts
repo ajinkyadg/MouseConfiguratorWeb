@@ -309,11 +309,14 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     const invalid = !!value && opts.validate(value) !== null;
     const desc = value ? opts.describe(value) : null;
     const line = el("span", "tile-line");
-    line.append(el("span", "tile-slot", slot.tag), el("span", "tile-name", desc ? desc.name : "Default"));
+    line.append(el("span", "tile-slot", slot.tag), " ", el("span", "tile-name", desc ? desc.name : "Default"));
     tile.replaceChildren(line);
-    if (desc?.keys.length) tile.append(keycaps(desc.keys));
-    if (invalid) tile.append(el("span", "tile-note", "Not recognised"));
+    if (desc?.keys.length) tile.append(" ", keycaps(desc.keys));
+    if (invalid) tile.append(" ", el("span", "tile-note", "Not recognised"));
     const changed = opts.isChanged(slot.id);
+    // The accessible name is the visible text (so voice control matches it)
+    // plus hidden context.
+    tile.append(el("span", "visually-hidden", `, ${slot.full}${changed ? ", changed" : ""}`));
     tile.classList.toggle("unchanged", !value);
     tile.classList.toggle("invalid", invalid);
     tile.classList.toggle("changed", changed);
@@ -321,11 +324,6 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     tile.classList.toggle("selected", isSelected);
     tile.setAttribute("aria-current", String(isSelected));
     tile.tabIndex = isSelected ? 0 : -1;
-    tile.setAttribute(
-      "aria-label",
-      // Starts with the visible slot label so voice control ("click Side 3") works.
-      `${slot.tag} ${desc ? desc.name : "Default"}, ${slot.full}${invalid ? ", not recognised" : ""}${changed ? ", changed" : ""}`,
-    );
   }
 
   function renderPanel() {
