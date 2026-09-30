@@ -88,15 +88,175 @@
         </button>
       </div>
     </nav>
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Panther Tech · Redragon M913 Impact Elite</p>
-        <h1>Configure your mouse<br /><span class="accent">from the browser.</span></h1>
-        <p class="hero-lede">DPI, polling rate, RGB and all 16 buttons on the Redragon M913 — no driver, no vendor software, no Windows. Plug the cable in, hit Connect, and the settings are written to the mouse itself.</p>
-        <div class="hero-cta">
-          <button id="connect" class="primary">Connect to M913</button>
-        </div>
+    <!-- Slim tool header: what this is, which mouse, Connect and status.
+         The marketing copy and artwork live in "About" below the tool, so
+         the button map is on the first screen. -->
+    <header class="tool-header">
+      <div class="tool-head-main">
+        <h1 class="tool-title">Configure your Redragon M913 from the browser</h1>
         <p id="status" role="status">Not connected. Works in Chrome or Edge. On macOS 26.6.2 or later, <a href="#macos">launch Chrome this way first</a>.</p>
+      </div>
+      <div class="mouse-bar tool-mouse" role="group" aria-label="Choose your mouse">
+        <span class="mouse-bar-label" id="mouse-menu-label">Mouse</span>
+        <details class="dropdown mouse-menu" id="mouse-menu">
+        <summary aria-describedby="mouse-menu-label">Redragon M913 Impact Elite</summary>
+        <div class="dropdown-panel">
+          <ul>
+            <li><a class="dropdown-item mouse-option" href="/" aria-current="page"><span>Redragon M913 Impact Elite</span><span class="badge">Supported</span><svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+            <li><a class="dropdown-item mouse-option" href="/m908"><span>Redragon M908 Impact</span><span class="badge">Beta</span></a></li>
+            <li><span class="dropdown-item mouse-option is-disabled"><span>Redragon M719 Invader</span><span class="badge">Coming soon</span></span></li>
+          </ul>
+          <p class="mouse-menu-foot">Don&rsquo;t see your mouse? Requests welcome.</p>
+        </div>
+      </details>
+      </div>
+      <button id="connect" class="primary">Connect to M913</button>
+    </header>
+
+    <main id="main">
+
+    <section id="unsupported" class="unsupported" hidden>
+      <h2>This browser can't talk to the mouse</h2>
+      <p>MouseConfig uses WebHID, which only desktop Chrome, Edge, Brave, and Opera support. Safari, Firefox, and phone or tablet browsers can't connect — open <strong>mouseconfig.app</strong> on a computer in one of those browsers. You can still browse the settings and import or export profiles here.</p>
+    </section>
+
+
+    <!-- Toolbar: the profile being edited, whether it has unsaved changes,
+         and Apply. Sticky on desktop so saving and writing stay one click
+         away while editing. -->
+    <section id="settings" class="config-toolbar" aria-label="Profile and apply">
+      <div class="toolbar-profile">
+        <label for="profile-select">Profile</label>
+        <select id="profile-select"></select>
+        <button id="profile-update">Save</button>
+        <details class="dropdown toolbar-more">
+          <summary aria-label="More profile actions">⋯</summary>
+          <div class="dropdown-panel">
+            <button id="profile-save-as">Save as new profile…</button>
+            <button id="profile-import">Import profile…</button>
+            <button id="profile-export">Export profile…</button>
+            <button id="profile-import-jmk">Import Redragon .jmk…</button>
+            <button id="profile-delete">Delete profile</button>
+            <a href="/jmk-decoder">Look inside a .jmk file →</a>
+          </div>
+        </details>
+        <input type="file" id="profile-import-input" accept="application/json" hidden />
+        <input type="file" id="profile-import-jmk-input" accept=".jmk" hidden />
+      </div>
+      <div class="toolbar-apply">
+        <p id="change-status" class="change-status" aria-live="polite"></p>
+        <button id="revert" hidden>Revert</button>
+        <button class="primary" id="apply" disabled aria-describedby="apply-hint">Apply to mouse</button>
+      </div>
+      <p id="apply-hint" class="visually-hidden">Sends polling rate, DPI, LED, and any button remaps in sequence.</p>
+    </section>
+
+    <div class="config-layout">
+      <section class="buttons-card">
+        <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="2.4" y="11.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="11.4" width="6.2" height="6.2" rx="1.6"/></svg>Buttons</h2>
+        <div id="button-editor" class="button-editor"></div>
+        <button id="show-action-reference" class="mt-3" aria-expanded="false" aria-controls="action-reference">Full Action Reference…</button>
+        <div id="action-reference" role="region" aria-label="Action reference" tabindex="0"></div>
+      </section>
+      <!-- Sensor and lighting are usually set once, so they fold into one
+           summary line under the buttons and expand in place. -->
+      <details class="settings-drawer" id="settings-drawer">
+        <summary>
+          <span class="drawer-title">Sensor &amp; lighting</span>
+          <span class="drawer-summary" id="settings-summary"></span>
+          <span class="drawer-toggle" aria-hidden="true"><span class="when-closed">Edit</span><span class="when-open">Done</span></span>
+        </summary>
+        <div class="settings-row">
+          <section>
+            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
+            <div id="dpi-rows"></div>
+            <p class="hint" id="dpi-hint"></p>
+            <p class="hint">Each swatch is the colour the mouse lights up for that stage.</p>
+          </section>
+
+          <section>
+            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 16.4h4.4M8.2 13.5a4.8 4.8 0 1 1 3.6 0v1.3H8.2v-1.3Z"/></svg>LED</h2>
+            <div class="row">
+              <label for="led-mode">Mode</label>
+              <select id="led-mode">
+                <option value="off">Off</option>
+                <option value="steady" selected>Steady</option>
+                <option value="respiration">Respiration</option>
+                <option value="rainbow">Rainbow</option>
+              </select>
+            </div>
+            <div class="row" id="led-color-row">
+              <label for="led-color">Color</label>
+              <input type="color" id="led-color" value="#00ff00" />
+            </div>
+            <div class="row" id="led-brightness-row">
+              <label for="led-brightness">Brightness</label>
+              <input type="range" id="led-brightness" min="0" max="255" value="255" data-format="percent" />
+              <output for="led-brightness" class="range-value"></output>
+            </div>
+            <div class="row" id="led-speed-row">
+              <label for="led-speed">Speed</label>
+              <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
+              <output for="led-speed" class="range-value"></output>
+            </div>
+          </section>
+
+          <section>
+            <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>
+            <div class="segmented" id="poll-buttons" role="group" aria-labelledby="poll-heading"></div>
+          </section>
+        </div>
+      </details>
+    </div>
+
+    <details id="macos" class="macos-tip expander section">
+      <summary>
+        <svg class="expander-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5M10 6.2v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <h2><span>On macOS 26.6.2 or later?</span> Apply needs a one-time workaround.</h2>
+        <span class="expander-toggle" aria-hidden="true"><span class="when-closed">Show steps</span><span class="when-open">Hide</span><svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </summary>
+      <div class="expander-body">
+      <p>
+        Since macOS 26.6.2, Apple only lets privileged apps write settings to this mouse, so a
+        normally-launched browser can connect but every <strong>Apply</strong> fails with
+        &ldquo;Failed to write the feature report.&rdquo; Nothing is wrong with your mouse or this
+        page. The workaround is to open Chrome with administrator rights, just for this:
+      </p>
+      <ol>
+        <li>Open <strong>Terminal</strong> (Spotlight &rarr; &ldquo;Terminal&rdquo;). Your normal Chrome can stay open.</li>
+        <li>Paste this command, press Return, and enter your Mac password when asked:
+          <div class="command">
+            <pre tabindex="0" aria-label="Terminal command"><code id="macos-command">sudo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/tmp/chrome-root https://mouseconfig.app/</code></pre>
+            <button type="button" id="copy-macos-command">Copy</button>
+            <span id="copy-status" class="visually-hidden" role="status"></span>
+          </div>
+        </li>
+        <li>A separate Chrome window opens on this page. Click <strong>Connect to M913</strong>, then <strong>Apply Configuration</strong>.</li>
+        <li>When you&rsquo;re done, quit that Chrome window (&#8984;Q) and close Terminal. Your settings stay saved on the mouse.</li>
+      </ol>
+      <p class="hint">
+        <strong>Only use that window for MouseConfig.</strong> A browser running with administrator
+        rights has full access to your Mac, so don&rsquo;t browse anywhere else in it. The
+        <code>--user-data-dir</code> part keeps it in a throwaway profile, separate from your
+        normal Chrome, so your bookmarks and logins are never touched. Not using Chrome? Edge and
+        Brave work the same way &mdash; swap in their app path.
+      </p>
+      </div>
+    </details>
+
+    <details class="expander section log-drawer">
+      <summary>
+        <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.3" y="3.6" width="15.4" height="12.8" rx="2"/><path d="M5.8 8.2 8 10.4l-2.2 2.2M10.4 12.6h4"/></svg>Device log</h2>
+        <span class="expander-toggle" aria-hidden="true"><span class="when-closed">Show</span><span class="when-open">Hide</span></span>
+      </summary>
+      <div class="expander-body">
+      <div id="log" role="log" aria-label="Device log" tabindex="0"></div>
+      </div>
+    </details>
+    <section class="about-product" aria-labelledby="about-heading">
+      <div>
+        <h2 id="about-heading">Why MouseConfig</h2>
+        <p class="hero-lede">DPI, polling rate, RGB and all 16 buttons on the Redragon M913 — no driver, no vendor software, no Windows. Plug the cable in, hit Connect, and the settings are written to the mouse itself.</p>
         <ul class="hero-proof">
           <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 8 14.5 16 5.5"/></svg>Nothing to install</li>
           <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.6 8 14.5 16 5.5"/></svg>Windows, macOS, Linux</li>
@@ -134,153 +294,13 @@
 <ellipse class="glow" cx="79.1" cy="90.9" rx="13" ry="7" filter="url(#mcS)"/>
 <path class="spec" d="M54.7 107.3C57.6 105 66.4 98.2 72.3 93.7C78.2 89.2 84.1 84.6 90.1 80.3C96 76 102.1 71.5 108.2 68.1C114.3 64.6 120.5 61.1 126.8 59.4C133.2 57.7 139.8 57.5 146.4 57.7C153.1 58 163.3 60.3 166.6 60.8"/>
 </svg>
-    </header>
-
-    <main id="main">
-    <section class="mouse-bar" aria-label="Choose your mouse">
-      <span class="mouse-bar-label" id="mouse-menu-label">Mouse</span>
-      <details class="dropdown mouse-menu" id="mouse-menu">
-        <summary aria-describedby="mouse-menu-label">Redragon M913 Impact Elite</summary>
-        <div class="dropdown-panel">
-          <ul>
-            <li><a class="dropdown-item mouse-option" href="/" aria-current="page"><span>Redragon M913 Impact Elite</span><span class="badge">Supported</span><svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
-            <li><a class="dropdown-item mouse-option" href="/m908"><span>Redragon M908 Impact</span><span class="badge">Beta</span></a></li>
-            <li><span class="dropdown-item mouse-option is-disabled"><span>Redragon M719 Invader</span><span class="badge">Coming soon</span></span></li>
-          </ul>
-          <p class="mouse-menu-foot">Don&rsquo;t see your mouse? Requests welcome.</p>
-        </div>
-      </details>
-      <span class="buy-links">Buy: <a href="https://www.amazon.com/Redragon-Wireless-Programmable-Buttons-Battery/dp/B088B3ZM76" target="_blank" rel="noopener noreferrer" aria-label="Buy the M913 on Amazon (opens in a new tab)">Amazon</a> · <a href="https://redragonshop.com/products/m913" target="_blank" rel="noopener noreferrer" aria-label="Buy the M913 from Redragon (opens in a new tab)">Redragon</a></span>
-    </section>
-
-    <section id="unsupported" class="unsupported" hidden>
-      <h2>This browser can't talk to the mouse</h2>
-      <p>MouseConfig uses WebHID, which only desktop Chrome, Edge, Brave, and Opera support. Safari, Firefox, and phone or tablet browsers can't connect — open <strong>mouseconfig.app</strong> on a computer in one of those browsers. You can still browse the settings and import or export profiles here.</p>
-    </section>
-
-    <details id="macos" class="macos-tip expander section">
-      <summary>
-        <svg class="expander-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v5M10 6.2v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <h2><span>On macOS 26.6.2 or later?</span> Apply needs a one-time workaround.</h2>
-        <span class="expander-toggle" aria-hidden="true"><span class="when-closed">Show steps</span><span class="when-open">Hide</span><svg viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      </summary>
-      <div class="expander-body">
-      <p>
-        Since macOS 26.6.2, Apple only lets privileged apps write settings to this mouse, so a
-        normally-launched browser can connect but every <strong>Apply</strong> fails with
-        &ldquo;Failed to write the feature report.&rdquo; Nothing is wrong with your mouse or this
-        page. The workaround is to open Chrome with administrator rights, just for this:
-      </p>
-      <ol>
-        <li>Open <strong>Terminal</strong> (Spotlight &rarr; &ldquo;Terminal&rdquo;). Your normal Chrome can stay open.</li>
-        <li>Paste this command, press Return, and enter your Mac password when asked:
-          <div class="command">
-            <pre tabindex="0" aria-label="Terminal command"><code id="macos-command">sudo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --user-data-dir=/tmp/chrome-root https://mouseconfig.app/</code></pre>
-            <button type="button" id="copy-macos-command">Copy</button>
-            <span id="copy-status" class="visually-hidden" role="status"></span>
-          </div>
-        </li>
-        <li>A separate Chrome window opens on this page. Click <strong>Connect to M913</strong>, then <strong>Apply Configuration</strong>.</li>
-        <li>When you&rsquo;re done, quit that Chrome window (&#8984;Q) and close Terminal. Your settings stay saved on the mouse.</li>
-      </ol>
-      <p class="hint">
-        <strong>Only use that window for MouseConfig.</strong> A browser running with administrator
-        rights has full access to your Mac, so don&rsquo;t browse anywhere else in it. The
-        <code>--user-data-dir</code> part keeps it in a throwaway profile, separate from your
-        normal Chrome, so your bookmarks and logins are never touched. Not using Chrome? Edge and
-        Brave work the same way &mdash; swap in their app path.
-      </p>
-      </div>
-    </details>
-
-    <!-- Toolbar: the profile being edited, whether it has unsaved changes,
-         and Apply. Sticky on desktop so saving and writing stay one click
-         away while editing. -->
-    <section id="settings" class="config-toolbar" aria-label="Profile and apply">
-      <div class="toolbar-profile">
-        <label for="profile-select">Profile</label>
-        <select id="profile-select"></select>
-        <button id="profile-save-as">Save As…</button>
-        <button id="profile-update">Update</button>
-        <details class="dropdown toolbar-more">
-          <summary>More</summary>
-          <div class="dropdown-panel">
-            <button id="profile-import">Import profile…</button>
-            <button id="profile-export">Export profile…</button>
-            <button id="profile-import-jmk">Import Redragon .jmk…</button>
-            <button id="profile-delete">Delete profile</button>
-            <a href="/jmk-decoder">Look inside a .jmk file →</a>
-          </div>
-        </details>
-        <input type="file" id="profile-import-input" accept="application/json" hidden />
-        <input type="file" id="profile-import-jmk-input" accept=".jmk" hidden />
-      </div>
-      <div class="toolbar-apply">
-        <p id="change-status" class="change-status" aria-live="polite"></p>
-        <button id="revert" hidden>Revert</button>
-        <button class="primary" id="apply" disabled>Apply to mouse</button>
-      </div>
-      <p id="apply-hint" class="toolbar-hint">Sends polling rate, DPI, LED, and any button remaps in sequence.</p>
-    </section>
-
-    <div class="config-layout">
-      <section class="buttons-card">
-        <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="2.4" width="6.2" height="6.2" rx="1.6"/><rect x="2.4" y="11.4" width="6.2" height="6.2" rx="1.6"/><rect x="11.4" y="11.4" width="6.2" height="6.2" rx="1.6"/></svg>Buttons</h2>
-        <div id="button-editor" class="button-editor"></div>
-        <button id="show-action-reference" class="mt-3" aria-expanded="false" aria-controls="action-reference">Full Action Reference…</button>
-        <div id="action-reference" role="region" aria-label="Action reference" tabindex="0"></div>
-      </section>
-      <div class="settings-row">
-        <section>
-          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
-          <div id="dpi-rows"></div>
-          <p class="hint" id="dpi-hint"></p>
-          <p class="hint">Each swatch is the colour the mouse lights up for that stage.</p>
-        </section>
-
-        <section>
-          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 16.4h4.4M8.2 13.5a4.8 4.8 0 1 1 3.6 0v1.3H8.2v-1.3Z"/></svg>LED</h2>
-          <div class="row">
-            <label for="led-mode">Mode</label>
-            <select id="led-mode">
-              <option value="off">Off</option>
-              <option value="steady" selected>Steady</option>
-              <option value="respiration">Respiration</option>
-              <option value="rainbow">Rainbow</option>
-            </select>
-          </div>
-          <div class="row" id="led-color-row">
-            <label for="led-color">Color</label>
-            <input type="color" id="led-color" value="#00ff00" />
-          </div>
-          <div class="row" id="led-brightness-row">
-            <label for="led-brightness">Brightness</label>
-            <input type="range" id="led-brightness" min="0" max="255" value="255" data-format="percent" />
-            <output for="led-brightness" class="range-value"></output>
-          </div>
-          <div class="row" id="led-speed-row">
-            <label for="led-speed">Speed</label>
-            <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
-            <output for="led-speed" class="range-value"></output>
-          </div>
-        </section>
-
-        <section>
-          <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>
-          <div class="segmented" id="poll-buttons" role="group" aria-labelledby="poll-heading"></div>
-        </section>
-      </div>
-    </div>
-
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.3" y="3.6" width="15.4" height="12.8" rx="2"/><path d="M5.8 8.2 8 10.4l-2.2 2.2M10.4 12.6h4"/></svg>Log</h2>
-      <div id="log" role="log" aria-label="Device log" tabindex="0"></div>
     </section>
     </main>
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech, currently supporting the Redragon M913 Impact Elite with more mice planned. Not affiliated with, endorsed by, or sponsored by Redragon or any other hardware brand named on this page — brand and model names are used only to identify the hardware this tool configures.</p>
       <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator (beta)</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/productivity-setup">Productivity button mapping</a></p>
+      <p class="buy-links">Buy: <a href="https://www.amazon.com/Redragon-Wireless-Programmable-Buttons-Battery/dp/B088B3ZM76" target="_blank" rel="noopener noreferrer" aria-label="Buy the M913 on Amazon (opens in a new tab)">Amazon</a> · <a href="https://redragonshop.com/products/m913" target="_blank" rel="noopener noreferrer" aria-label="Buy the M913 from Redragon (opens in a new tab)">Redragon</a></p>
     </footer>
 
     <script type="module" src="/src/main.ts"></script>

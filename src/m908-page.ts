@@ -105,7 +105,16 @@ let editingSlot: M908ProfileIndex = profileSet.activeProfile;
 let profile: M908ProfileSettings = profileSet.profiles[editingSlot];
 
 let storageWarned = false;
+// One-line summary on the collapsed "Sensor, lighting & preset" drawer.
+function renderSettingsSummary() {
+  const el = document.querySelector<HTMLSpanElement>("#settings-summary");
+  if (!el) return;
+  const dpi = profile.dpiValues.filter((_, i) => profile.dpiEnabled[i]).join(" · ");
+  el.textContent = `DPI ${dpi || "—"}  |  LED ${profile.lightMode.replace(/_/g, " ")}  |  ${profile.reportRateHz} Hz  |  Scroll ${profile.scrollSpeed}`;
+}
+
 function persist() {
+  renderSettingsSummary();
   if (saveM908ProfileSet(storage, profileSet) || storageWarned) return;
   storageWarned = true;
   log("Couldn't save your profiles in this browser (storage unavailable) — use Export to keep a copy.");
@@ -124,10 +133,13 @@ function setConnected(connected: boolean) {
   if (connected && document.activeElement === connectBtn) applyBtn.focus();
   connectBtn.disabled = connected;
   applyHintEl.textContent = connected ? APPLY_HINT : "Connect your mouse (top of page) to enable Apply.";
+  applyBtn.title = applyHintEl.textContent; // the hint line is a tooltip
 }
 
 // Short outcome for screen readers and anyone scrolled away from the log.
 function announce(message: string, tone: "warning" | "" = "") {
+  // The device log is collapsed by default; open it when something needs attention.
+  if (tone === "warning") document.querySelector<HTMLDetailsElement>(".log-drawer")?.setAttribute("open", "");
   statusEl.textContent = message;
   statusEl.classList.remove("connected");
   statusEl.classList.toggle("warning", tone === "warning");
@@ -304,7 +316,10 @@ const buttonEditor = createButtonEditor({
     { id: "wheel", label: "Wheel & DPI" },
     { id: "side", label: "Side panel" },
   ],
-  slots: TILE_ORDER.map((id) => ({ id, ...tileLabel(id) })),
+  slots: TILE_ORDER.map((id) => {
+    const label = tileLabel(id);
+    return { id, ...label, tag: label.short.replace(/^Side /, "") };
+  }),
   categories: M908_CATEGORIES,
   getValue: (id) => profile.buttonActions[id as M908ButtonName] ?? "",
   setValue: (id, value) => {
@@ -323,6 +338,7 @@ const buttonEditor = createButtonEditor({
   customPlaceholder: "e.g. ctrl+c, fire:a:5:10, macro3",
   modifierLabel: (mod) => modifierLabel(mod, NAMING_OS),
   comboKeyGroups: comboKeyGroups((key) => m908ActionSupported(`ctrl+${key}`)),
+  customExtras: [...document.querySelectorAll<HTMLElement>("#show-action-reference, #action-reference")],
 });
 
 function renderLedControls() {
@@ -405,6 +421,7 @@ function renderAll() {
   renderReportRateButtons();
   scrollSpeedEl.value = String(profile.scrollSpeed);
   buttonEditor.refresh();
+  renderSettingsSummary();
 }
 
 function buildActionReferenceText(): string {

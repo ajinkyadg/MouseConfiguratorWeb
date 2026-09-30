@@ -11,7 +11,8 @@ import { MODIFIER_ORDER } from "./profiles/shortcut-names";
 
 export interface EditorSlot {
   id: string;
-  short: string; // tile label: "Side 3"
+  short: string; // accessible short name: "Side 3"
+  tag: string; // small label on the tile: "3", "Left", "DPI +"
   full: string; // panel heading / accessible name: "Side button 3"
   group: string; // EditorGroup.id
 }
@@ -41,9 +42,11 @@ export interface ButtonEditorOptions {
   customPlaceholder: string;
   /// Label for each modifier toggle in the key-combo builder, e.g. "⌘ Command"
   /// or "Win" — a function because the M913's naming OS follows the profile.
-  modifierLabel(mod: Modifier): string;
+  modifierLabel(mod: Modifier): { short: string; full: string };
   /// Keys offered by the combo builder, grouped (Letters, Digits, Function…).
   comboKeyGroups: { name: string; keys: { value: string; label: string }[] }[];
+  /// Extra page elements shown in the Custom tab (e.g. the syntax reference).
+  customExtras?: HTMLElement[];
 }
 
 type Modifier = (typeof MODIFIER_ORDER)[number];
@@ -127,7 +130,8 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   });
 
   // --- Panel --------------------------------------------------------------
-  const panel = el("section", "btn-panel");
+  const panel = el("div", "btn-panel"); // not <section>: that gets the page card style
+  panel.setAttribute("role", "region");
   panel.id = "btn-panel";
   panel.setAttribute("aria-labelledby", "btn-panel-title");
 
@@ -141,7 +145,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   const titleWrap = el("div", "panel-title-wrap");
   const title = el("h3", "panel-title");
   title.id = "btn-panel-title";
-  const current = el("p", "panel-current");
+  const current = el("span", "panel-current");
   titleWrap.append(title, current);
   const close = el("button", "panel-close", "Done");
   close.type = "button";
@@ -213,7 +217,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     modRow.append(chip);
   }
   const keyRow = el("div", "combo-key-row");
-  const keyLabel = el("label", "", "Key");
+  const keyLabel = el("label", "visually-hidden", "Key");
   keyLabel.htmlFor = "btn-combo-key";
   const keySelect = el("select");
   keySelect.id = "btn-combo-key";
@@ -223,17 +227,17 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       .map((g) => `<optgroup label="${g.name}">${g.keys.map((k) => `<option value="${k.value}">${k.label}</option>`).join("")}</optgroup>`)
       .join("");
   keySelect.addEventListener("change", updateComboPreview);
-  keyRow.append(keyLabel, keySelect);
-  const comboFoot = el("div", "combo-foot");
   const comboPreview = el("span", "combo-preview");
-  const comboUse = el("button", "combo-use", "Use combination");
+  const comboUse = el("button", "combo-use", "Use");
   comboUse.type = "button";
-  comboFoot.append(comboPreview, comboUse);
-  const record = el("button", "record-btn", "Record from keyboard");
+  keyRow.append(keyLabel, keySelect, comboPreview, comboUse);
+  // Recording is the quickest path, so it comes first; the builder below
+  // covers shortcuts the OS won't let a web page capture.
+  const record = el("button", "record-btn", "Record shortcut");
   record.type = "button";
   record.setAttribute("aria-pressed", "false");
-  const recordHint = el("p", "hint combo-hint", "Or press Record and type the shortcut.");
-  panes.combo.append(modRow, keyRow, comboFoot, record, recordHint);
+  const recordHint = el("p", "hint combo-hint", "Or build it: pick modifiers and a key.");
+  panes.combo.append(record, recordHint, modRow, keyRow);
 
   // Custom pane.
   const customRow = el("div", "row");
@@ -245,7 +249,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   const customUse = el("button", "", "Use");
   customUse.type = "button";
   customRow.append(customInput, customUse);
-  panes.custom.append(customRow, el("p", "hint", "Any action the mouse understands — see Full Action Reference below the grid."));
+  panes.custom.append(customRow, el("p", "hint", "Any action the mouse understands."), ...(opts.customExtras ?? []));
 
   // One message line for whichever pane is showing.
   const panelError = el("p", "panel-error");
@@ -253,7 +257,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   panelError.setAttribute("aria-live", "polite");
   customInput.setAttribute("aria-describedby", panelError.id);
 
-  const reset = el("button", "panel-reset", "Reset to default");
+  const reset = el("button", "panel-reset link-button", "Reset to default");
   reset.type = "button";
 
   panel.append(head, tabList, panes.actions, panes.combo, panes.custom, panelError, reset);
@@ -304,7 +308,9 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     const value = opts.getValue(slot.id);
     const invalid = !!value && opts.validate(value) !== null;
     const desc = value ? opts.describe(value) : null;
-    tile.replaceChildren(el("span", "tile-slot", slot.short), el("span", "tile-name", desc ? desc.name : "Default"));
+    const line = el("span", "tile-line");
+    line.append(el("span", "tile-slot", slot.tag), el("span", "tile-name", desc ? desc.name : "Default"));
+    tile.replaceChildren(line);
     if (desc?.keys.length) tile.append(keycaps(desc.keys));
     if (invalid) tile.append(el("span", "tile-note", "Not recognised"));
     const changed = opts.isChanged(slot.id);
@@ -326,14 +332,19 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     const slot = slotById(selected);
     const value = opts.getValue(selected);
     title.textContent = slot.full;
-    current.replaceChildren(value ? "Currently " : "Currently default");
+    current.replaceChildren();
     if (value) {
       const desc = opts.describe(value);
       current.append(el("strong", "", desc.name));
-      if (desc.keys.length) current.append(" ", keycaps(desc.keys));
-    }
+      if (desc.keys.length) current.append(keycaps(desc.keys));
+    } else current.append("Default");
     for (const option of options) option.button.setAttribute("aria-pressed", String(option.value === value));
-    for (const mod of MODIFIER_ORDER) modChips[mod].textContent = opts.modifierLabel(mod);
+    for (const mod of MODIFIER_ORDER) {
+      const { short, full } = opts.modifierLabel(mod);
+      modChips[mod].textContent = short;
+      modChips[mod].title = full;
+      modChips[mod].setAttribute("aria-label", full);
+    }
     reset.disabled = !value;
     const order = slots.map((s) => s.id);
     const index = order.indexOf(selected);
@@ -467,15 +478,15 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     if (!recording) return;
     recording = false;
     record.setAttribute("aria-pressed", "false");
-    record.textContent = "Record from keyboard";
-    recordHint.textContent = "Or press Record and type the shortcut.";
+    record.textContent = "Record shortcut";
+    recordHint.textContent = "Or build it: pick modifiers and a key.";
   }
   record.addEventListener("click", () => {
     if (recording) return stopRecording();
     recording = true;
     record.setAttribute("aria-pressed", "true");
     record.textContent = "Listening… (Esc to cancel)";
-    recordHint.textContent = "Press the shortcut now. System ones like ⌘Tab can't be captured — build those above.";
+    recordHint.textContent = "Press the shortcut now. System ones like ⌘Tab can't be captured — build those below.";
   });
   record.addEventListener("blur", stopRecording);
   record.addEventListener("keydown", (event) => {

@@ -93,20 +93,15 @@
         </button>
       </div>
     </nav>
-    <header>
-      <div>
-        <p class="eyebrow">Panther Tech</p>
-        <h1>M908 Configurator</h1>
-        <p>Configure your Redragon M908 Impact — DPI, buttons, RGB — right from your browser on Windows, Mac, or Linux.</p>
+    <!-- Slim tool header, as on the M913 page. -->
+    <header class="tool-header">
+      <div class="tool-head-main">
+        <h1 class="tool-title">M908 Configurator <span class="badge">Beta</span></h1>
         <p id="status" role="status">Not connected. Works in Chrome or Edge.</p>
       </div>
-      <button id="connect" class="primary">Connect to M908</button>
-    </header>
-
-    <main id="main">
-    <section class="mouse-bar" aria-label="Choose your mouse">
-      <span class="mouse-bar-label" id="mouse-menu-label">Mouse</span>
-      <details class="dropdown mouse-menu" id="mouse-menu">
+      <div class="mouse-bar tool-mouse" role="group" aria-label="Choose your mouse">
+        <span class="mouse-bar-label" id="mouse-menu-label">Mouse</span>
+        <details class="dropdown mouse-menu" id="mouse-menu">
         <summary aria-describedby="mouse-menu-label">Redragon M908 Impact</summary>
         <div class="dropdown-panel">
           <ul>
@@ -117,52 +112,47 @@
           <p class="mouse-menu-foot">Don&rsquo;t see your mouse? Requests welcome.</p>
         </div>
       </details>
-      <span class="buy-links">Buy: <a href="https://www.amazon.com/Redragon-M908-Programmable-Buttons-Cartridge/dp/B07N2SXZGG" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 on Amazon (opens in a new tab)">Amazon</a> · <a href="https://redragonshop.com/products/impact-m908" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 from Redragon (opens in a new tab)">Redragon</a></span>
-    </section>
+      </div>
+      <button id="connect" class="primary">Connect to M908</button>
+    </header>
+
+    <main id="main">
 
     <section id="unsupported" class="unsupported" hidden>
       <h2>This browser can't talk to the mouse</h2>
       <p>MouseConfig uses WebHID, which only desktop Chrome, Edge, Brave, and Opera support. Safari, Firefox, and phone or tablet browsers can't connect — open <strong>mouseconfig.app</strong> on a computer in one of those browsers. You can still browse the settings here.</p>
     </section>
 
-    <section class="callout">
-      <h2>New — not yet hardware-verified</h2>
-      <p>
-        M908 support was built from public protocol documentation, not a
-        confirmed working device — unlike the M913, this hasn't been
-        tested on real hardware yet. DPI/LED/report-rate and button
-        mapping should be structurally correct, but if something doesn't
-        work as expected, that's expected until the first real test.
-      </p>
-    </section>
+    <p class="beta-note"><strong>Not yet hardware-verified.</strong> M908 support is built from public protocol docs and hasn't been tested on a real M908 — if something doesn't work, that's expected until the first real test.</p>
 
-    <section aria-labelledby="slots-heading">
-      <h2 id="slots-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.4" y="4" width="15.2" height="12" rx="2"/><path d="M6 8h3M6 12h8"/></svg>Onboard Profiles</h2>
-      <p class="hint">The M908 stores five profiles on the mouse and switches between them with its profile button. Pick one to edit — every section below edits only that profile.</p>
-      <div class="segmented slot-switcher" id="slot-buttons" role="group" aria-labelledby="slots-heading"></div>
-      <p class="editing-slot" id="editing-slot"></p>
-      <div class="row slot-tools">
-        <label for="active-profile">Active on the mouse</label>
+    <!-- Toolbar: which of the five onboard profiles you're editing, which one
+         the mouse uses, and Apply. Sticky on desktop. Profiles save in this
+         browser automatically, so there's no Save button here. -->
+    <section class="config-toolbar" aria-labelledby="slots-heading">
+      <div class="toolbar-profile">
+        <span class="toolbar-label" id="slots-heading">Editing</span>
+        <div class="segmented slot-switcher" id="slot-buttons" role="group" aria-labelledby="slots-heading"></div>
+        <p class="visually-hidden" id="editing-slot"></p>
+        <label for="active-profile">Active on mouse</label>
         <select id="active-profile"></select>
+        <details class="dropdown toolbar-more">
+          <summary aria-label="More profile actions">⋯</summary>
+          <div class="dropdown-panel">
+            <div class="more-row">
+              <label for="copy-target">Copy this profile to</label>
+              <select id="copy-target"></select>
+              <button type="button" id="copy-slot">Copy</button>
+            </div>
+            <button type="button" id="export-set">Export all 5…</button>
+            <button type="button" id="import-set">Import all 5…</button>
+            <input type="file" id="import-set-input" accept="application/json,.json" hidden />
+            <p class="more-note">Profiles save in this browser automatically. This page can't read what's already on the mouse — recreate profiles from Redragon's software here (or keep an export) before applying.</p>
+          </div>
+        </details>
       </div>
-      <div class="row">
-        <label for="copy-target">Copy this profile to</label>
-        <select id="copy-target"></select>
-        <button type="button" id="copy-slot">Copy</button>
-      </div>
-      <div class="row">
-        <button type="button" id="export-set">Export all 5…</button>
-        <button type="button" id="import-set">Import all 5…</button>
-        <input type="file" id="import-set-input" accept="application/json,.json" hidden />
-      </div>
-      <p class="hint">Your five profiles are saved in this browser automatically. This page can't read what's currently on the mouse, so if you set profiles up in Redragon's Windows software, recreate them here (or keep an export) before applying.</p>
-    </section>
-
-    <!-- Toolbar: Apply, sticky on desktop so it stays one click away. -->
-    <section class="config-toolbar" aria-label="Apply">
-      <p id="apply-hint" class="toolbar-hint">Writes all five profiles shown here to the mouse (the M908 only accepts them together), then switches it to the active profile.</p>
+      <p id="apply-hint" class="visually-hidden">Writes all five profiles shown here to the mouse (the M908 only accepts them together), then switches it to the active profile.</p>
       <div class="toolbar-apply">
-        <button class="primary" id="apply" disabled>Apply to mouse</button>
+        <button class="primary" id="apply" disabled aria-describedby="apply-hint">Apply to mouse</button>
       </div>
     </section>
 
@@ -173,69 +163,88 @@
         <button id="show-action-reference" class="mt-3" aria-expanded="false" aria-controls="action-reference">Action Syntax Reference…</button>
         <div id="action-reference" role="region" aria-label="Action syntax reference" tabindex="0"></div>
       </section>
-      <div class="settings-row">
-        <section>
-          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="2"/><circle cx="13" cy="14.5" r="2"/></svg>Preset</h2>
-          <div class="row">
-            <select id="preset-select" aria-label="Preset">
-              <option value="">Custom</option>
-            </select>
-          </div>
-          <p class="hint">Loads DPI, LED, and button mappings into the profile you're editing — the other four stay as they are.</p>
-        </section>
+      <details class="settings-drawer" id="settings-drawer">
+        <summary>
+          <span class="drawer-title">Sensor, lighting &amp; preset</span>
+          <span class="drawer-summary" id="settings-summary"></span>
+          <span class="drawer-toggle" aria-hidden="true"><span class="when-closed">Edit</span><span class="when-open">Done</span></span>
+        </summary>
+        <div class="settings-row">
+          <section>
+            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="2"/><circle cx="13" cy="14.5" r="2"/></svg>Preset</h2>
+            <div class="row">
+              <select id="preset-select" aria-label="Preset">
+                <option value="">Custom</option>
+              </select>
+            </div>
+            <p class="hint">Loads DPI, LED, and button mappings into the profile you're editing — the other four stay as they are.</p>
+          </section>
 
-        <section>
-          <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>
-          <div class="segmented" id="report-rate-buttons" role="group" aria-labelledby="poll-heading"></div>
-        </section>
+          <section>
+            <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>
+            <div class="segmented" id="report-rate-buttons" role="group" aria-labelledby="poll-heading"></div>
+          </section>
 
-        <section>
-          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
-          <div id="dpi-rows"></div>
-          <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list.</p>
-        </section>
+          <section>
+            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
+            <div id="dpi-rows"></div>
+            <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list.</p>
+          </section>
 
-        <section>
-          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 16.4h4.4M8.2 13.5a4.8 4.8 0 1 1 3.6 0v1.3H8.2v-1.3Z"/></svg>LED</h2>
-          <div class="row">
-            <label for="led-mode">Mode</label>
-            <select id="led-mode"></select>
-          </div>
-          <div class="row">
-            <label for="led-color">Color</label>
-            <input type="color" id="led-color" value="#00ff00" />
-          </div>
-          <div class="row">
-            <label for="led-brightness">Brightness</label>
-            <input type="range" id="led-brightness" min="0" max="255" value="200" data-format="percent" />
-            <output for="led-brightness" class="range-value"></output>
-          </div>
-          <div class="row">
-            <label for="led-speed">Speed</label>
-            <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
-            <output for="led-speed" class="range-value"></output>
-          </div>
-        </section>
+          <section>
+            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.8 16.4h4.4M8.2 13.5a4.8 4.8 0 1 1 3.6 0v1.3H8.2v-1.3Z"/></svg>LED</h2>
+            <div class="row">
+              <label for="led-mode">Mode</label>
+              <select id="led-mode"></select>
+            </div>
+            <div class="row">
+              <label for="led-color">Color</label>
+              <input type="color" id="led-color" value="#00ff00" />
+            </div>
+            <div class="row">
+              <label for="led-brightness">Brightness</label>
+              <input type="range" id="led-brightness" min="0" max="255" value="200" data-format="percent" />
+              <output for="led-brightness" class="range-value"></output>
+            </div>
+            <div class="row">
+              <label for="led-speed">Speed</label>
+              <input type="range" id="led-speed" min="1" max="5" value="3" data-format="of-max" />
+              <output for="led-speed" class="range-value"></output>
+            </div>
+          </section>
 
-        <section>
-          <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.6" y="2.4" width="8.8" height="15.2" rx="4.4"/><path d="M10 5.6v3.2"/></svg>Scroll Speed</h2>
-          <div class="row">
-            <input type="number" id="scroll-speed" aria-label="Scroll speed" min="0" max="255" value="1" />
-          </div>
-          <p class="hint">Raw device value (0-255) — exact real-world scaling not yet confirmed.</p>
-        </section>
-      </div>
+          <section>
+            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5.6" y="2.4" width="8.8" height="15.2" rx="4.4"/><path d="M10 5.6v3.2"/></svg>Scroll Speed</h2>
+            <div class="row">
+              <input type="number" id="scroll-speed" aria-label="Scroll speed" min="0" max="255" value="1" />
+            </div>
+            <p class="hint">Raw device value (0-255) — exact real-world scaling not yet confirmed.</p>
+          </section>
+        </div>
+      </details>
     </div>
 
-    <section>
-      <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.3" y="3.6" width="15.4" height="12.8" rx="2"/><path d="M5.8 8.2 8 10.4l-2.2 2.2M10.4 12.6h4"/></svg>Log</h2>
+    <details class="expander section log-drawer">
+      <summary>
+        <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.3" y="3.6" width="15.4" height="12.8" rx="2"/><path d="M5.8 8.2 8 10.4l-2.2 2.2M10.4 12.6h4"/></svg>Device log</h2>
+        <span class="expander-toggle" aria-hidden="true"><span class="when-closed">Show</span><span class="when-open">Hide</span></span>
+      </summary>
+      <div class="expander-body">
       <div id="log" role="log" aria-label="Device log" tabindex="0"></div>
+      </div>
+    </details>
+    <section class="about-product" aria-labelledby="about-heading">
+      <div>
+        <h2 id="about-heading">About this configurator</h2>
+        <p class="hero-lede">Configure your Redragon M908 Impact — DPI, buttons, RGB — right from your browser on Windows, Mac, or Linux.</p>
+      </div>
     </section>
     </main>
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
       <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator (beta)</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/productivity-setup">Productivity button mapping</a></p>
+      <p class="buy-links">Buy: <a href="https://www.amazon.com/Redragon-M908-Programmable-Buttons-Cartridge/dp/B07N2SXZGG" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 on Amazon (opens in a new tab)">Amazon</a> · <a href="https://redragonshop.com/products/impact-m908" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 from Redragon (opens in a new tab)">Redragon</a></p>
     </footer>
 
     <script type="module" src="/src/m908-page.ts"></script>

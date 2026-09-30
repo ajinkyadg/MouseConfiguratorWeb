@@ -101,10 +101,16 @@ export function comboKeys(value: string, os: ShortcutOS): string[] {
     : t === "super" ? superName : PC_MODS[t] ?? KEYS[t] ?? t.toUpperCase());
 }
 
-/// Label for a modifier toggle in the combo builder, in that OS's words.
-export function modifierLabel(mod: string, os: ShortcutOS): string {
-  if (os === "macos") return { ctrl: "⌃ Control", alt: "⌥ Option", super: "⌘ Command", shift: "⇧ Shift" }[mod] ?? mod;
-  return { ctrl: "Ctrl", alt: "Alt", super: os === "windows" ? "Win" : "Super", shift: "Shift" }[mod] ?? mod;
+/// Label for a modifier toggle in the combo builder, in that OS's words:
+/// a glyph plus full name on macOS (⌘ / "Command"), the key name elsewhere.
+export function modifierLabel(mod: string, os: ShortcutOS): { short: string; full: string } {
+  if (os === "macos") {
+    const mac: Record<string, [string, string]> = { ctrl: ["⌃", "Control"], alt: ["⌥", "Option"], super: ["⌘", "Command"], shift: ["⇧", "Shift"] };
+    const [short, full] = mac[mod] ?? [mod, mod];
+    return { short, full };
+  }
+  const name = { ctrl: "Ctrl", alt: "Alt", super: os === "windows" ? "Win" : "Super", shift: "Shift" }[mod] ?? mod;
+  return { short: name, full: name };
 }
 
 /// Modifier order used everywhere a combo string is built, so a recorded

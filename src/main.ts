@@ -125,11 +125,15 @@ function setConnected(connected: boolean) {
   if (connected && document.activeElement === connectBtn) applyBtn.focus();
   connectBtn.disabled = connected;
   applyHintEl.textContent = connected ? APPLY_HINT : "Connect your mouse (top of page) to enable Apply.";
+  applyBtn.title = applyHintEl.textContent; // the hint line is now a tooltip
 }
 
 // Short, human-readable outcome for screen readers and anyone who has
 // scrolled away from the log; the log keeps the full packet trace.
 function announce(message: string, tone: "warning" | "" = "") {
+  // The device log is collapsed by default; open it when something needs
+  // attention, since that's where the full detail is.
+  if (tone === "warning") document.querySelector<HTMLDetailsElement>(".log-drawer")?.setAttribute("open", "");
   statusEl.textContent = message;
   statusEl.classList.remove("connected");
   statusEl.classList.toggle("warning", tone === "warning");
@@ -467,6 +471,7 @@ const buttonEditor = createButtonEditor({
     return {
       id: slot.id,
       short: side ? `Side ${side[1]}` : slot.displayName.replace(/ (Click|Button)$/, ""),
+      tag: side ? side[1]! : slot.displayName.replace(/ (Click|Button)$/, ""),
       full: slot.displayName,
       group: side ? "side" : "clicks",
     };
@@ -488,6 +493,7 @@ const buttonEditor = createButtonEditor({
   customPlaceholder: "e.g. ctrl+shift+k, media_play, fire:58:3",
   modifierLabel: (mod) => modifierLabel(mod, namingOS),
   comboKeyGroups: comboKeyGroups((key) => parseAction(key) !== null),
+  customExtras: [...document.querySelectorAll<HTMLElement>("#show-action-reference, #action-reference")],
 });
 
 // --- Unsaved-change tracking --------------------------------------------
@@ -520,7 +526,11 @@ function updateChangeState() {
   changeStatusEl.textContent = !count ? "All changes saved" : currentUserProfile() ? noun : `${noun} · Save As to keep`;
   changeStatusEl.classList.toggle("dirty", count > 0);
   revertBtn.hidden = count === 0 || !baseline;
-  profileUpdateBtn.disabled = !currentUserProfile() || count === 0;
+  // One Save button: updates a saved profile, or asks for a name (Save As)
+  // when the edits are to a built-in preset.
+  profileUpdateBtn.disabled = count === 0;
+  profileUpdateBtn.textContent = currentUserProfile() ? "Save" : "Save as…";
+  renderSettingsSummary();
   const selectedOption = profileSelectEl.selectedOptions[0];
   if (selectedOption && selectedOption.value) {
     const base = selectedOption.dataset.name ?? selectedOption.textContent ?? "";
@@ -528,6 +538,15 @@ function updateChangeState() {
     selectedOption.textContent = count ? `${base} (modified)` : base;
   }
   buttonEditor.refresh();
+}
+
+// One-line summary shown on the collapsed Sensor & lighting drawer.
+const settingsSummaryEl = document.querySelector<HTMLSpanElement>("#settings-summary")!;
+function renderSettingsSummary() {
+  const config = getCurrentConfig();
+  const dpi = config.dpi.filter((_, i) => config.dpiEnabled[i]).join(" · ");
+  const led = ledModeEl.selectedOptions[0]?.textContent ?? config.ledMode;
+  settingsSummaryEl.textContent = `DPI ${dpi || "—"}  |  LED ${led}  |  ${config.pollingRateHz} Hz`;
 }
 
 function markSaved() {
@@ -665,7 +684,10 @@ profileSaveAsBtn.addEventListener("click", () => {
 
 profileUpdateBtn.addEventListener("click", () => {
   const profile = currentUserProfile();
-  if (!profile) return;
+  if (!profile) {
+    profileSaveAsBtn.click();
+    return;
+  }
   profileStore.updateProfile(profile.id, getCurrentConfig());
   markSaved();
   log(`Updated profile "${profile.name}".`);
