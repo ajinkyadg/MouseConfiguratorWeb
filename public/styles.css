@@ -988,3 +988,18 @@ footer .buy-links { font-size: var(--fs-xs); color: var(--text-secondary); }
   .config-toolbar .slot-switcher { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); flex-basis: 100%; min-block-size: 2.25rem; }
   .config-toolbar .slot-switcher button { padding-inline: 0.25rem; font-size: var(--fs-xs); white-space: nowrap; }
 }
+
+/* Phone fixes that must come after the desktop toolbar/header rules above. */
+@media (max-width: 760px) {
+  .toolbar-more .dropdown-panel { inset-inline: 0 auto; }
+  .config-toolbar label { margin-inline-start: 0; }
+}
+@media (max-width: 600px) { .tool-header { align-items: stretch; } }
+/* A disabled primary must not look armed (Play gives primaries a glow). */
+button.primary:disabled { box-shadow: none; }
+/* Phones: the ⋯ menu spans the toolbar instead of hanging off its trigger. */
+@media (max-width: 760px) {
+  .config-toolbar { position: relative; }
+  .config-toolbar .toolbar-more { position: static; }
+  .config-toolbar .toolbar-more .dropdown-panel { inset-inline: 0.5rem; inline-size: auto; max-inline-size: none; }
+}

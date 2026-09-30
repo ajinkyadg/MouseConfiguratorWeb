@@ -305,7 +305,10 @@ function describeAction(value: string): ActionDescription {
   // Keyboard combos are named by their keys; anything else (raw codes)
   // shows as typed.
   if (/^(ctrl|alt|super|shift)(\+(ctrl|alt|super|shift))*$/.test(value)) return { name: `Hold ${formatCombo(value, NAMING_OS)}`, keys: [] };
-  return { name: /^[a-z0-9_]+(\+[a-z0-9_]+)+$/.test(value) ? formatCombo(value, NAMING_OS) : value, keys: [] };
+  // Keyboard keys/combos (anything the parser also accepts after a modifier)
+  // are named by their keys: "Tab", "⌃⇧K".
+  const isKey = /^[a-z0-9_]+(\+[a-z0-9_]+)*$/.test(value) && m908ActionSupported(value.includes("+") ? value : `ctrl+${value}`);
+  return { name: isKey ? formatCombo(value, NAMING_OS) : value, keys: [] };
 }
 
 function tileLabel(name: M908ButtonName): { short: string; full: string; group: string } {
@@ -347,7 +350,12 @@ const buttonEditor = createButtonEditor({
     persist();
   },
   isChanged: () => false, // the M908's five profiles save automatically
-  validate: (value) => (m908ActionSupported(value) ? null : `"${value}" isn't an action the M908 understands.`),
+  validate: (value) => {
+    if (m908ActionSupported(value)) return null;
+    // The M908's documented format has no encoding for a modifier on its own.
+    if (/^(ctrl|alt|super|shift)(\+(ctrl|alt|super|shift))*$/.test(value)) return "The M908 needs a key with the modifier (e.g. Ctrl+C) — it can't hold a modifier on its own.";
+    return `"${value}" isn't an action the M908 understands.`;
+  },
   describe: describeAction,
   categoryKeys: (value, category) => {
     const os = category.actions.find((a) => a.value === value)?.os;
