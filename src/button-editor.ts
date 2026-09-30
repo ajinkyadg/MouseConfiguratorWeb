@@ -324,7 +324,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     tile.setAttribute(
       "aria-label",
       // Starts with the visible slot label so voice control ("click Side 3") works.
-      `${slot.short}: ${desc ? desc.name : "default"}${invalid ? ", not recognised" : ""}${changed ? ", changed" : ""}`,
+      `${slot.tag} ${desc ? desc.name : "Default"}, ${slot.full}${invalid ? ", not recognised" : ""}${changed ? ", changed" : ""}`,
     );
   }
 
@@ -343,7 +343,6 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       const { short, full } = opts.modifierLabel(mod);
       modChips[mod].textContent = short;
       modChips[mod].title = full;
-      modChips[mod].setAttribute("aria-label", full);
     }
     reset.disabled = !value;
     const order = slots.map((s) => s.id);
@@ -364,8 +363,10 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   // A keyboard combo the builder can represent: known modifiers + one key.
   function asCombo(value: string): { mods: Modifier[]; key: string } | null {
     const parts = value.toLowerCase().split("+");
+    const isMod = (p: string) => (MODIFIER_ORDER as readonly string[]).includes(p);
+    if (parts.every(isMod)) return { mods: parts as Modifier[], key: "" };
     const key = parts.pop()!;
-    if (!comboKeyValues.has(key) || !parts.every((p) => (MODIFIER_ORDER as readonly string[]).includes(p))) return null;
+    if (!comboKeyValues.has(key) || !parts.every(isMod)) return null;
     return { mods: parts as Modifier[], key };
   }
 
@@ -391,9 +392,11 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     showMode(combo ? "combo" : customInput.value ? "custom" : "actions", false);
   }
 
+  // Modifiers + key, a key alone (Tab), or modifiers alone (⌘ held while
+  // the button is held — e.g. for hold-⌘-and-tap-Tab app switching).
   function builtCombo(): string {
     const mods = MODIFIER_ORDER.filter((m) => modChips[m].getAttribute("aria-pressed") === "true");
-    return keySelect.value ? [...mods, keySelect.value].join("+") : "";
+    return [...mods, keySelect.value].filter(Boolean).join("+");
   }
 
   function updateComboPreview() {
@@ -489,6 +492,20 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     recordHint.textContent = "Press the shortcut now. System ones like ⌘Tab can't be captured — build those below.";
   });
   record.addEventListener("blur", stopRecording);
+  let heldMods: Record<Modifier, boolean> | null = null;
+  record.addEventListener("keyup", (event) => {
+    if (!recording || !heldMods || !(MODIFIER_CODES.test(event.key) || MODIFIER_CODES.test(event.code))) return;
+    const combo = MODIFIER_ORDER.filter((m) => heldMods![m]).join("+");
+    heldMods = null;
+    if (!combo) return;
+    const error = opts.validate(combo);
+    if (error) {
+      recordHint.textContent = error;
+      return;
+    }
+    stopRecording();
+    if (assign(combo)) loadModeFor(combo);
+  });
   record.addEventListener("keydown", (event) => {
     if (!recording) return;
     event.preventDefault();
@@ -497,7 +514,13 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       stopRecording();
       return;
     }
-    if (MODIFIER_CODES.test(event.key) || MODIFIER_CODES.test(event.code)) return; // wait for the real key
+    if (MODIFIER_CODES.test(event.key) || MODIFIER_CODES.test(event.code)) {
+      // Wait for a real key; if the modifiers are released without one, the
+      // modifiers alone are the shortcut (see keyup below).
+      heldMods = { ctrl: event.ctrlKey, alt: event.altKey, super: event.metaKey, shift: event.shiftKey };
+      return;
+    }
+    heldMods = null;
     const key = keyFromCode(event.code);
     if (!key) {
       recordHint.textContent = `"${event.key}" can't be sent by the mouse — try another key.`;

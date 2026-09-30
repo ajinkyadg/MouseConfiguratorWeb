@@ -137,6 +137,24 @@ function setConnected(connected: boolean) {
 }
 
 // Short outcome for screen readers and anyone scrolled away from the log.
+// Edit confirmations ("Side 1 set to Copy") go to a screen-reader-only
+// live region, so the visible #status keeps showing the connection state.
+const editLiveEl = document.createElement("p");
+editLiveEl.className = "visually-hidden";
+editLiveEl.setAttribute("role", "status");
+document.body.append(editLiveEl);
+function say(message: string) {
+  editLiveEl.textContent = message;
+}
+
+// The drawer opens below the fold on shorter screens; bring it into view.
+document.querySelector<HTMLDetailsElement>("#settings-drawer")?.addEventListener("toggle", (event) => {
+  const drawer = event.currentTarget as HTMLDetailsElement;
+  if (!drawer.open) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  drawer.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+});
+
 function announce(message: string, tone: "warning" | "" = "") {
   // The device log is collapsed by default; open it when something needs attention.
   if (tone === "warning") document.querySelector<HTMLDetailsElement>(".log-drawer")?.setAttribute("open", "");
@@ -279,13 +297,14 @@ function describeAction(value: string): ActionDescription {
   if (name) return { name, keys: comboKeys(value, NAMING_OS) };
   for (const category of M908_CATEGORIES) {
     const action = category.actions.find((a) => a.value === value);
-    if (action) return { name: action.label, keys: action.os ? comboKeys(value, action.os) : [] };
+    if (action && (!action.os || action.os === NAMING_OS)) return { name: action.label, keys: action.os ? comboKeys(value, action.os) : [] };
   }
   const macro = /^macro(\d+)/.exec(value);
   if (macro) return { name: `Macro ${macro[1]}`, keys: [] };
   if (value.startsWith("fire:")) return { name: "Rapid fire", keys: [] };
   // Keyboard combos are named by their keys; anything else (raw codes)
   // shows as typed.
+  if (/^(ctrl|alt|super|shift)(\+(ctrl|alt|super|shift))*$/.test(value)) return { name: `Hold ${formatCombo(value, NAMING_OS)}`, keys: [] };
   return { name: /^[a-z0-9_]+(\+[a-z0-9_]+)+$/.test(value) ? formatCombo(value, NAMING_OS) : value, keys: [] };
 }
 
@@ -334,7 +353,7 @@ const buttonEditor = createButtonEditor({
     const os = category.actions.find((a) => a.value === value)?.os;
     return os ? comboKeys(value, os) : [];
   },
-  announce: (message) => announce(message),
+  announce: (message) => say(message),
   customPlaceholder: "e.g. ctrl+c, fire:a:5:10, macro3",
   modifierLabel: (mod) => modifierLabel(mod, NAMING_OS),
   comboKeyGroups: comboKeyGroups((key) => m908ActionSupported(`ctrl+${key}`)),
@@ -494,7 +513,7 @@ copySlotBtn.addEventListener("click", () => {
   profile = profileSet.profiles[editingSlot];
   persist();
   log(`Copied profile ${editingSlot + 1} to profile ${target + 1}.`);
-  announce(`Copied profile ${editingSlot + 1} to profile ${target + 1}.`);
+  say(`Copied profile ${editingSlot + 1} to profile ${target + 1}.`);
 });
 
 exportSetBtn.addEventListener("click", () => {
@@ -527,7 +546,7 @@ importSetInput.addEventListener("change", async () => {
   syncSlotControls();
   persist();
   log(`Imported five profiles from "${file.name}" (active: profile ${profileSet.activeProfile + 1}).`);
-  announce(`Imported five profiles from "${file.name}".`);
+  say(`Imported five profiles from "${file.name}".`);
 });
 
 showActionReferenceBtn.addEventListener("click", () => {

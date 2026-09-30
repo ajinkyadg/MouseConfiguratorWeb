@@ -130,6 +130,24 @@ function setConnected(connected: boolean) {
 
 // Short, human-readable outcome for screen readers and anyone who has
 // scrolled away from the log; the log keeps the full packet trace.
+// Edit confirmations ("Side 1 set to Copy") go to a screen-reader-only
+// live region, so the visible #status keeps showing the connection state.
+const editLiveEl = document.createElement("p");
+editLiveEl.className = "visually-hidden";
+editLiveEl.setAttribute("role", "status");
+document.body.append(editLiveEl);
+function say(message: string) {
+  editLiveEl.textContent = message;
+}
+
+// The drawer opens below the fold on shorter screens; bring it into view.
+document.querySelector<HTMLDetailsElement>("#settings-drawer")?.addEventListener("toggle", (event) => {
+  const drawer = event.currentTarget as HTMLDetailsElement;
+  if (!drawer.open) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  drawer.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+});
+
 function announce(message: string, tone: "warning" | "" = "") {
   // The device log is collapsed by default; open it when something needs
   // attention, since that's where the full detail is.
@@ -443,10 +461,15 @@ function catalogEntry(value: string) {
 function describeAction(value: string): ActionDescription {
   const name = shortcutName(value, namingOS);
   if (name) return { name, keys: comboKeys(value, namingOS) };
+  // A catalog name from another OS's list would mislabel the combo here
+  // (bare "super" is the GNOME overview on Linux, but just ⌘ on a Mac).
   const entry = catalogEntry(value);
-  if (entry) return { name: entry.label, keys: entry.os ? comboKeys(value, entry.os) : [] };
-  // Any other keyboard combo is named by its keys ("⌃⇧K").
-  return { name: parseAction(value)?.keyboard ? formatCombo(value, namingOS) : value, keys: [] };
+  if (entry && (!entry.os || entry.os === namingOS)) return { name: entry.label, keys: entry.os ? comboKeys(value, entry.os) : [] };
+  // Any other keyboard combo is named by its keys ("⌃⇧K"); modifiers alone
+  // are held while the button is held.
+  const keyboard = parseAction(value)?.keyboard;
+  if (keyboard) return { name: `${keyboard.keys.length ? "" : "Hold "}${formatCombo(value, namingOS)}`, keys: [] };
+  return { name: value, keys: [] };
 }
 
 function validateAction(value: string): string | null {
@@ -489,7 +512,7 @@ const buttonEditor = createButtonEditor({
     const os = category.actions.find((a) => a.value === value)?.os;
     return os ? comboKeys(value, os) : [];
   },
-  announce: (message) => announce(message),
+  announce: (message) => say(message),
   customPlaceholder: "e.g. ctrl+shift+k, media_play, fire:58:3",
   modifierLabel: (mod) => modifierLabel(mod, namingOS),
   comboKeyGroups: comboKeyGroups((key) => parseAction(key) !== null),
@@ -567,7 +590,7 @@ for (const type of ["input", "change", "click"]) {
 revertBtn.addEventListener("click", () => {
   if (baseline) applyConfigToUI(baseline);
   updateChangeState();
-  announce("Changes reverted.");
+  say("Changes reverted.");
 });
 
 showActionRefBtn.addEventListener("click", () => {

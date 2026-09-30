@@ -139,6 +139,13 @@
           <summary aria-label="More profile actions">⋯</summary>
           <div class="dropdown-panel">
             <div class="more-row">
+              <label for="preset-select">Load preset</label>
+              <select id="preset-select">
+                <option value="">Custom</option>
+              </select>
+            </div>
+            <p class="more-note">Loads DPI, LED and buttons into the profile you're editing; the other four stay as they are.</p>
+            <div class="more-row">
               <label for="copy-target">Copy this profile to</label>
               <select id="copy-target"></select>
               <button type="button" id="copy-slot">Copy</button>
@@ -165,20 +172,11 @@
       </section>
       <details class="settings-drawer" id="settings-drawer">
         <summary>
-          <span class="drawer-title">Sensor, lighting &amp; preset</span>
+          <span class="drawer-title">Sensor &amp; lighting</span>
           <span class="drawer-summary" id="settings-summary"></span>
           <span class="drawer-toggle" aria-hidden="true"><span class="when-closed">Edit</span><span class="when-open">Done</span></span>
         </summary>
         <div class="settings-row">
-          <section>
-            <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="2"/><circle cx="13" cy="14.5" r="2"/></svg>Preset</h2>
-            <div class="row">
-              <select id="preset-select" aria-label="Preset">
-                <option value="">Custom</option>
-              </select>
-            </div>
-            <p class="hint">Loads DPI, LED, and button mappings into the profile you're editing — the other four stay as they are.</p>
-          </section>
 
           <section>
             <h2 id="poll-heading"><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 10.5h3L7.4 4l3 12 2.3-5.5h5.5"/></svg>Polling Rate</h2>

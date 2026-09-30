@@ -481,6 +481,7 @@ body.wide { max-width: 1320px; }
 
 /* Buttons card: grid left, editor panel right. */
 .button-editor { display: grid; gap: 1.25rem; min-block-size: 24rem; }
+@media (min-width: 900px) { .button-editor { min-block-size: 21rem; } }
 @media (min-width: 900px) {
   .button-editor { grid-template-columns: minmax(0, 1fr) minmax(19rem, 24rem); align-items: start; }
 }
@@ -584,12 +585,15 @@ body.wide { max-width: 1320px; }
   .btn-panel {
     position: fixed; inset: auto 0 0; z-index: 30; max-block-size: 80vh; overflow-y: auto;
     border-radius: 16px 16px 0 0; background: var(--surface); box-shadow: var(--shadow-lg);
+    padding: 0.75rem 1rem calc(1rem + env(safe-area-inset-bottom)); border-top: 1px solid var(--border);
     transform: translateY(105%); visibility: hidden; transition: transform 0.2s ease, visibility 0.2s;
   }
   body.sheet-open .btn-panel { transform: none; visibility: visible; }
   .panel-close { display: inline-block; }
   .button-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
   .button-tile { padding: 0.4rem 0.5rem; min-block-size: 3rem; }
+  .tile-line { flex-direction: column; align-items: flex-start; gap: 0; }
+  .toolbar-more .dropdown-panel { inset-inline: 0 auto; }
   .toolbar-apply { inline-size: 100%; }
   .toolbar-apply .primary { flex: 1; }
 }
@@ -930,7 +934,8 @@ input[type="number"], output, #log, .current-value { font-variant-numeric: tabul
 .tool-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.25rem; padding: 0.9rem 0; margin-bottom: 0.85rem; }
 .tool-head-main { flex: 1 1 26rem; min-inline-size: 0; }
 .tool-title { font-size: var(--fs-lg); margin: 0; }
-.tool-header #status { margin-top: 0.35rem; }
+.tool-header #status { margin-top: 0.35rem; max-inline-size: none; }
+@media (max-width: 600px) { .tool-head-main { flex: 0 0 auto; } }
 .tool-mouse { padding: 0; }
 .tool-mouse .mouse-bar-label { color: var(--text-secondary); }
 footer .buy-links { font-size: var(--fs-xs); color: var(--text-secondary); }
@@ -966,7 +971,12 @@ footer .buy-links { font-size: var(--fs-xs); color: var(--text-secondary); }
 .tool-title .badge { vertical-align: middle; font-size: var(--fs-2xs); }
 .toolbar-label, .toolbar-profile > label { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); min-width: 0; }
 .toolbar-profile > label { margin-inline-start: 0.5rem; }
-.toolbar-more .more-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.65rem; }
+.toolbar-more .more-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; padding: 0.4rem 0.65rem; }
+.toolbar-more select { min-inline-size: 0; flex: 1; }
 .toolbar-more .more-row label { min-width: 0; font-size: var(--fs-sm); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text); white-space: nowrap; }
 .toolbar-more .dropdown-panel .more-row button { inline-size: auto; border: 1px solid var(--border-control); text-decoration: none; }
 .more-note { margin: 0.3rem 0.65rem 0.4rem; max-inline-size: 22rem; font-size: var(--fs-xs); color: var(--text-secondary); }
+
+/* Play (dark): lift remapped tiles off the card so they read as filled. */
+:root:not([data-theme="pro"]) .button-tile:not(.unchanged) { background: var(--surface-elevated); }
+.settings-drawer .settings-row { align-items: stretch; }

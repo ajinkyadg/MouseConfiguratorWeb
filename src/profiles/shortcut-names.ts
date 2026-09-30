@@ -102,10 +102,10 @@ export function comboKeys(value: string, os: ShortcutOS): string[] {
 }
 
 /// Label for a modifier toggle in the combo builder, in that OS's words:
-/// a glyph plus full name on macOS (⌘ / "Command"), the key name elsewhere.
+/// glyph + short name on macOS ("⌘ Cmd", tooltip "Command"), the key name elsewhere.
 export function modifierLabel(mod: string, os: ShortcutOS): { short: string; full: string } {
   if (os === "macos") {
-    const mac: Record<string, [string, string]> = { ctrl: ["⌃", "Control"], alt: ["⌥", "Option"], super: ["⌘", "Command"], shift: ["⇧", "Shift"] };
+    const mac: Record<string, [string, string]> = { ctrl: ["⌃ Ctrl", "Control"], alt: ["⌥ Opt", "Option"], super: ["⌘ Cmd", "Command"], shift: ["⇧ Shift", "Shift"] };
     const [short, full] = mac[mod] ?? [mod, mod];
     return { short, full };
   }
