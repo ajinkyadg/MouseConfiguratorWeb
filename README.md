@@ -49,10 +49,12 @@ WebHID is required for the configurators: **Chrome, Edge, Brave or Opera on
 desktop**. Safari and Firefox don't implement it, and neither do mobile
 browsers; the site says so rather than failing silently.
 
-**macOS 26.6.2 and later** additionally blocks unprivileged processes from
+**On some macOS 26.6 setups**, macOS blocks unprivileged processes from
 writing HID feature reports to these mice, so Apply fails from a normally
-launched browser. The site explains the one-time workaround (launching
-Chrome with elevated rights for a throwaway profile) on the homepage.
+launched browser. It isn't universal — writes from a normal Chrome have been
+confirmed working on 26.6.2 too. The site only shows the one-time workaround
+(launching Chrome with elevated rights for a throwaway profile) if an Apply
+is actually refused.
 
 ## Development
 

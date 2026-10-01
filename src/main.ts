@@ -17,7 +17,7 @@ import {
   type M913Identification,
 } from "./core/hid-transport";
 import {
-  macOSBlocksHidWrites,
+  isMacOS,
   isWriteRefusedError,
   isWebHidAvailable,
   detectDesktopOS,
@@ -283,17 +283,6 @@ connectBtn.addEventListener("click", async () => {
       await closeDevice(device);
       device = null;
       setConnected(false);
-    } else if (await macOSBlocksHidWrites()) {
-      // Connected and correct in every respect the page can control — the
-      // write is normally refused by the macOS kernel, not by the device.
-      // Warn up front, but still allow Apply: the gate only rejects
-      // unprivileged processes, so a browser running as root (or a future
-      // macOS that relaxes the gate, or a wrong version detection) can
-      // still succeed, and the page shouldn't be the thing that stops it.
-      announce(`Connected: ${device.productName} — macOS 26.6+ usually blocks browser writes to this mouse. Apply will be attempted anyway.`, "warning");
-      if (macosTip) macosTip.open = true;
-      setConnected(true);
-      log(MACOS_WRITE_BLOCK_EXPLANATION);
     } else if (identity.kind !== "m913") {
       log(`You confirmed "${device.productName}" is an M913 — Apply enabled.`);
       announce(`Connected: ${device.productName} (${hardware} hardware, wired) — not identified as an M913, enabled because you confirmed it is.`, "warning");
@@ -316,14 +305,17 @@ connectBtn.addEventListener("click", async () => {
 
 // --- macOS tip: copy the sudo Chrome command -------------------------------
 
-// The tip is a collapsed expander so it doesn't push the configurator a
-// screen down; it opens itself only when linked to (the #status link or a
-// shared #macos URL) and when a connect detects the macOS write block.
+// The sudo workaround is hidden until it's needed: it appears only when an
+// Apply is actually refused by macOS (see applySection) or when someone
+// follows a shared #macos link. Writes work without it on many macOS 26.6.2
+// machines, and nobody should run a browser as admin unless they must.
 const macosTip = document.querySelector<HTMLDetailsElement>("#macos");
-if (macosTip && location.hash === "#macos") macosTip.open = true;
-document.querySelector('a[href="#macos"]')?.addEventListener("click", () => {
-  if (macosTip) macosTip.open = true;
-});
+function revealMacosTip() {
+  if (!macosTip) return;
+  macosTip.hidden = false;
+  macosTip.open = true;
+}
+if (location.hash === "#macos") revealMacosTip();
 
 const copyStatusEl = document.querySelector<HTMLSpanElement>("#copy-status");
 
@@ -849,9 +841,11 @@ async function applySection(label: string, send: () => Promise<void>): Promise<b
     return true;
   } catch (err) {
     log(`${label} failed: ${(err as Error).message}`);
-    if (!explainedWriteBlock && isWriteRefusedError(err) && (await macOSBlocksHidWrites())) {
+    if (!explainedWriteBlock && isWriteRefusedError(err) && isMacOS()) {
       explainedWriteBlock = true;
       log(MACOS_WRITE_BLOCK_EXPLANATION);
+      revealMacosTip();
+      announce("macOS refused the write — see the workaround under the settings.", "warning");
     }
     return false;
   }

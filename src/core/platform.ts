@@ -23,17 +23,21 @@
 // permission the user can grant (Input Monitoring does not help), and not
 // something a different browser, USB port, or reboot changes.
 //
-// The same writes were confirmed working on macOS 26.5.2 on 2026-08-29,
-// five days before 26.6.2 shipped, so this is version-specific: older
-// macOS must keep working and must not be blocked or warned about.
+// The same writes were confirmed working on macOS 26.5.2 on 2026-08-29.
+//
+// Update 2026-10-01: on macOS 26.6.2 (build 25G83) the owner applied a
+// config from a normally launched Chrome with no sudo, so the gate is not
+// universal on 26.6.2 — it depends on something we haven't pinned down. The
+// page therefore never warns up front; it explains the workaround only after
+// an Apply is actually refused (isWriteRefusedError on macOS).
 
 export const MACOS_WRITE_BLOCK_EXPLANATION =
-  "macOS 26.6.2 and later block browsers from writing to this mouse. The M913's " +
+  "macOS refused this write. On some macOS 26.6 setups, browsers can't write to this mouse: the M913's " +
   "config channel shares a HID interface with its keyboard collection, and macOS " +
   "now restricts writes on those interfaces to privileged processes. Chrome isn't " +
   "one, so the write is refused by the kernel before it reaches the mouse. Input " +
   "Monitoring, changing USB port, or restarting won't help. Workaround: launch " +
-  "Chrome with sudo (see \"On macOS 26.6.2 or later?\" at the top of this page " +
+  "Chrome with sudo (see \"Apply refused on macOS?\" under the settings on this page " +
   "for the exact command) and apply from that window — confirmed working. Windows " +
   "and Linux are unaffected.";
 
@@ -62,34 +66,6 @@ export function detectDesktopOS(): DesktopOS {
   if (/android/i.test(navigator.userAgent)) return "unknown";
   if (/linux|x11|cros/i.test(platform)) return "linux";
   return "unknown";
-}
-
-// True only for macOS versions known to block the write. Returns false when
-// the version can't be determined, so an unknown platform degrades to
-// "let the user try" rather than blocking something that might work.
-//
-// navigator.platform and the UA string are useless here: Chrome freezes the
-// macOS version in both, reporting "10.15.7" forever. The real version is
-// only available through the User-Agent Client Hints high-entropy API,
-// which is Chromium-only — hence the guarded access and the false default.
-export async function macOSBlocksHidWrites(): Promise<boolean> {
-  if (!isMacOS()) return false;
-
-  const uaData = (navigator as Navigator & {
-    userAgentData?: { getHighEntropyValues?: (hints: string[]) => Promise<{ platformVersion?: string }> };
-  }).userAgentData;
-
-  if (!uaData?.getHighEntropyValues) return false;
-
-  try {
-    const { platformVersion } = await uaData.getHighEntropyValues(["platformVersion"]);
-    if (!platformVersion) return false;
-    const [major = 0, minor = 0] = platformVersion.split(".").map(Number);
-    if (!Number.isFinite(major) || !Number.isFinite(minor)) return false;
-    return major > 26 || (major === 26 && minor >= 6);
-  } catch {
-    return false;
-  }
 }
 
 // Whether a thrown error is the kernel refusing the write, rather than a
