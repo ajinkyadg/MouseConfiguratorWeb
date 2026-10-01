@@ -4,8 +4,13 @@
 the configuration from a real M913 (USB `25a7:fa08`, bcdDevice `0x1333`),
 taken by the project owner in a Windows VM on 2026-10-01. The capture itself
 isn't committed. Everything below is observed in that capture and cross-checked
-against the write format in [m913.md](m913.md); nothing here has been sent from
-this site yet.
+against the write format in [m913.md](m913.md).
+
+**Confirmed on hardware, 2026-10-01**: the site's "Load from mouse"
+(`src/profiles/m913-read.ts`) replaying this exact sequence over WebHID read
+the owner's M913 correctly from a normally launched Chrome on macOS 26.6.2
+(25G83) — so WebHID does deliver input report `0x09`, and macOS didn't block
+the read.
 
 ## Transport
 
@@ -61,7 +66,6 @@ clicks.
 
 1. Are commands 1, 2 and 4 needed, and what does the 4-byte exchange in
    command 2 mean?
-2. Does WebHID deliver input report `0x09` on macOS/Windows/Linux? It's on
-   the vendor collection, so it should — and on macOS the write gate may or
-   may not also block reads.
+2. ~~Does WebHID deliver input report `0x09`?~~ Yes on macOS 26.6.2
+   (confirmed 2026-10-01); Windows and Linux not yet tried.
 3. Compx-hardware M913s: same read command? Untested.
