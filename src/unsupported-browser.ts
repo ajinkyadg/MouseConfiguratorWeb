@@ -6,8 +6,10 @@
 export function offerDesktopHandoff(connectBtn: HTMLButtonElement) {
   const handoff = document.createElement("button");
   handoff.type = "button";
-  handoff.className = "primary";
-  const canShare = typeof navigator.share === "function";
+  handoff.className = "primary handoff";
+  // Desktop Safari has a share sheet too, but "send to my computer" makes no
+  // sense there — offer it only on touch devices.
+  const canShare = typeof navigator.share === "function" && matchMedia("(pointer: coarse)").matches;
   handoff.textContent = canShare ? "Send this page to my computer" : "Copy link for Chrome or Edge";
   handoff.addEventListener("click", async () => {
     const url = location.href.split("#")[0]!;

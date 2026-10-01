@@ -53,6 +53,9 @@ export function detectDesktopOS(): DesktopOS {
   const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
   const platform = uaData?.platform || navigator.platform || navigator.userAgent;
   if (/mac/i.test(platform)) return "macos";
+  // iPhone/iPad can't run WebHID, but someone browsing on one most likely
+  // uses a Mac, so show them the macOS preset rather than Windows.
+  if (/^ios$|iphone|ipad|ipod/i.test(platform)) return "macos";
   if (/win/i.test(platform)) return "windows";
   // Android reports "Linux" in the legacy UA string; it can't run WebHID, but
   // the preset shown on a phone should still not claim to be a desktop one.

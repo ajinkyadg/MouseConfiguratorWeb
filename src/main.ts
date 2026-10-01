@@ -817,7 +817,9 @@ setConnected(false);
 // Say up front that this browser can't do it, rather than letting the user
 // click Connect and get a raw TypeError from deep inside requestM913().
 if (!isWebHidAvailable()) {
-  statusEl.textContent = "This browser can't connect to a mouse — open this page in Chrome or Edge on a computer.";
+  statusEl.textContent = matchMedia("(pointer: coarse)").matches
+    ? "This device can't connect to a mouse — open this page in Chrome or Edge on a computer."
+    : "This browser can't connect to a mouse — open this page in Chrome or Edge.";
   statusEl.classList.remove("connected");
   connectBtn.disabled = true;
   offerDesktopHandoff(connectBtn);

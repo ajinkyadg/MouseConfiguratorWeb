@@ -929,3 +929,6 @@ button.primary:disabled { box-shadow: none; }
   .config-toolbar .toolbar-more .dropdown-panel { inset-inline: 0.5rem; inline-size: auto; max-inline-size: none; }
 }
 button[hidden] { display: none; }
+.handoff { min-block-size: 44px; }
+@media (max-width: 640px) { .handoff { inline-size: 100%; } }
+.unsupported h2::after { background: linear-gradient(90deg, var(--warning), transparent 72%); }
