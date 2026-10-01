@@ -80,6 +80,15 @@ const ARESON_DPI_TABLE: Record<number, [number, number, number]> = {
   16000: [0xbd, 0xbd, 0xdb],
 };
 
+/// Reverse lookup for reading the config back: the DPI a 3-byte stage code
+/// stands for, or undefined if it's not in the (partial) table.
+export function aresonDpiFromCode(code: readonly [number, number, number]): number | undefined {
+  for (const [dpi, c] of Object.entries(ARESON_DPI_TABLE)) {
+    if (c[0] === code[0] && c[1] === code[1] && c[2] === code[2]) return Number(dpi);
+  }
+  return undefined;
+}
+
 export function aresonDpiSupported(dpi: number): boolean {
   return dpi in ARESON_DPI_TABLE;
 }

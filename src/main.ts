@@ -11,6 +11,7 @@ import {
   isWiredConnection,
   describeCollections,
   sendConfigPacket,
+  requestReply,
   waitForResponse,
   toHex,
   type HardwareRevision,
@@ -42,6 +43,7 @@ import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog"
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
 import { comboKeyGroups } from "./profiles/key-combo-keys";
+import { decodeConfig, parseReply, readPlan, type Memory } from "./profiles/m913-read";
 import { parseAction } from "./profiles/m913-buttons";
 
 // Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
@@ -86,6 +88,7 @@ const ledSpeedEl = document.querySelector<HTMLInputElement>("#led-speed")!;
 const buttonEditorEl = document.querySelector<HTMLDivElement>("#button-editor")!;
 const changeStatusEl = document.querySelector<HTMLParagraphElement>("#change-status")!;
 const revertBtn = document.querySelector<HTMLButtonElement>("#revert")!;
+const loadFromMouseBtn = document.querySelector<HTMLButtonElement>("#load-from-mouse")!;
 const applyBtn = document.querySelector<HTMLButtonElement>("#apply")!;
 const showActionRefBtn = document.querySelector<HTMLButtonElement>("#show-action-reference")!;
 const actionRefEl = document.querySelector<HTMLDivElement>("#action-reference")!;
@@ -110,6 +113,9 @@ const profileStore = new ProfileStore();
 // configuration from scratch. Matched against profileStore.profiles (not
 // BUILT_IN_PRESETS) to decide whether Update/Delete apply.
 let loadedProfileID: string | null = null;
+// True while the working config is what "Load from mouse" read, so the
+// profile picker can say so instead of "Unsaved Configuration".
+let loadedFromMouse = false;
 
 function log(msg: string) {
   const time = new Date().toLocaleTimeString();
@@ -127,6 +133,8 @@ function setConnected(connected: boolean) {
   connectBtn.disabled = connected;
   applyHintEl.textContent = connected ? APPLY_HINT : "Connect your mouse (top of page) to enable Apply.";
   applyBtn.title = applyHintEl.textContent; // the hint line is now a tooltip
+  // Reading back is only known for Areson hardware (docs/protocol-notes/m913-read.md).
+  loadFromMouseBtn.hidden = !connected || hardware !== "areson";
 }
 
 // Short, human-readable outcome for screen readers and anyone who has
@@ -648,7 +656,7 @@ function currentProfileLabel(): string {
 function renderProfileSelect() {
   const current = loadedProfileID ?? "";
   profileSelectEl.innerHTML =
-    `<option value="">— Unsaved Configuration —</option>` +
+    `<option value="">${loadedFromMouse ? "Read from mouse" : "— Unsaved Configuration —"}</option>` +
     `<optgroup label="Presets">` +
     BUILT_IN_PRESETS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("") +
     `</optgroup>` +
@@ -663,6 +671,7 @@ function renderProfileSelect() {
 }
 
 function loadProfile(profile: UserProfile) {
+  loadedFromMouse = false;
   const detected = detectDesktopOS();
   namingOS = PRESET_OS[profile.id] ?? (detected === "unknown" ? "windows" : detected);
   applyConfigToUI(profile.config);
@@ -822,6 +831,55 @@ if (!isWebHidAvailable()) {
   if (macosTip) macosTip.open = false;
   log(WEBHID_UNAVAILABLE_MESSAGE);
 }
+
+// --- Load from mouse ------------------------------------------------------
+//
+// Reads what's actually on the mouse (the same reads Redragon's Windows
+// software makes) and shows it, so editing starts from the real state.
+// Anything that can't be decoded keeps its current value and is named.
+
+loadFromMouseBtn.addEventListener("click", async () => {
+  if (!device || loadFromMouseBtn.getAttribute("aria-disabled") === "true") return;
+  const pending = unsavedChanges();
+  if (pending && !window.confirm(`Replace your ${pending} unsaved change${pending === 1 ? "" : "s"} with what's on the mouse?`)) return;
+  loadFromMouseBtn.setAttribute("aria-disabled", "true");
+  loadFromMouseBtn.textContent = "Reading…";
+  const mem: Memory = new Map();
+  try {
+    const plan = readPlan();
+    log(`Reading the configuration from the mouse (${plan.length} requests)…`);
+    for (const packet of plan) {
+      const reply = await requestReply(device, hardware, packet);
+      const data = parseReply(packet, reply);
+      if (!data) continue;
+      const address = (packet[3]! << 8) | packet[4]!;
+      data.forEach((b, i) => mem.set(address + i, b));
+    }
+    const { config, warnings } = decodeConfig(mem);
+    const loaded = normalizeConfig({ ...getCurrentConfig(), ...config });
+    applyConfigToUI(loaded);
+    loadedProfileID = null;
+    loadedFromMouse = true;
+    baseline = loaded;
+    renderProfileSelect();
+    log(`Read OK. Buttons: ${JSON.stringify(config.buttonActions)}`);
+    if (warnings.length) log(`Couldn't decode: ${warnings.join(", ")} — kept their current values.`);
+    announce(
+      warnings.length
+        ? `Loaded your mouse's settings — except ${warnings.join(", ")}, which kept their current values.`
+        : "Loaded the current settings from your mouse.",
+      warnings.length ? "warning" : "",
+    );
+    if (!warnings.length) statusEl.classList.add("connected"); // announce() cleared it
+  } catch (err) {
+    log(`Read failed: ${(err as Error).message}`);
+    announce("Couldn't read the settings from the mouse — see the log. Nothing was changed.", "warning");
+    if (isWriteRefusedError(err) && isMacOS()) revealMacosTip();
+  } finally {
+    loadFromMouseBtn.removeAttribute("aria-disabled");
+    loadFromMouseBtn.textContent = "Load from mouse";
+  }
+});
 
 // --- Apply ---------------------------------------------------------------
 

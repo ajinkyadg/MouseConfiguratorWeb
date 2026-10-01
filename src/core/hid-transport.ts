@@ -284,6 +284,24 @@ export function waitForResponse(device: HIDDevice, timeoutMs = 2000): Promise<Ui
   });
 }
 
+// Sends a packet and returns the mouse's reply. The listener is attached
+// before sending, so a fast reply can't slip past it.
+export async function requestReply(
+  device: HIDDevice,
+  hardware: HardwareRevision,
+  packet: Uint8Array,
+  timeoutMs = 800,
+): Promise<Uint8Array> {
+  const reply = waitForResponse(device, timeoutMs);
+  try {
+    await sendConfigPacket(device, hardware, packet);
+  } catch (err) {
+    reply.catch(() => {}); // the timeout would otherwise reject unobserved
+    throw err;
+  }
+  return reply;
+}
+
 export function toHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
