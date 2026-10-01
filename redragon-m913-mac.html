@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Redragon M913 Software for Mac: Setup Without Windows | MouseConfig</title>
+    <meta name="description" content="Redragon only makes Windows software for the M913. Here's how to remap its buttons, DPI and RGB on a Mac with a free browser-based configurator — no install, no Windows, no drivers." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/redragon-m913-mac" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Redragon M913 Software for Mac — Setup Without Windows" />
+    <meta property="og:description" content="Redragon only makes Windows software for the M913. Remap its buttons, DPI and RGB on a Mac from your browser instead — free, no install." />
+    <meta property="og:url" content="https://mouseconfig.app/redragon-m913-mac" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Redragon M913 Software for Mac — Setup Without Windows" />
+    <meta name="twitter:description" content="Remap the Redragon M913's buttons, DPI and RGB on a Mac from your browser — free, no install." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Redragon M913 Software for Mac: How to Set It Up Without Windows",
+        "description": "Redragon only makes Windows software for the M913. How to remap its buttons, DPI and RGB on a Mac with a free browser-based configurator.",
+        "datePublished": "2026-10-01",
+        "author": { "@type": "Organization", "name": "Panther Tech" },
+        "publisher": { "@type": "Organization", "name": "Panther Tech" },
+        "mainEntityOfPage": "https://mouseconfig.app/redragon-m913-mac"
+      }
+    </script>
+
+    <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
+    <script>
+      /* Theme before first paint, so neither face ever flashes: the stored
+         choice if there is one, otherwise Pro — the brand's default face. */
+      (function () {
+        var theme = null;
+        try { theme = localStorage.getItem("mouseconfig.theme"); } catch (e) { /* blocked storage */ }
+        document.documentElement.setAttribute("data-theme", theme === "play" ? "play" : "pro");
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      article p { font-size: var(--fs-md); line-height: 1.7; color: var(--text); margin: 0 0 1rem; max-width: 68ch; }
+      article h2 { font-size: 1.0625rem; font-weight: 650; color: var(--text); text-transform: none; letter-spacing: -0.005em; margin: 1.75rem 0 0.5rem; }
+      article ul, article ol { font-size: var(--fs-md); line-height: 1.7; color: var(--text); max-width: 68ch; padding-inline-start: 1.25rem; margin: 0 0 1rem; }
+      article li { margin-bottom: 0.35rem; }
+      article h3 { font-size: var(--fs-md); font-weight: 650; margin: 1.25rem 0 0.35rem; }
+      .cta-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="currentColor"/><g stroke="var(--on-accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 13c-8.2 0-13.5 6.2-13.5 14.5v9C18.5 45 23.8 51 32 51s13.5-6 13.5-14.5v-9C45.5 19.2 40.2 13 32 13Z"/><path d="M18.8 32.4h26.4"/><path d="M32 20.5v6"/></g><g fill="var(--on-accent)"><circle cx="12" cy="27" r="2.1"/><circle cx="12" cy="33.5" r="2.1"/><circle cx="12" cy="40" r="2.1"/></g></svg></span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Configurator — beta</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu is-active">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/redragon-m913-mac" aria-current="page"><span class="nav-item-title">M913 software for Mac</span><span class="nav-item-desc">Set up the M913 on a Mac without Windows</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+      <div class="theme-switch" role="radiogroup" aria-label="Site theme">
+        <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-value="play">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="currentColor"><path d="M11.6 1.8 4 11.6h4.2L8.4 18.2 16 8.4h-4.3l-.1-6.6Z"/></svg>
+          <span class="theme-label">Play</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-value="pro">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="6.2" width="15.6" height="11" rx="2"/><path d="M7.2 6.2V4.6a1.6 1.6 0 0 1 1.6-1.6h2.4a1.6 1.6 0 0 1 1.6 1.6v1.6M2.2 10.6h15.6"/></svg>
+          <span class="theme-label">Pro</span>
+        </button>
+      </div>
+    </nav>
+    <header>
+      <div>
+        <p class="eyebrow">Guide</p>
+        <h1>Redragon M913 Software for Mac</h1>
+        <p>Redragon only ships Windows software for the M913. Here's how to set it up on a Mac anyway — in your browser, in a couple of minutes.</p>
+      </div>
+    </header>
+
+    <main id="main">
+
+    <section>
+      <article>
+        <p>
+          If you've just plugged a Redragon M913 Impact Elite into a Mac and
+          gone looking for its software, you've probably found the problem:
+          Redragon's configuration software is Windows-only. Without it, the
+          twelve side buttons do whatever the factory set, and there's no way
+          to change DPI stages, the polling rate or the lighting.
+        </p>
+        <p>
+          <a href="/">MouseConfig</a> fills that gap. It's a free configurator
+          that runs in your browser and talks to the mouse directly over
+          WebHID — no download, no drivers, no Windows virtual machine.
+          Your settings are written to the mouse itself, so they stay with it
+          when you close the page.
+        </p>
+
+        <h2>What you need</h2>
+        <ul>
+          <li><strong>Chrome, Edge, Brave or Opera</strong> on your Mac. Safari and Firefox don't support WebHID, the technology the page uses to reach the mouse.</li>
+          <li><strong>The USB cable.</strong> The wireless receiver only carries movement and clicks; configuration needs the wired connection.</li>
+          <li><strong>macOS 26.6.2 or later?</strong> Apple now blocks browsers from writing settings to this mouse. There's a one-time workaround — see <a href="/#macos">the steps on the configurator page</a>.</li>
+        </ul>
+
+        <h2>Setting it up</h2>
+        <ol>
+          <li>Plug the M913 in with its USB cable.</li>
+          <li>Open <a href="/">mouseconfig.app</a> in Chrome or Edge and click <strong>Connect to M913</strong>, then pick the mouse in the browser's device list.</li>
+          <li>Choose a starting point from <strong>Profile</strong> — the Productivity preset for macOS maps the side buttons to Copy, Paste, Undo, tab switching and more — or click any button tile and pick an action, build a key combination, or record a shortcut.</li>
+          <li>Adjust DPI stages, polling rate and lighting under <strong>Sensor &amp; lighting</strong>.</li>
+          <li>Click <strong>Apply to mouse</strong>.</li>
+        </ol>
+
+        <h2>What you can change</h2>
+        <ul>
+          <li>All 16 buttons — including key combinations with ⌘, ⌥, ⌃ and ⇧, media keys and macOS shortcuts like Mission Control and Spotlight.</li>
+          <li>Five DPI stages, each with its own indicator colour.</li>
+          <li>Polling rate (125 to 1000 Hz).</li>
+          <li>LED mode, colour, brightness and speed.</li>
+        </ul>
+
+        <h2>Common questions</h2>
+        <h3>Do I need Windows at all?</h3>
+        <p>No. Everything runs in the browser on your Mac. If someone has shared a Redragon Windows profile (a .jmk file), you can import its button mappings too, or open it with the <a href="/jmk-decoder">.jmk file decoder</a>.</p>
+        <h3>Is anything uploaded?</h3>
+        <p>No. The page works entirely in your browser; there's no account and nothing about your mouse or profiles leaves your machine.</p>
+        <h3>Does it work on Linux too?</h3>
+        <p>Yes — the same page works in Chrome or Edge on Linux, and Windows as well.</p>
+        <h3>What about other Redragon mice?</h3>
+        <p>The M908 Impact has <a href="/m908">beta support</a>. Others are on the way — the mouse menu on the configurator lists what's coming.</p>
+      </article>
+    </section>
+
+    <section class="cta-row">
+      <p class="prose-muted" style="margin: 0;">
+        Ready to set up your M913?
+      </p>
+      <a class="btn primary" href="/">Open the M913 configurator →</a>
+    </section>
+    </main>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator (beta)</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/productivity-setup">Productivity button mapping</a> · <a href="/redragon-m913-mac">M913 software for Mac</a></p>
+    </footer>
+    <script type="module" src="/src/site-nav.ts"></script>
+  </body>
+</html>

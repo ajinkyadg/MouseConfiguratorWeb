@@ -1,5 +1,6 @@
 // Wires the M908 configurator page (m908.html) to the M908 protocol
 // modules. UNVERIFIED AGAINST REAL HARDWARE — see docs/protocol-notes/m908.md.
+import { offerDesktopHandoff } from "./unsupported-browser";
 import { initDropdowns } from "./dropdowns";
 import { initRangeSliders, syncRangeSliders } from "./range-slider";
 import {
@@ -656,9 +657,10 @@ renderAll();
 setConnected(false);
 
 if (!isWebHidAvailable()) {
-  statusEl.textContent = "This browser doesn't support WebHID — open this page in Chrome or Edge.";
+  statusEl.textContent = "This browser can't connect to a mouse — open this page in Chrome or Edge on a computer.";
   statusEl.classList.remove("connected");
   connectBtn.disabled = true;
+  offerDesktopHandoff(connectBtn);
   applyBtn.disabled = true;
   document.querySelector<HTMLElement>("#unsupported")!.hidden = false;
   // Apply can never enable here, so don't keep it floating over the page.

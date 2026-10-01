@@ -1,4 +1,5 @@
 import { initDropdowns } from "./dropdowns";
+import { offerDesktopHandoff } from "./unsupported-browser";
 import { initRangeSliders, syncRangeSliders } from "./range-slider";
 import {
   requestM913,
@@ -816,9 +817,10 @@ setConnected(false);
 // Say up front that this browser can't do it, rather than letting the user
 // click Connect and get a raw TypeError from deep inside requestM913().
 if (!isWebHidAvailable()) {
-  statusEl.textContent = "This browser doesn't support WebHID — open this page in Chrome or Edge.";
+  statusEl.textContent = "This browser can't connect to a mouse — open this page in Chrome or Edge on a computer.";
   statusEl.classList.remove("connected");
   connectBtn.disabled = true;
+  offerDesktopHandoff(connectBtn);
   applyBtn.disabled = true;
   document.querySelector<HTMLElement>("#unsupported")!.hidden = false;
   // Apply can never enable here, so don't keep it floating over the page.

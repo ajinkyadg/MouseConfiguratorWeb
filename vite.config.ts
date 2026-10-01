@@ -39,6 +39,7 @@ export default defineConfig({
         main: resolve(__dirname, "index.html"),
         jmkDecoder: resolve(__dirname, "jmk-decoder.html"),
         productivitySetup: resolve(__dirname, "productivity-setup.html"),
+        m913Mac: resolve(__dirname, "redragon-m913-mac.html"),
         m908: resolve(__dirname, "m908.html"),
         dpiChecker: resolve(__dirname, "dpi-checker.html"),
         sensitivityConverter: resolve(__dirname, "sensitivity-converter.html"),

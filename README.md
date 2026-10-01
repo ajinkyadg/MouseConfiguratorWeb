@@ -37,9 +37,11 @@ own one, testing it is the single most useful contribution you can make.
   — keeps your aim consistent across a DPI change or a game switch.
 - **[Productivity button mapping](https://mouseconfig.app/productivity-setup)**
   — a guide to using the M913's 12 side buttons for work rather than games.
+- **[M913 software for Mac](https://mouseconfig.app/redragon-m913-mac)**
+  — setting up the M913 on a Mac without Redragon's Windows-only software.
 
-The last three need no WebHID, so they work in any browser, including Safari,
-Firefox and mobile.
+Only the configurators need WebHID. The .jmk decoder, DPI checker, sensitivity
+converter and guides work in any browser, including Safari, Firefox and mobile.
 
 ## Browser support
 
