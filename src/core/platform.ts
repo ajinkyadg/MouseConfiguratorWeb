@@ -11,7 +11,7 @@
 // gets a valid HIDDevice and open() succeeds.
 //
 // But macOS gates report transfers on any HID interface carrying keyboard
-// usages, and as of macOS 26.6.2 that gate rejects unprivileged processes.
+// usages, and on some macOS 26.6 setups that gate rejects unprivileged processes.
 // Verified with a native IOKit probe outside the browser entirely:
 //
 //   unprivileged: IOHIDDeviceSetReport(feature, 0x08) -> kIOReturnNotPermitted
@@ -34,10 +34,10 @@
 export const MACOS_WRITE_BLOCK_EXPLANATION =
   "macOS refused this write. On some macOS 26.6 setups, browsers can't write to this mouse: the M913's " +
   "config channel shares a HID interface with its keyboard collection, and macOS " +
-  "now restricts writes on those interfaces to privileged processes. Chrome isn't " +
+  "can restrict writes on those interfaces to privileged processes. Chrome isn't " +
   "one, so the write is refused by the kernel before it reaches the mouse. Input " +
   "Monitoring, changing USB port, or restarting won't help. Workaround: launch " +
-  "Chrome with sudo (see \"Apply refused on macOS?\" under the settings on this page " +
+  "Chrome with sudo (see \"Apply refused on macOS?\" below the settings on this page " +
   "for the exact command) and apply from that window — confirmed working. Windows " +
   "and Linux are unaffected.";
 

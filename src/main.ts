@@ -845,7 +845,9 @@ async function applySection(label: string, send: () => Promise<void>): Promise<b
       explainedWriteBlock = true;
       log(MACOS_WRITE_BLOCK_EXPLANATION);
       revealMacosTip();
-      announce("macOS refused the write — see the workaround under the settings.", "warning");
+      announce("macOS refused the write — see the one-time workaround below.", "warning");
+      macosTip?.scrollIntoView({ block: "start" });
+      macosTip?.querySelector("summary")?.focus({ preventScroll: true });
     }
     return false;
   }

@@ -224,6 +224,13 @@
         use this if Apply actually failed that way. Nothing is wrong with your mouse or this page.
         The workaround is to open Chrome with administrator rights, just for this:
       </p>
+      <p class="hint">
+        <strong>Only use the admin Chrome window for MouseConfig.</strong> A browser running with administrator
+        rights has full access to your Mac, so don&rsquo;t browse anywhere else in it. The
+        <code>--user-data-dir</code> part keeps it in a throwaway profile, separate from your
+        normal Chrome, so your bookmarks and logins are never touched. Not using Chrome? Edge and
+        Brave work the same way &mdash; swap in their app path.
+      </p>
       <ol>
         <li>Open <strong>Terminal</strong> (Spotlight &rarr; &ldquo;Terminal&rdquo;). Your normal Chrome can stay open.</li>
         <li>Paste this command, press Return, and enter your Mac password when asked:
@@ -236,13 +243,6 @@
         <li>A separate Chrome window opens on this page. Click <strong>Connect to M913</strong>, then <strong>Apply to mouse</strong>.</li>
         <li>When you&rsquo;re done, quit that Chrome window (&#8984;Q) and close Terminal. Your settings stay saved on the mouse.</li>
       </ol>
-      <p class="hint">
-        <strong>Only use that window for MouseConfig.</strong> A browser running with administrator
-        rights has full access to your Mac, so don&rsquo;t browse anywhere else in it. The
-        <code>--user-data-dir</code> part keeps it in a throwaway profile, separate from your
-        normal Chrome, so your bookmarks and logins are never touched. Not using Chrome? Edge and
-        Brave work the same way &mdash; swap in their app path.
-      </p>
       </div>
     </details>
 
