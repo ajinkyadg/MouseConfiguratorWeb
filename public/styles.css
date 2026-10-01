@@ -932,3 +932,6 @@ button[hidden] { display: none; }
 .handoff { min-block-size: 44px; }
 @media (max-width: 640px) { .handoff { inline-size: 100%; } }
 .unsupported h2::after { background: linear-gradient(90deg, var(--warning), transparent 72%); }
+/* Dim what's being refreshed while the mouse is read. */
+[aria-busy="true"] { opacity: 0.55; transition: opacity 0.15s; }
+@media (prefers-reduced-motion: reduce) { [aria-busy="true"] { transition: none; } }

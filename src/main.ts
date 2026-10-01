@@ -304,6 +304,9 @@ connectBtn.addEventListener("click", async () => {
       // up top and needs reading first.
       const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.querySelector("#settings")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      // Start from what's actually on the mouse (skipped if it would
+      // overwrite unsaved edits — the Reload button is there for that).
+      void loadFromMouse(true);
     }
   } catch (err) {
     log(`Connect failed: ${(err as Error).message}`);
@@ -552,7 +555,9 @@ function updateChangeState() {
   revertBtn.hidden = count === 0 || !baseline;
   // One Save button: updates a saved profile, or asks for a name (Save As)
   // when the edits are to a built-in preset.
-  profileUpdateBtn.disabled = count === 0;
+  // Settings just read from the mouse aren't saved anywhere yet, so "Save
+  // as…" stays available even with nothing changed.
+  profileUpdateBtn.disabled = count === 0 && !(loadedFromMouse && !currentUserProfile());
   profileUpdateBtn.textContent = currentUserProfile() ? "Save" : "Save as…";
   renderSettingsSummary();
   const selectedOption = profileSelectEl.selectedOptions[0];
@@ -650,7 +655,7 @@ function currentProfileLabel(): string {
   if (userProfile) return userProfile.name;
   const preset = BUILT_IN_PRESETS.find((p) => p.id === loadedProfileID);
   if (preset) return preset.name;
-  return "Unsaved Configuration";
+  return loadedFromMouse ? "Settings from mouse" : "Unsaved Configuration";
 }
 
 function renderProfileSelect() {
@@ -689,6 +694,7 @@ profileSelectEl.addEventListener("change", () => {
   }
   if (!id) {
     loadedProfileID = null;
+    loadedFromMouse = false;
     renderProfileSelect();
     return;
   }
@@ -697,11 +703,15 @@ profileSelectEl.addEventListener("change", () => {
 });
 
 profileSaveAsBtn.addEventListener("click", () => {
-  const name = window.prompt("Save profile as:", currentProfileLabel() === "Unsaved Configuration" ? "" : currentProfileLabel());
+  const suggested = loadedFromMouse
+    ? `M913 – ${new Date().toLocaleDateString()}`
+    : currentProfileLabel() === "Unsaved Configuration" ? "" : currentProfileLabel();
+  const name = window.prompt("Save profile as:", suggested);
   if (name === null) return;
   const trimmed = name.trim();
   const saved = profileStore.addProfile(trimmed || "Untitled", getCurrentConfig());
   loadedProfileID = saved.id;
+  loadedFromMouse = false;
   renderProfileSelect();
   markSaved();
   log(`Saved profile "${saved.name}".`);
@@ -723,6 +733,7 @@ profileDeleteBtn.addEventListener("click", () => {
   if (!profile) return;
   profileStore.deleteProfile(profile.id);
   loadedProfileID = null;
+  loadedFromMouse = false;
   renderProfileSelect();
   profileSelectEl.focus(); // Delete just disabled itself; keep keyboard focus on the page
   log(`Deleted profile "${profile.name}".`);
@@ -838,12 +849,23 @@ if (!isWebHidAvailable()) {
 // software makes) and shows it, so editing starts from the real state.
 // Anything that can't be decoded keeps its current value and is named.
 
-loadFromMouseBtn.addEventListener("click", async () => {
-  if (!device || loadFromMouseBtn.getAttribute("aria-disabled") === "true") return;
+let reading = false;
+const busyRegionEls = [document.querySelector(".config-layout"), document.querySelector(".toolbar-profile")];
+
+// `auto` = right after Connect: only when nothing would be overwritten.
+async function loadFromMouse(auto: boolean) {
+  if (!device || reading || applying || hardware !== "areson") return;
   const pending = unsavedChanges();
-  if (pending && !window.confirm(`Replace your ${pending} unsaved change${pending === 1 ? "" : "s"} with what's on the mouse?`)) return;
+  if (pending) {
+    if (auto) return;
+    if (!window.confirm(`Replace your ${pending} unsaved change${pending === 1 ? "" : "s"} with what's on the mouse? This can't be undone.`)) return;
+  }
+  reading = true;
   loadFromMouseBtn.setAttribute("aria-disabled", "true");
+  applyBtn.setAttribute("aria-disabled", "true"); // never read and write at once
   loadFromMouseBtn.textContent = "Reading…";
+  busyRegionEls.forEach((el) => el?.setAttribute("aria-busy", "true"));
+  say("Reading settings from the mouse…");
   const mem: Memory = new Map();
   try {
     const plan = readPlan();
@@ -864,22 +886,27 @@ loadFromMouseBtn.addEventListener("click", async () => {
     renderProfileSelect();
     log(`Read OK. Buttons: ${JSON.stringify(config.buttonActions)}`);
     if (warnings.length) log(`Couldn't decode: ${warnings.join(", ")} — kept their current values.`);
-    announce(
-      warnings.length
-        ? `Loaded your mouse's settings — except ${warnings.join(", ")}, which kept their current values.`
-        : "Loaded the current settings from your mouse.",
-      warnings.length ? "warning" : "",
-    );
-    if (!warnings.length) statusEl.classList.add("connected"); // announce() cleared it
+    // The header keeps the connection status; the outcome goes to the
+    // toolbar's change line and the screen-reader live region.
+    const outcome = warnings.length
+      ? `Loaded from your mouse, except ${warnings.join(", ")} (kept as they were)`
+      : "Loaded from your mouse";
+    changeStatusEl.textContent = outcome;
+    say(outcome);
   } catch (err) {
     log(`Read failed: ${(err as Error).message}`);
     announce("Couldn't read the settings from the mouse — see the log. Nothing was changed.", "warning");
     if (isWriteRefusedError(err) && isMacOS()) revealMacosTip();
   } finally {
+    reading = false;
+    busyRegionEls.forEach((el) => el?.removeAttribute("aria-busy"));
     loadFromMouseBtn.removeAttribute("aria-disabled");
-    loadFromMouseBtn.textContent = "Load from mouse";
+    applyBtn.removeAttribute("aria-disabled");
+    loadFromMouseBtn.textContent = "Reload from mouse";
   }
-});
+}
+
+loadFromMouseBtn.addEventListener("click", () => loadFromMouse(false));
 
 // --- Apply ---------------------------------------------------------------
 
@@ -916,7 +943,7 @@ async function applySection(label: string, send: () => Promise<void>): Promise<b
 let applying = false;
 
 applyBtn.addEventListener("click", async () => {
-  if (!device || applying) return;
+  if (!device || applying || reading) return;
   applying = true;
   applyBtn.setAttribute("aria-disabled", "true");
   applyBtn.textContent = "Applying…";
