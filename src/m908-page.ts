@@ -108,6 +108,7 @@ let profile: M908ProfileSettings = profileSet.profiles[editingSlot];
 let storageWarned = false;
 // One-line summary on the collapsed "Sensor, lighting & preset" drawer.
 function renderSettingsSummary() {
+  syncPresetSelect();
   const el = document.querySelector<HTMLSpanElement>("#settings-summary");
   if (!el) return;
   const dpi = profile.dpiValues.filter((_, i) => profile.dpiEnabled[i]).join(" · ");
@@ -173,6 +174,29 @@ function renderPresetOptions() {
     opt.textContent = preset.name;
     presetSelectEl.append(opt);
   }
+  const blank = document.createElement("option");
+  blank.value = BLANK_PRESET;
+  blank.textContent = "Blank profile";
+  presetSelectEl.append(blank);
+}
+
+const BLANK_PRESET = "__blank__";
+
+// Key order in buttonActions changes as buttons are edited, so compare
+// profiles by a canonical form.
+function profileKey(p: M908ProfileSettings): string {
+  return JSON.stringify({ ...p, buttonActions: Object.fromEntries(Object.entries(p.buttonActions).sort()) });
+}
+const PRESET_KEYS: (readonly [string, string])[] = [
+  ...M908_BUILT_IN_PRESETS.map((preset) => [preset.id, profileKey(preset.profile)] as const),
+  [BLANK_PRESET, profileKey(M908_NEUTRAL_PROFILE)],
+];
+
+// The picker shows which preset the profile being edited currently matches
+// ("Custom" once anything has been changed), rather than snapping back.
+function syncPresetSelect() {
+  const key = profileKey(profile);
+  presetSelectEl.value = PRESET_KEYS.find(([, k]) => k === key)?.[0] ?? "";
 }
 
 function renderLedModeOptions() {
@@ -404,7 +428,8 @@ function syncSlotControls() {
     const selected = i === editingSlot;
     btn.classList.toggle("active", selected);
     btn.setAttribute("aria-pressed", String(selected));
-    btn.replaceChildren(`Profile ${i + 1}`);
+    btn.replaceChildren(String(i + 1)); // the toolbar label says "Profile"
+    btn.setAttribute("aria-label", `Profile ${i + 1}`);
     if (i === profileSet.activeProfile) {
       const mark = document.createElement("span");
       mark.className = "slot-active-mark";
@@ -413,6 +438,7 @@ function syncSlotControls() {
       srText.className = "visually-hidden";
       srText.textContent = " (active on mouse)";
       btn.append(mark, srText);
+      btn.setAttribute("aria-label", `Profile ${i + 1} (active on mouse)`);
       btn.title = "Active on the mouse after Apply";
     } else {
       btn.removeAttribute("title");
@@ -438,7 +464,6 @@ function selectSlot(slot: M908ProfileIndex) {
   if (slot === editingSlot) return;
   editingSlot = slot;
   profile = profileSet.profiles[slot];
-  presetSelectEl.value = "";
   renderAll();
   syncSlotControls();
 }
@@ -471,6 +496,10 @@ function buildActionReferenceText(): string {
 
 presetSelectEl.addEventListener("change", () => {
   const preset = M908_BUILT_IN_PRESETS.find((p) => p.id === presetSelectEl.value);
+  if (!preset && presetSelectEl.value !== BLANK_PRESET) {
+    syncPresetSelect(); // "Custom" isn't something to load
+    return;
+  }
   profile = structuredClone(preset ? preset.profile : M908_NEUTRAL_PROFILE);
   profileSet.profiles[editingSlot] = profile;
   renderAll();
@@ -550,7 +579,6 @@ importSetInput.addEventListener("change", async () => {
   }
   profileSet = imported;
   profile = profileSet.profiles[editingSlot];
-  presetSelectEl.value = "";
   renderAll();
   syncSlotControls();
   persist();
@@ -645,7 +673,7 @@ applyBtn.addEventListener("click", async () => {
   }
   applying = false;
   applyBtn.removeAttribute("aria-disabled");
-  applyBtn.textContent = "Apply Configuration";
+  applyBtn.textContent = "Apply to mouse";
 });
 
 // --- Init ---

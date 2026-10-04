@@ -935,3 +935,7 @@ button[hidden] { display: none; }
 /* Dim what's being refreshed while the mouse is read. */
 [aria-busy="true"] { opacity: 0.55; transition: opacity 0.15s; }
 @media (prefers-reduced-motion: reduce) { [aria-busy="true"] { transition: none; } }
+/* M908 toolbar: profile 1-5, preset and active-profile pickers in one row. */
+.config-toolbar #preset-select { min-inline-size: 12rem; }
+.config-toolbar #active-profile { min-inline-size: 0; }
+.config-toolbar .slot-switcher button { min-inline-size: 2.4rem; }

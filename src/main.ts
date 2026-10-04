@@ -991,7 +991,7 @@ applyBtn.addEventListener("click", async () => {
   if (!failed.length) statusEl.classList.add("connected");
   applying = false;
   applyBtn.removeAttribute("aria-disabled");
-  applyBtn.textContent = "Apply Configuration";
+  applyBtn.textContent = "Apply to mouse";
 });
 
 initDropdowns();

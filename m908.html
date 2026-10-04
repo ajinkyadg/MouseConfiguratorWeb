@@ -131,21 +131,18 @@
          browser automatically, so there's no Save button here. -->
     <section class="config-toolbar" aria-labelledby="slots-heading">
       <div class="toolbar-profile">
-        <span class="toolbar-label" id="slots-heading">Editing</span>
+        <span class="toolbar-label" id="slots-heading">Profile</span>
         <div class="segmented slot-switcher" id="slot-buttons" role="group" aria-labelledby="slots-heading"></div>
         <p class="visually-hidden" id="editing-slot"></p>
+        <label for="preset-select">Preset</label>
+        <select id="preset-select" title="Loads DPI, LED and buttons into the profile you're editing; the other four stay as they are.">
+          <option value="">Custom</option>
+        </select>
         <label for="active-profile">Active on mouse</label>
         <select id="active-profile"></select>
         <details class="dropdown toolbar-more">
           <summary aria-label="More profile actions">⋯</summary>
           <div class="dropdown-panel">
-            <div class="more-row">
-              <label for="preset-select">Load preset</label>
-              <select id="preset-select">
-                <option value="">Custom</option>
-              </select>
-            </div>
-            <p class="more-note">Loads DPI, LED and buttons into the profile you're editing; the other four stay as they are.</p>
             <div class="more-row">
               <label for="copy-target">Copy this profile to</label>
               <select id="copy-target"></select>
