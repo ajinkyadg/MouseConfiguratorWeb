@@ -34,8 +34,42 @@ describe("M908_BUILT_IN_PRESETS", () => {
   });
 
   it("Productivity preset uses the mouse's own cross-platform compatibility actions, not hardcoded modifiers", () => {
-    const productivity = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-productivity")!;
+    const productivity = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-compat")!;
     expect(productivity.profile.buttonActions.button_1).toBe("compatibility_copy");
     expect(productivity.profile.buttonActions.button_2).toBe("compatibility_paste");
+  });
+
+  it("carries every M913 preset over, side buttons mapped to button_1..12", () => {
+    const ids = M908_BUILT_IN_PRESETS.map((p) => p.id);
+    for (const id of ["preset-office-macos", "preset-office-windows", "preset-office-linux", "preset-default", "preset-fps", "preset-productivity", "preset-rgb"]) {
+      expect(ids).toContain(`m908-${id}`);
+    }
+    const mySetup = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-default")!;
+    expect(mySetup.name).toBe("My Setup (macOS)");
+    expect(mySetup.profile.buttonActions).toMatchObject({
+      button_1: "super+c",
+      button_2: "super+v",
+      button_3: "ctrl+tab",
+      button_4: "ctrl+arrow_left",
+      button_10: "super+w",
+      button_12: "ctrl+arrow_up",
+      button_fire: "enter",
+    });
+  });
+
+  it("has no duplicate preset ids", () => {
+    const ids = M908_BUILT_IN_PRESETS.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("translates what the M908 can't express", () => {
+    const linux = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-office-linux")!;
+    expect(linux.profile.buttonActions.button_6).toBe("alt+f1"); // bare "super" has no M908 encoding
+    const rgb = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-rgb")!;
+    expect(rgb.profile.dpiValues[4]).toBe(12000); // 16000 isn't in the M908's DPI table
+    expect(rgb.profile.lightMode).toBe("rainbow");
+    const lowDpi = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-productivity")!;
+    expect(lowDpi.profile.reportRateHz).toBe(125);
+    expect(lowDpi.profile.dpiEnabled).toEqual([true, true, true, false, false]);
   });
 });

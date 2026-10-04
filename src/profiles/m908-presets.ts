@@ -4,7 +4,10 @@
 // always writes all 5 together, so the page holds all 5 — see
 // m908-profile-store.ts and m908.md). M908_NEUTRAL_PROFILE is the plain
 // default a fresh slot starts from.
-import type { M908ProfileSettings } from "./m908";
+import { m908DpiSupported, type M908LightMode, type M908ProfileSettings } from "./m908";
+import type { M908ButtonName } from "./m908-buttons";
+import type { LedMode } from "./m913";
+import { BUILT_IN_PRESETS, type UserProfile } from "./user-profiles";
 
 export const M908_NEUTRAL_PROFILE: M908ProfileSettings = {
   lightMode: "static",
@@ -24,7 +27,69 @@ export interface M908Preset {
   profile: M908ProfileSettings;
 }
 
+// --- The M913 presets, carried over ------------------------------------
+//
+// The M908 has the same 12-button side panel, so every M913 preset
+// (Productivity per OS, My Setup, FPS, Low DPI, RGB) is offered here too,
+// derived from the M913 list rather than copied so the two can't drift.
+// Only what the M908 can't express is translated.
+
+const LIGHT_MODE: Record<LedMode, M908LightMode> = {
+  off: "off",
+  steady: "static",
+  respiration: "breathing",
+  rainbow: "rainbow",
+};
+
+// Actions the M908's documented format has no encoding for.
+const ACTION_OVERRIDES: Record<string, string> = {
+  // A bare modifier (GNOME Activities on the M913 Linux preset). Alt+F1 is
+  // GNOME's other default shortcut for the same overview.
+  super: "alt+f1",
+};
+
+function m908Button(m913Button: string): M908ButtonName | null {
+  const side = /^side(\d+)$/.exec(m913Button);
+  if (side) return `button_${side[1]}` as M908ButtonName;
+  return ({ fire: "button_fire", left: "button_left", right: "button_right", middle: "button_middle" } as const)[
+    m913Button as "fire" | "left" | "right" | "middle"
+  ] ?? null;
+}
+
+// The M908 only accepts DPI values from its table; step down to the
+// nearest one it has (16000 → 12000).
+function m908Dpi(dpi: number): number {
+  if (m908DpiSupported(dpi)) return dpi;
+  return [12000, 8000, 6400, 3200, 1600, 1200, 800, 400, 200].find((v) => v <= dpi && m908DpiSupported(v)) ?? 400;
+}
+
+function fromM913(preset: UserProfile): M908Preset {
+  const { config } = preset;
+  const buttonActions: M908ProfileSettings["buttonActions"] = {};
+  for (const [button, action] of Object.entries(config.buttonActions)) {
+    const target = m908Button(button);
+    if (target) buttonActions[target] = ACTION_OVERRIDES[action] ?? action;
+  }
+  const rgb = parseInt(config.ledColorHex, 16);
+  return {
+    id: `m908-${preset.id}`,
+    name: preset.name,
+    profile: {
+      ...M908_NEUTRAL_PROFILE,
+      lightMode: LIGHT_MODE[config.ledMode],
+      color: [(rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff],
+      brightness: config.ledBrightness,
+      speed: config.ledSpeed,
+      reportRateHz: config.pollingRateHz,
+      dpiEnabled: [...config.dpiEnabled],
+      dpiValues: config.dpi.map(m908Dpi) as M908ProfileSettings["dpiValues"],
+      buttonActions,
+    },
+  };
+}
+
 export const M908_BUILT_IN_PRESETS: M908Preset[] = [
+  ...BUILT_IN_PRESETS.map(fromM913),
   {
     id: "m908-preset-mmo",
     name: "MMO / Ability Bar",
@@ -58,8 +123,10 @@ export const M908_BUILT_IN_PRESETS: M908Preset[] = [
     },
   },
   {
-    id: "m908-preset-productivity",
-    name: "Productivity",
+    id: "m908-preset-compat",
+    // Renamed so it isn't confused with the per-OS Productivity presets
+    // above: this one uses the mouse's own built-in shortcut actions.
+    name: "Built-in shortcuts (untested)",
     profile: {
       ...M908_NEUTRAL_PROFILE,
       lightMode: "off",

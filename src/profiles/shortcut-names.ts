@@ -66,6 +66,7 @@ const WINDOWS: Record<string, string> = {
 const LINUX: Record<string, string> = {
   ...PC,
   "super": "Activities overview",
+  "alt+f1": "Activities overview",
   "super+l": "Lock",
   "ctrl+alt+arrow_left": "Previous workspace",
   "ctrl+alt+arrow_right": "Next workspace",
