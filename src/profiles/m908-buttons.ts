@@ -81,11 +81,23 @@ function parseKeyboardKey(action: string): M908ActionBytes | null {
   if (parts.length === 0) return null;
 
   const keyPart = parts[parts.length - 1];
-  const keyCode = KEY_CODES[keyPart];
-  if (keyCode === undefined) return null;
+  const isModifierOnly = MODIFIER_BITS[keyPart] !== undefined;
+
+  let keyCode: number;
+  let modifierParts: string[];
+
+  if (isModifierOnly) {
+    // Allow modifier-only keys by using 0x00 as the key code
+    keyCode = 0x00;
+    modifierParts = parts;
+  } else {
+    keyCode = KEY_CODES[keyPart];
+    if (keyCode === undefined) return null;
+    modifierParts = parts.slice(0, -1);
+  }
 
   let modifierByte = 0;
-  for (const modifierName of parts.slice(0, -1)) {
+  for (const modifierName of modifierParts) {
     const bit = MODIFIER_BITS[modifierName];
     if (bit === undefined) return null;
     modifierByte |= bit;
