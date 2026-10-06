@@ -1,0 +1,88 @@
+name: Request or vote for a mouse
+description: Ask for a mouse to be supported, or tell us which feature matters most to you.
+title: "Support request: "
+labels: ["device-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before opening a new request, check whether your mouse is already listed** in the
+        [open requests sorted by votes](https://github.com/ajinkyadg/MouseConfiguratorWeb/issues?q=is%3Aissue+is%3Aopen+label%3Adevice-request+sort%3Areactions-%2B1-desc).
+
+        If it is, vote by adding a 👍 reaction to the first post of that issue and click **Subscribe** to hear when it ships.
+        Please don't comment "+1" — reactions are what we count.
+
+  - type: dropdown
+    id: mouse
+    attributes:
+      label: Which mouse do you want supported?
+      options:
+        - Redragon M908 Impact
+        - Redragon M719 Invader
+        - Redragon M711 Cobra
+        - Redragon M901 Perdition
+        - Redragon M990 Legend
+        - Another Redragon mouse
+        - Another brand
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Exact model and USB ID
+      description: >-
+        The model name printed under the mouse, plus the USB vendor and product ID if you can find it
+        (macOS: System Information > USB; Windows: Device Manager > Details > Hardware Ids;
+        Linux: `lsusb`).
+      placeholder: "e.g. Redragon M908 Impact, 04d9:fc4d"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: features
+    attributes:
+      label: Which features matter most to you?
+      description: Tick everything you would actually use. This decides what gets built first.
+      options:
+        - label: Button remapping
+        - label: Keyboard shortcuts on buttons (e.g. Cmd+C)
+        - label: Macros
+        - label: DPI stages
+        - label: Polling rate
+        - label: RGB lighting
+        - label: Multiple onboard profiles
+        - label: Reading the current settings back from the mouse
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Which operating system do you use it on?
+      multiple: true
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - ChromeOS
+    validations:
+      required: true
+
+  - type: dropdown
+    id: testing
+    attributes:
+      label: Can you help test on your own mouse?
+      description: Support can only be confirmed on real hardware, so testers move a mouse up the list.
+      options:
+        - "Yes, I can test builds and report back"
+        - "Yes, and I can capture USB traffic from the official software"
+        - "No, I just want to vote"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
+      description: What you want to use the mouse for, or what the official software can't do for you.
+    validations:
+      required: false

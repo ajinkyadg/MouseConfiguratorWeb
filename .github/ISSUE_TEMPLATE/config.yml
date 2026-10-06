@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Vote for a mouse that is already requested
+    url: https://github.com/ajinkyadg/MouseConfiguratorWeb/issues?q=is%3Aissue+is%3Aopen+label%3Adevice-request+sort%3Areactions-%2B1-desc
+    about: See open requests sorted by votes. Add a 👍 to the one you want and subscribe for updates.
