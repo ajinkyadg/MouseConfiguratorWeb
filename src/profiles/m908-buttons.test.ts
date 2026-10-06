@@ -30,6 +30,19 @@ describe("parseM908Action — keyboard keys, with and without modifiers", () => 
   it("rejects an unrecognized key", () => {
     expect(parseM908Action("ctrl+madeupkey")).toBeNull();
   });
+
+  it("a modifier on its own is sent as that modifier's own key code", () => {
+    expect(parseM908Action("ctrl")).toEqual([0x90, 0x00, 0xe0, 0x00]);
+    expect(parseM908Action("shift")).toEqual([0x90, 0x00, 0xe1, 0x00]);
+    expect(parseM908Action("alt")).toEqual([0x90, 0x00, 0xe2, 0x00]);
+    expect(parseM908Action("super")).toEqual([0x90, 0x00, 0xe3, 0x00]);
+    expect(parseM908Action("shift_r")).toEqual([0x90, 0x00, 0xe5, 0x00]);
+    expect(parseM908Action("super_r")).toEqual([0x90, 0x00, 0xe7, 0x00]);
+  });
+
+  it("several modifiers alone: the last is the key, the rest are modifier bits", () => {
+    expect(parseM908Action("ctrl+shift")).toEqual([0x8f, 0x01, 0xe1, 0x00]);
+  });
 });
 
 describe("parseM908Action — fire", () => {

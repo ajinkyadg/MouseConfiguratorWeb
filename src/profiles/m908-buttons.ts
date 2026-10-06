@@ -80,24 +80,16 @@ function parseKeyboardKey(action: string): M908ActionBytes | null {
   const parts = action.split("+").filter(Boolean);
   if (parts.length === 0) return null;
 
+  // A trailing modifier ("shift", "ctrl+shift") is sent as a key in its own
+  // right: the family's key table lists the modifiers at HID usages
+  // 0xE0-0xE7, in the same order as their modifier bits.
   const keyPart = parts[parts.length - 1];
-  const isModifierOnly = MODIFIER_BITS[keyPart] !== undefined;
-
-  let keyCode: number;
-  let modifierParts: string[];
-
-  if (isModifierOnly) {
-    // Allow modifier-only keys by using 0x00 as the key code
-    keyCode = 0x00;
-    modifierParts = parts;
-  } else {
-    keyCode = KEY_CODES[keyPart];
-    if (keyCode === undefined) return null;
-    modifierParts = parts.slice(0, -1);
-  }
+  const trailingModifierBit = MODIFIER_BITS[keyPart];
+  const keyCode = trailingModifierBit !== undefined ? 0xe0 + Math.log2(trailingModifierBit) : KEY_CODES[keyPart];
+  if (keyCode === undefined) return null;
 
   let modifierByte = 0;
-  for (const modifierName of modifierParts) {
+  for (const modifierName of parts.slice(0, -1)) {
     const bit = MODIFIER_BITS[modifierName];
     if (bit === undefined) return null;
     modifierByte |= bit;

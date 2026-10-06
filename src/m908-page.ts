@@ -377,8 +377,6 @@ const buttonEditor = createButtonEditor({
   isChanged: () => false, // the M908's five profiles save automatically
   validate: (value) => {
     if (m908ActionSupported(value)) return null;
-    // The M908's documented format has no encoding for a modifier on its own.
-    if (/^(ctrl|alt|super|shift)(\+(ctrl|alt|super|shift))*$/.test(value)) return "The M908 needs a key with the modifier (e.g. Ctrl+C) — it can't hold a modifier on its own.";
     return `"${value}" isn't an action the M908 understands.`;
   },
   describe: describeAction,
