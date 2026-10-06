@@ -57,6 +57,30 @@ describe("M908_BUILT_IN_PRESETS", () => {
     });
   });
 
+  it("My Setup (macOS) is the owner's exported M908 layout, not the M913 carry-over", () => {
+    const mySetup = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-default")!;
+    expect(mySetup.profile).toEqual({
+      ...M908_NEUTRAL_PROFILE,
+      color: [0, 0, 255],
+      brightness: 255,
+      buttonActions: {
+        button_1: "super+c",
+        button_2: "super+v",
+        button_3: "ctrl+tab",
+        button_4: "ctrl+arrow_left",
+        button_5: "ctrl+arrow_right",
+        button_6: "ctrl+shift+tab",
+        button_8: "super+space",
+        button_10: "super+w",
+        button_11: "shift",
+        button_12: "ctrl+arrow_up",
+        button_fire: "enter",
+        button_middle: "ctrl+shift+m",
+      },
+    });
+    expect(parseM908Action("shift")).toEqual([0x90, 0x00, 0xe1, 0x00]);
+  });
+
   it("has no duplicate preset ids", () => {
     const ids = M908_BUILT_IN_PRESETS.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);

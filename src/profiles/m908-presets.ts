@@ -88,8 +88,35 @@ function fromM913(preset: UserProfile): M908Preset {
   };
 }
 
+// The site owner's own M908 layout, exported from the M908 page. It
+// replaces the carried-over M913 "My Setup" because it uses buttons that
+// preset doesn't (hold Shift on side 11, a middle-click shortcut).
+const M908_MY_SETUP: M908Preset = {
+  id: "m908-preset-default",
+  name: "My Setup (macOS)",
+  profile: {
+    ...M908_NEUTRAL_PROFILE,
+    color: [0, 0, 255],
+    brightness: 255,
+    buttonActions: {
+      button_1: "super+c", // Copy
+      button_2: "super+v", // Paste
+      button_3: "ctrl+tab", // Next tab
+      button_4: "ctrl+arrow_left", // Swipe between windows, left
+      button_5: "ctrl+arrow_right", // Swipe between windows, right
+      button_6: "ctrl+shift+tab", // Previous tab
+      button_8: "super+space", // Spotlight search
+      button_10: "super+w", // Close tab
+      button_11: "shift", // Hold Shift
+      button_12: "ctrl+arrow_up", // Mission Control
+      button_fire: "enter",
+      button_middle: "ctrl+shift+m",
+    },
+  },
+};
+
 export const M908_BUILT_IN_PRESETS: M908Preset[] = [
-  ...BUILT_IN_PRESETS.map(fromM913),
+  ...BUILT_IN_PRESETS.map((preset) => (preset.id === "preset-default" ? M908_MY_SETUP : fromM913(preset))),
   {
     id: "m908-preset-mmo",
     name: "MMO / Ability Bar",
