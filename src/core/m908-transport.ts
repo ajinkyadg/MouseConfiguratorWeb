@@ -71,8 +71,13 @@ export async function sendM908Row(device: HIDDevice, row: number[]): Promise<voi
   await device.sendFeatureReport(reportId, payload as BufferSource);
 }
 
-export async function sendM908Rows(device: HIDDevice, rows: number[][]): Promise<void> {
+// The official software leaves about 30 ms between packets (median of a
+// captured full write); sending them back to back is untested on hardware.
+export const M908_ROW_GAP_MS = 30;
+
+export async function sendM908Rows(device: HIDDevice, rows: number[][], gapMs: number = M908_ROW_GAP_MS): Promise<void> {
   for (const row of rows) {
     await sendM908Row(device, row);
+    if (gapMs > 0) await new Promise((resolve) => setTimeout(resolve, gapMs));
   }
 }
