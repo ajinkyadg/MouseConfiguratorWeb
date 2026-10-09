@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy | MouseConfig</title>
+    <meta name="description" content="How MouseConfig handles your information: no accounts, no cookies, no analytics. Your mouse settings stay in your own browser." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/privacy" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Privacy Policy | MouseConfig" />
+    <meta property="og:description" content="How MouseConfig handles your information: no accounts, no cookies, no analytics. Your mouse settings stay in your own browser." />
+    <meta property="og:url" content="https://mouseconfig.app/privacy" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Privacy Policy | MouseConfig" />
+    <meta name="twitter:description" content="How MouseConfig handles your information: no accounts, no cookies, no analytics. Your mouse settings stay in your own browser." />
+
+    <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
+    <script>
+      /* Theme before first paint, so neither face ever flashes: the stored
+         choice if there is one, otherwise Pro — the brand's default face. */
+      (function () {
+        var theme = null;
+        try { theme = localStorage.getItem("mouseconfig.theme"); } catch (e) { /* blocked storage */ }
+        document.documentElement.setAttribute("data-theme", theme === "play" ? "play" : "pro");
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      article p { font-size: var(--fs-md); line-height: 1.7; color: var(--text); margin: 0 0 1rem; max-width: 68ch; }
+      article h2 { font-size: 1.0625rem; font-weight: 650; color: var(--text); text-transform: none; letter-spacing: -0.005em; margin: 1.75rem 0 0.5rem; }
+      article ul, article ol { font-size: var(--fs-md); line-height: 1.7; color: var(--text); max-width: 68ch; padding-inline-start: 1.25rem; margin: 0 0 1rem; }
+      article li { margin-bottom: 0.35rem; }
+      article h3 { font-size: 1rem; font-weight: 650; margin: 1.25rem 0 0.35rem; }
+      .legal-updated { color: var(--text-secondary); font-size: var(--fs-sm); }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="currentColor"/><g stroke="var(--on-accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 13c-8.2 0-13.5 6.2-13.5 14.5v9C18.5 45 23.8 51 32 51s13.5-6 13.5-14.5v-9C45.5 19.2 40.2 13 32 13Z"/><path d="M18.8 32.4h26.4"/><path d="M32 20.5v6"/></g><g fill="var(--on-accent)"><circle cx="12" cy="27" r="2.1"/><circle cx="12" cy="33.5" r="2.1"/><circle cx="12" cy="40" r="2.1"/></g></svg></span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Configurator — beta</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/redragon-m913-mac"><span class="nav-item-title">M913 software for Mac</span><span class="nav-item-desc">Set up the M913 on a Mac without Windows</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+      <div class="theme-switch" role="radiogroup" aria-label="Site theme">
+        <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-value="play">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="currentColor"><path d="M11.6 1.8 4 11.6h4.2L8.4 18.2 16 8.4h-4.3l-.1-6.6Z"/></svg>
+          <span class="theme-label">Play</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-value="pro">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="6.2" width="15.6" height="11" rx="2"/><path d="M7.2 6.2V4.6a1.6 1.6 0 0 1 1.6-1.6h2.4a1.6 1.6 0 0 1 1.6 1.6v1.6M2.2 10.6h15.6"/></svg>
+          <span class="theme-label">Pro</span>
+        </button>
+      </div>
+    </nav>
+    <header>
+      <div>
+        <p class="eyebrow">Legal</p>
+        <h1>Privacy Policy</h1>
+        <p>What information is involved when you use MouseConfig, and what is not.</p>
+      </div>
+    </header>
+
+    <main id="main">
+
+    <section>
+      <article>
+        <p class="legal-updated">Last updated: 9 October 2026</p>
+
+        <p>
+          MouseConfig (<a href="/">mouseconfig.app</a>) is a free, browser-based
+          tool for configuring gaming mice, run by Panther Tech. This policy
+          explains what information is involved when you use it. The short
+          version: there are no accounts, no ads, no cookies and no analytics
+          in these pages, and your settings stay on your own device.
+        </p>
+
+        <h2>Information we do not collect</h2>
+        <ul>
+          <li>We do not ask for your name, email address or any other contact details.</li>
+          <li>The pages contain no analytics, advertising or social-media tracking scripts.</li>
+          <li>We do not set cookies.</li>
+          <li>We do not receive your mouse settings, profiles, or any file you open on the site.</li>
+        </ul>
+
+        <h2>Information stored on your device</h2>
+        <p>
+          To remember your work between visits, the site saves a few things in
+          your browser's local storage. This data never leaves your device and
+          we cannot see it:
+        </p>
+        <ul>
+          <li>the mouse profiles you create or edit, including button mappings, DPI, lighting and polling-rate settings;</li>
+          <li>your choice of site theme;</li>
+          <li>a note of which mice you have confirmed as compatible, so you are not asked again.</li>
+        </ul>
+        <p>
+          You can remove all of it at any time by clearing this site's data in
+          your browser settings. Using a private or incognito window means
+          nothing is kept after you close it.
+        </p>
+
+        <h2>Access to your mouse</h2>
+        <p>
+          The configurators talk to your mouse through WebHID, a browser
+          feature. Your browser asks for your permission before the site can
+          see or change a device, and you choose which device to share. All
+          communication happens directly between your browser and the mouse
+          over USB. Nothing about your device is sent to us or to anyone else.
+          You can withdraw the permission at any time in your browser's site
+          settings.
+        </p>
+
+        <h2>Files you open</h2>
+        <p>
+          Profile files you import and <code>.jmk</code> files you open in the
+          decoder are read and processed entirely inside your browser. They
+          are not uploaded.
+        </p>
+
+        <h2>Hosting and server logs</h2>
+        <p>
+          The site is hosted on Cloudflare. Like any website host, Cloudflare
+          processes technical information about each request in order to
+          deliver pages and protect the service from abuse. This includes your
+          IP address, browser type, the page requested and the time of the
+          request. We rely on our legitimate interest in running a secure,
+          reliable website for this processing. We do not use this information
+          to identify you, build a profile of you, or sell to anyone. See
+          <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">Cloudflare's privacy policy</a>
+          for how Cloudflare handles this data.
+        </p>
+
+        <h2>Links to other sites</h2>
+        <p>
+          Some pages link to other websites, such as Amazon, Redragon and
+          GitHub. These are ordinary links, not affiliate links, and we receive
+          nothing when you follow them. Once you leave MouseConfig, the other
+          site's own privacy policy applies.
+        </p>
+
+        <h2>Requests and feedback on GitHub</h2>
+        <p>
+          If you request support for a mouse or report a problem, you do so on
+          GitHub. Anything you post there is public and is handled by GitHub
+          under its own terms and privacy statement.
+        </p>
+
+        <h2>Children</h2>
+        <p>
+          The site is a general-audience tool. It is not directed at children
+          and does not knowingly collect personal information from anyone.
+        </p>
+
+        <h2>Your rights</h2>
+        <p>
+          Depending on where you live, laws such as the GDPR or the CCPA give
+          you rights over your personal information, including the rights to
+          access, correct and delete it and to object to its use. Because we
+          hold no account or profile for you, the data connected with your use
+          of the site is the data stored in your own browser, which you
+          control directly. If you have a question about the hosting logs
+          described above, or wish to exercise a right, contact us using the
+          details below. You also have the right to complain to your local
+          data-protection authority.
+        </p>
+
+        <h2>Changes to this policy</h2>
+        <p>
+          If the site starts handling information differently, for example by
+          adding analytics or an email list, this page will be updated before
+          the change takes effect and the date at the top will change.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Questions about this policy can be raised by opening an issue at
+          <a href="https://github.com/ajinkyadg/MouseConfiguratorWeb/issues" target="_blank" rel="noopener noreferrer">github.com/ajinkyadg/MouseConfiguratorWeb</a>.
+          Please do not include personal information in a public issue.
+        </p>
+        <p>See also the <a href="/terms">Terms of Use</a>.</p>
+      </article>
+    </section>
+    </main>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator (beta)</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/productivity-setup">Productivity button mapping</a> · <a href="/redragon-m913-mac">M913 software for Mac</a></p>
+      <p>Legal: <a href="/privacy">Privacy policy</a> · <a href="/terms">Terms of use</a></p>
+    </footer>
+    <script type="module" src="/src/site-nav.ts"></script>
+  </body>
+</html>

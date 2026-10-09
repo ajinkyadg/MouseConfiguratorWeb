@@ -43,6 +43,8 @@ export default defineConfig({
         m908: resolve(__dirname, "m908.html"),
         dpiChecker: resolve(__dirname, "dpi-checker.html"),
         sensitivityConverter: resolve(__dirname, "sensitivity-converter.html"),
+        privacy: resolve(__dirname, "privacy.html"),
+        terms: resolve(__dirname, "terms.html"),
       },
     },
   },
