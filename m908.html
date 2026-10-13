@@ -3,20 +3,46 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Redragon M908 Software for Mac &amp; Linux (Beta) | MouseConfig</title>
-    <meta name="description" content="Free Redragon M908 Impact software that runs in your browser: remap all 20 buttons and set DPI, RGB and report rate for all five profiles on Mac, Linux or Windows. No download." />
+    <title>Redragon M908 Software for Mac &amp; Linux | MouseConfig</title>
+    <meta name="description" content="Free Redragon M908 Impact software in your browser. Remap all 20 buttons and set DPI, RGB and polling rate for five profiles on Mac or Linux. No download." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://mouseconfig.app/m908" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MouseConfig" />
-    <meta property="og:title" content="Redragon M908 Software for Mac &amp; Linux (Beta) | MouseConfig" />
+    <meta property="og:title" content="Redragon M908 Software for Mac &amp; Linux | MouseConfig" />
     <meta property="og:description" content="Configure DPI, buttons, and RGB on your Redragon M908 straight from the browser. No install, no drivers, works on Windows, Mac, and Linux." />
     <meta property="og:url" content="https://mouseconfig.app/m908" />
+    <meta property="og:image" content="https://mouseconfig.app/brand/share.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MouseConfig: Redragon mouse software for Mac, Linux and Windows, in your browser" />
 
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Redragon M908 Software for Mac &amp; Linux (Beta) | MouseConfig" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://mouseconfig.app/brand/share.png" />
+    <meta name="twitter:title" content="Redragon M908 Software for Mac &amp; Linux | MouseConfig" />
     <meta name="twitter:description" content="Configure DPI, buttons, and RGB on your Redragon M908 straight from the browser. No install, no drivers." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "MouseConfig for Redragon M908 Impact",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "url": "https://mouseconfig.app/m908",
+        "description": "Free browser-based software for the Redragon M908 Impact gaming mouse: all five onboard profiles, 20 buttons, DPI, RGB and polling rate, with no install.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Panther Tech"
+        }
+      }
+    </script>
 
     <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
     <script>
@@ -64,7 +90,7 @@
           <summary>Configure</summary>
           <div class="dropdown-panel"><ul>
             <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
-            <li><a class="dropdown-item nav-item" href="/m908" aria-current="page"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Configurator — beta</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908" aria-current="page"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Five onboard profiles, buttons, DPI and RGB</span></a></li>
           </ul></div>
         </details></li>
         <li><details class="dropdown nav-menu">
@@ -97,7 +123,7 @@
     <!-- Slim tool header, as on the M913 page. -->
     <header class="tool-header">
       <div class="tool-head-main">
-        <h1 class="tool-title">M908 Configurator <span class="badge">Beta</span></h1>
+        <h1 class="tool-title">M908 Configurator</h1>
         <p id="status" role="status">Not connected. Works in Chrome or Edge.</p>
       </div>
       <div class="mouse-bar tool-mouse" role="group" aria-label="Choose your mouse">
@@ -107,7 +133,7 @@
         <div class="dropdown-panel">
           <ul>
             <li><a class="dropdown-item mouse-option" href="/"><span>Redragon M913 Impact Elite</span><span class="badge">Supported</span></a></li>
-            <li><a class="dropdown-item mouse-option" href="/m908" aria-current="page"><span>Redragon M908 Impact</span><span class="badge">Beta</span><svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+            <li><a class="dropdown-item mouse-option" href="/m908" aria-current="page"><span>Redragon M908 Impact</span><span class="badge">Supported</span><svg class="check" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
             <li><span class="dropdown-item mouse-option is-disabled"><span>Redragon M719 Invader</span><span class="badge">Coming soon</span></span></li>
           </ul>
           <p class="mouse-menu-foot">Don&rsquo;t see your mouse? <a href="https://github.com/ajinkyadg/MouseConfiguratorWeb/issues?q=is%3Aissue+is%3Aopen+label%3Adevice-request+sort%3Areactions-%2B1-desc" target="_blank" rel="noopener noreferrer" aria-label="Request or vote for a mouse on GitHub (opens in a new tab)">Request or vote for it</a>.</p>
@@ -124,7 +150,7 @@
       <p>MouseConfig talks to the mouse over WebHID, which only desktop Chrome, Edge, Brave and Opera support. You can still look around on this device.</p>
     </section>
 
-    <p class="beta-note"><strong>Not yet hardware-verified.</strong> M908 support is built from public protocol docs and hasn't been tested on a real M908 — if something doesn't work, that's expected until the first real test. Own an M908? <a href="https://github.com/ajinkyadg/MouseConfiguratorWeb/issues/2" target="_blank" rel="noopener noreferrer" aria-label="Vote for M908 support or follow progress on GitHub (opens in a new tab)">Vote for it or follow progress on GitHub</a>.</p>
+    <p class="beta-note"><strong>Tested on a real Redragon M908 Impact.</strong> If something doesn't work on yours, <a href="https://github.com/ajinkyadg/MouseConfiguratorWeb/issues/2" target="_blank" rel="noopener noreferrer" aria-label="Report an M908 problem on GitHub (opens in a new tab)">tell us on GitHub</a>.</p>
 
     <!-- Toolbar: which of the five onboard profiles you're editing, which one
          the mouse uses, and Apply. Sticky on desktop. Profiles save in this
@@ -148,6 +174,7 @@
               <select id="copy-target"></select>
               <button type="button" id="copy-slot">Copy</button>
             </div>
+            <button type="button" id="share-profile">Copy share link for this profile</button>
             <button type="button" id="export-set">Export all 5…</button>
             <button type="button" id="import-set">Import all 5…</button>
             <input type="file" id="import-set-input" accept="application/json,.json" hidden />
@@ -239,7 +266,7 @@
 
     <footer>
       <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
-      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator (beta)</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/productivity-setup">Productivity button mapping</a> · <a href="/redragon-m913-mac">M913 software for Mac</a></p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/productivity-setup">Productivity button mapping</a> · <a href="/redragon-m913-mac">M913 software for Mac</a></p>
       <p>Legal: <a href="/privacy">Privacy policy</a> · <a href="/terms">Terms of use</a></p>
       <p class="buy-links">Buy: <a href="https://www.amazon.com/Redragon-M908-Programmable-Buttons-Cartridge/dp/B07N2SXZGG" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 on Amazon (opens in a new tab)">Amazon</a> · <a href="https://redragonshop.com/products/impact-m908" target="_blank" rel="noopener noreferrer" aria-label="Buy the M908 from Redragon (opens in a new tab)">Redragon</a></p>
     </footer>
