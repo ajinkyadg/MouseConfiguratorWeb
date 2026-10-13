@@ -17,7 +17,7 @@ uploaded.
 | Mouse | Status | What you can configure |
 | --- | --- | --- |
 | Redragon M913 Impact Elite | Working, tested on hardware | Polling rate, 5 DPI stages with per-stage indicator colours, LED mode/colour/brightness/speed, all 16 buttons (including key combinations and macOS shortcuts) |
-| Redragon M908 Impact | **Beta — never tested on hardware** | All 5 onboard profiles, DPI stages, LED modes, polling rate, scroll speed, button actions |
+| Redragon M908 Impact | Working, tested on hardware | All 5 onboard profiles, DPI stages, LED modes, polling rate, scroll speed, button actions |
 | Redragon M719 Invader | Not started | — |
 
 The M913 support is verified against a real mouse. **M908 support was built

@@ -2,7 +2,7 @@
 // (the M913 module) rather than generalized, so nothing here can regress
 // the already-working, hardware-verified M913 flow.
 //
-// UNVERIFIED AGAINST REAL HARDWARE — see docs/protocol-notes/m908.md.
+// Confirmed on a real M908 by the owner (2026-10-13) — see docs/protocol-notes/m908.md.
 import { isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./platform";
 
 import { toFeatureReportPayload } from "../profiles/m908";

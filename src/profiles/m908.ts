@@ -4,7 +4,8 @@
 // tables JSON are transcribed byte values (facts), not copied logic; all
 // the overlay logic below is written from scratch.
 //
-// UNVERIFIED AGAINST REAL HARDWARE — see "Open questions" in m908.md.
+// Confirmed on a real M908 by the owner (2026-10-13); remaining unknowns are
+// under "Open questions" in m908.md.
 // In particular: whether sendFeatureReport needs the leading 0x02 byte
 // included in the payload or stripped (this module assumes it's stripped,
 // mirroring M913's convention — see buildFeatureReportPayloads below).
