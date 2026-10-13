@@ -34,7 +34,7 @@ export function m908DpiSupported(dpi: number): boolean {
 export interface M908ProfileSettings {
   lightMode: M908LightMode;
   color: [r: number, g: number, b: number];
-  brightness: number; // 0-255
+  brightness: number; // 0-255 on the page; sent as m908BrightnessByte()
   speed: number; // device-defined scale, matches the "speed" template field
   scrollSpeed: number;
   reportRateHz: number; // 125 | 250 | 500 | 1000
@@ -43,6 +43,13 @@ export interface M908ProfileSettings {
   /** Button name -> action string (see profiles/m908-buttons.ts). Buttons
    * not present here keep their current/factory mapping. */
   buttonActions: Partial<Record<M908ButtonName, string>>;
+}
+
+// The mouse stores brightness as a level, not 0-255: the reference
+// template and a capture of the official software both write 2 for a
+// mid setting, and upstream documents the range as 1-3.
+export function m908BrightnessByte(brightness: number): number {
+  return Math.min(3, Math.max(1, Math.ceil(brightness / 85)));
 }
 
 export function m908LightModeSupported(mode: string): mode is M908LightMode {
@@ -94,7 +101,7 @@ export function buildM908SettingsRows(profiles: M908FiveProfiles): { settings1: 
     modePacket[12] = profile.speed;
 
     // Brightness, packet `4 + 2*i`
-    settings1[4 + 2 * i][8] = profile.brightness;
+    settings1[4 + 2 * i][8] = m908BrightnessByte(profile.brightness);
 
     // Scroll speed, settings2 byte `8 + 2*i`
     settings2[8 + 2 * i] = profile.scrollSpeed;
@@ -112,6 +119,15 @@ export function buildM908SettingsRows(profiles: M908FiveProfiles): { settings1: 
       if (code) {
         row[9] = code[0];
         row[10] = code[1];
+        // The official software writes five bytes here, repeating the
+        // code (X then Y). Only seen in a capture for values up to 6200,
+        // where the second byte is 0, so higher values keep the four-byte
+        // upstream form until a capture shows what follows them.
+        if (code[1] === 0) {
+          row[4] = 5;
+          row[11] = code[0];
+          row[12] = 0;
+        }
       }
     }
 

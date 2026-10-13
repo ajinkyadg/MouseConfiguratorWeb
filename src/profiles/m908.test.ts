@@ -8,6 +8,8 @@ import {
   M908_REPORT_ID,
   m908DpiRowIndex,
   buildM908ApplySequence,
+  m908BrightnessByte,
+  type M908FiveProfiles,
   type M908ProfileSettings,
 } from "./m908";
 
@@ -61,8 +63,8 @@ describe("buildM908SettingsRows", () => {
     const { settings1 } = buildM908SettingsRows(
       profiles.map((p, i) => (i <= 1 ? { ...p, brightness: i === 0 ? 111 : 222 } : p)) as typeof profiles
     );
-    expect(settings1[4][8]).toBe(111); // "4 + 2*0"
-    expect(settings1[6][8]).toBe(222); // "4 + 2*1"
+    expect(settings1[4][8]).toBe(2); // "4 + 2*0": 111 -> level 2
+    expect(settings1[6][8]).toBe(3); // "4 + 2*1": 222 -> level 3"
   });
 
   it("overlays scroll speed in settings2 at byte 8+2*i", () => {
@@ -143,14 +145,14 @@ describe("buildM908ProfileSelectRows", () => {
 });
 
 describe("buildM908ApplySequence", () => {
-  const five = [0, 1, 2, 3, 4].map((i) => baseProfile({ brightness: 10 + i, scrollSpeed: 20 + i })) as Parameters<typeof buildM908ApplySequence>[0];
+  const five = [0, 1, 2, 3, 4].map((i) => baseProfile({ brightness: 80 * i, scrollSpeed: 20 + i })) as Parameters<typeof buildM908ApplySequence>[0];
 
   it("writes all five profiles' fields, then selects the active profile last", () => {
     const steps = buildM908ApplySequence(five, 2);
     expect(steps).toHaveLength(4);
     const [s1, s2, s3, select] = steps;
     for (let i = 0; i < 5; i++) {
-      expect(s1.rows[4 + 2 * i][8]).toBe(10 + i);
+      expect(s1.rows[4 + 2 * i][8]).toBe(m908BrightnessByte(80 * i));
       expect(s2.rows[0][8 + 2 * i]).toBe(20 + i);
     }
     expect(s2.rows[0]).toHaveLength(64);
@@ -173,5 +175,117 @@ describe("toFeatureReportPayload", () => {
     const { reportId, payload } = toFeatureReportPayload([2, 0xf3, 0x42, 0x00]);
     expect(reportId).toBe(M908_REPORT_ID);
     expect(Array.from(payload)).toEqual([0xf3, 0x42, 0x00]);
+  });
+});
+
+describe("m908BrightnessByte", () => {
+  it("maps the page's 0-255 slider onto the mouse's three levels", () => {
+    expect([0, 1, 85, 86, 128, 170, 171, 200, 255].map(m908BrightnessByte)).toEqual([1, 1, 1, 2, 2, 2, 3, 3, 3]);
+  });
+
+  it("never sends a value outside 1-3, whatever the page holds", () => {
+    for (let b = -10; b <= 300; b++) {
+      const level = m908BrightnessByte(b);
+      expect(level).toBeGreaterThanOrEqual(1);
+      expect(level).toBeLessThanOrEqual(3);
+    }
+  });
+});
+
+// Rows below are copied from a USB capture of the official Redragon
+// software writing its default profile (500/1000/2000/3000/6200 DPI, red
+// wave lighting, 500 Hz) with Shift on side button 11 of profiles 1 and 2.
+describe("matches a capture of the official software", () => {
+  const official: M908ProfileSettings = {
+    lightMode: "wave",
+    color: [255, 0, 0],
+    brightness: 128,
+    speed: 4,
+    scrollSpeed: 1,
+    reportRateHz: 500,
+    dpiEnabled: [true, true, true, true, true],
+    dpiValues: [500, 1000, 2000, 3000, 6200],
+    buttonActions: {},
+  };
+  const withShift = { ...official, buttonActions: { button_11: "shift" } };
+  const profiles = [withShift, withShift, official, official, official] as M908FiveProfiles;
+
+  // Replays every addressed write (f3 <addr lo> <addr hi> <length>) into a
+  // map of mouse memory, so two write sequences can be compared by what
+  // they leave in memory rather than by how they split it into packets.
+  function memoryAfter(rows: number[][]): Map<number, number> {
+    const memory = new Map<number, number>();
+    for (const row of rows) {
+      if (row[1] !== 0xf3) continue;
+      const address = row[2] | (row[3] << 8);
+      for (let k = 0; k < row[4]; k++) memory.set(address + k, row[8 + k]);
+    }
+    return memory;
+  }
+  const hex = (text: string) => text.split(" ").map((b) => parseInt(b, 16));
+  const appMemory = () => {
+    const { settings1, settings2, settings3 } = buildM908SettingsRows(profiles);
+    return memoryAfter([...settings1, settings2, ...settings3]);
+  };
+  const expectSameMemory = (capturedRows: string[]) => {
+    const memory = appMemory();
+    for (const [address, value] of memoryAfter(capturedRows.map(hex))) {
+      expect(memory.get(address), `address 0x${address.toString(16)}`).toBe(value);
+    }
+  };
+
+  it("DPI stages: enabled flag plus the code written twice", () => {
+    expectSameMemory([
+      "02 f3 44 00 05 00 00 00 01 0b 00 0b 00 00 00 00",
+      "02 f3 4a 00 05 00 00 00 01 16 00 16 00 00 00 00",
+      "02 f3 50 00 05 00 00 00 01 2d 00 2d 00 00 00 00",
+      "02 f3 56 00 05 00 00 00 01 43 00 43 00 00 00 00",
+      "02 f3 5c 00 05 00 00 00 01 8c 00 8c 00 00 00 00",
+      "02 f3 04 01 05 00 00 00 01 0b 00 0b 00 00 00 00",
+      "02 f3 2c 03 05 00 00 00 01 8c 00 8c 00 00 00 00",
+    ]);
+  });
+
+  it("DPI rows are byte-identical to the captured packets, not just equivalent", () => {
+    const { settings3 } = buildM908SettingsRows(profiles);
+    expect(settings3[m908DpiRowIndex(0, 0)]).toEqual(hex("02 f3 44 00 05 00 00 00 01 0b 00 0b 00 00 00 00"));
+    expect(settings3[m908DpiRowIndex(4, 4)]).toEqual(hex("02 f3 2c 03 05 00 00 00 01 8c 00 8c 00 00 00 00"));
+  });
+
+  it("lighting: colour, mode, speed and brightness level for every profile", () => {
+    expectSameMemory([
+      "02 f3 49 04 07 00 00 00 ff 00 00 02 04 00 02 00",
+      "02 f3 51 04 07 00 00 00 ff 00 00 02 04 00 02 00",
+      "02 f3 59 04 07 00 00 00 ff 00 00 02 04 00 02 00",
+      "02 f3 61 04 07 00 00 00 ff 00 00 02 04 00 02 00",
+      "02 f3 69 04 07 00 00 00 ff 00 00 02 04 00 02 00",
+    ]);
+  });
+
+  it("polling rate for all five profiles", () => {
+    expectSameMemory([
+      "02 f3 32 00 06 00 00 00 02 00 02 00 02 00 00 00",
+      "02 f3 38 00 04 00 00 00 02 00 02 00 00 00 00 00",
+    ]);
+  });
+
+  it("buttons: Shift on side 11, and the untouched defaults around it", () => {
+    expectSameMemory([
+      "02 f3 82 00 04 00 00 00 81 00 00 00 00 00 00 00", // left click
+      "02 f3 86 00 04 00 00 00 82 00 00 00 00 00 00 00", // right click
+      "02 f3 8e 00 04 00 00 00 99 81 03 00 00 00 00 00", // fire button
+      "02 f3 9a 00 04 00 00 00 90 00 1e 00 00 00 00 00", // side 1 = "1"
+      "02 f3 c2 00 04 00 00 00 90 00 e1 00 00 00 00 00", // side 11 = Shift, profile 1
+      "02 f3 82 01 04 00 00 00 90 00 e1 00 00 00 00 00", // side 11 = Shift, profile 2
+      "02 f3 32 02 04 00 00 00 90 00 57 00 00 00 00 00", // side 11 default, profile 3
+      "02 f3 ae 03 04 00 00 00 8c 00 00 00 00 00 00 00", // scroll down, profile 5
+    ]);
+  });
+
+  it("DPI above 6200 keeps the four-byte form (no capture covers it yet)", () => {
+    const high = profiles.map((p) => ({ ...p, dpiValues: [500, 1000, 2000, 6400, 12400] })) as M908FiveProfiles;
+    const { settings3 } = buildM908SettingsRows(high);
+    expect(settings3[m908DpiRowIndex(0, 3)]).toEqual(hex("02 f3 56 00 04 00 00 00 01 48 01 00 00 00 00 00"));
+    expect(settings3[m908DpiRowIndex(0, 4)]).toEqual(hex("02 f3 5c 00 04 00 00 00 01 8c 01 00 00 00 00 00"));
   });
 });
