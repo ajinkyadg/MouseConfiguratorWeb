@@ -1,5 +1,5 @@
 // Wires the M908 configurator page (m908.html) to the M908 protocol
-// modules. UNVERIFIED AGAINST REAL HARDWARE — see docs/protocol-notes/m908.md.
+// modules. Confirmed on a real M908 by the owner (2026-10-13) — see docs/protocol-notes/m908.md.
 import { offerDesktopHandoff } from "./unsupported-browser";
 import { initDropdowns } from "./dropdowns";
 import { initRangeSliders, syncRangeSliders } from "./range-slider";
@@ -33,6 +33,8 @@ import {
   type M908ProfileSet,
 } from "./profiles/m908-profile-store";
 import { detectDesktopOS, isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
+import { buildShareUrl, readM908Share } from "./profiles/share-link";
+import { clearShareFragment, copyShareLink } from "./share-ui";
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
 import { comboKeyGroups } from "./profiles/key-combo-keys";
@@ -59,6 +61,7 @@ const activeProfileEl = document.querySelector<HTMLSelectElement>("#active-profi
 const copyTargetEl = document.querySelector<HTMLSelectElement>("#copy-target")!;
 const copySlotBtn = document.querySelector<HTMLButtonElement>("#copy-slot")!;
 const exportSetBtn = document.querySelector<HTMLButtonElement>("#export-set")!;
+const shareProfileBtn = document.querySelector<HTMLButtonElement>("#share-profile")!;
 const importSetBtn = document.querySelector<HTMLButtonElement>("#import-set")!;
 const importSetInput = document.querySelector<HTMLInputElement>("#import-set-input")!;
 
@@ -563,6 +566,50 @@ exportSetBtn.addEventListener("click", () => {
   log("Exported all five profiles to m908-profiles.json.");
 });
 
+shareProfileBtn.addEventListener("click", async () => {
+  const url = buildShareUrl(location.href, "m908", `M908 profile ${editingSlot + 1}`, profile);
+  const copied = await copyShareLink(url);
+  const message = copied
+    ? `Share link for profile ${editingSlot + 1} copied — anyone who opens it gets this profile.`
+    : `Share link for profile ${editingSlot + 1} is ready to copy.`;
+  log(message);
+  announce(message);
+});
+
+// A share link carries one profile in the URL fragment. Offer it for the
+// slot being edited; nothing reaches the mouse until Apply.
+function openSharedProfile() {
+  const shared = readM908Share(location.hash);
+  if (shared.kind === "none") return;
+  clearShareFragment();
+  if (shared.kind === "invalid") {
+    log("That share link is damaged or incomplete — nothing was loaded.");
+    announce("That share link is damaged or incomplete — nothing was loaded.", "warning");
+    return;
+  }
+  if (shared.kind === "wrong-mouse") {
+    log("That share link is for a different mouse — nothing was loaded.");
+    announce("That share link is for a different mouse — nothing was loaded.", "warning");
+    return;
+  }
+  const slot = editingSlot + 1;
+  const ok = confirm(
+    `Load the shared profile "${shared.name}" into profile ${slot}?\n\n` +
+      `It replaces what profile ${slot} holds on this page. Nothing is sent to the mouse until you press Apply.`
+  );
+  if (!ok) {
+    log("Shared profile not loaded.");
+    return;
+  }
+  profile = shared.profile;
+  profileSet.profiles[editingSlot] = profile;
+  renderAll();
+  persist();
+  log(`Loaded shared profile "${shared.name}" into profile ${slot}. Review it, then press Apply to write it to the mouse.`);
+  announce(`Shared profile "${shared.name}" loaded into profile ${slot}. Review it before you apply.`);
+}
+window.addEventListener("hashchange", openSharedProfile);
+
 importSetBtn.addEventListener("click", () => importSetInput.click());
 
 importSetInput.addEventListener("change", async () => {
@@ -698,3 +745,4 @@ if (!isWebHidAvailable()) {
 
 initDropdowns();
 initRangeSliders();
+openSharedProfile();

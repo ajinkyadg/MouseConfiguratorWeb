@@ -71,6 +71,8 @@ import {
   type UserProfile,
 } from "./profiles/user-profiles";
 import { ProfileStore } from "./profiles/profile-store";
+import { buildShareUrl, readM913Share } from "./profiles/share-link";
+import { clearShareFragment, copyShareLink } from "./share-ui";
 import { jmkToButtonActions } from "./profiles/jmk-import";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
@@ -96,6 +98,7 @@ const profileSelectEl = document.querySelector<HTMLSelectElement>("#profile-sele
 const profileSaveAsBtn = document.querySelector<HTMLButtonElement>("#profile-save-as")!;
 const profileUpdateBtn = document.querySelector<HTMLButtonElement>("#profile-update")!;
 const profileDeleteBtn = document.querySelector<HTMLButtonElement>("#profile-delete")!;
+const profileShareBtn = document.querySelector<HTMLButtonElement>("#profile-share")!;
 const profileImportBtn = document.querySelector<HTMLButtonElement>("#profile-import")!;
 const profileExportBtn = document.querySelector<HTMLButtonElement>("#profile-export")!;
 const profileImportInput = document.querySelector<HTMLInputElement>("#profile-import-input")!;
@@ -658,16 +661,20 @@ function currentProfileLabel(): string {
   return loadedFromMouse ? "Settings from mouse" : "Unsaved Configuration";
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 function renderProfileSelect() {
   const current = loadedProfileID ?? "";
   profileSelectEl.innerHTML =
     `<option value="">${loadedFromMouse ? "Read from mouse" : "— Unsaved Configuration —"}</option>` +
     `<optgroup label="Presets">` +
-    BUILT_IN_PRESETS.map((p) => `<option value="${p.id}">${p.name}</option>`).join("") +
+    BUILT_IN_PRESETS.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("") +
     `</optgroup>` +
     (profileStore.profiles.length
       ? `<optgroup label="My Profiles">` +
-        profileStore.profiles.map((p) => `<option value="${p.id}">${p.name}</option>`).join("") +
+        profileStore.profiles.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("") +
         `</optgroup>`
       : "");
   profileSelectEl.value = current;
@@ -802,6 +809,49 @@ profileExportBtn.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+profileShareBtn.addEventListener("click", async () => {
+  const label = currentProfileLabel();
+  const name = label === "Unsaved Configuration" || label === "Settings from mouse" ? "M913 profile" : label;
+  const copied = await copyShareLink(buildShareUrl(location.href, "m913", name, getCurrentConfig()));
+  const message = copied
+    ? `Share link for "${name}" copied — anyone who opens it gets this profile.`
+    : `Share link for "${name}" is ready to copy.`;
+  log(message);
+  announce(message);
+});
+
+// A share link carries one profile in the URL fragment. It is added to
+// the saved profiles and loaded; nothing reaches the mouse until Apply.
+function openSharedProfile() {
+  const shared = readM913Share(location.hash);
+  if (shared.kind === "none") return;
+  clearShareFragment();
+  if (shared.kind !== "ok") {
+    const message =
+      shared.kind === "wrong-mouse"
+        ? "That share link is for a different mouse — nothing was loaded."
+        : "That share link is damaged or incomplete — nothing was loaded.";
+    log(message);
+    announce(message, "warning");
+    return;
+  }
+  const pending = unsavedChanges();
+  const ok = window.confirm(
+    `Add the shared profile "${shared.name}" to your profiles and open it?\n\n` +
+      (pending ? `Your ${pending} unsaved change${pending === 1 ? "" : "s"} to "${currentProfileLabel()}" will be discarded. ` : "") +
+      "Nothing is sent to the mouse until you press Apply."
+  );
+  if (!ok) {
+    log("Shared profile not loaded.");
+    return;
+  }
+  const saved = profileStore.addProfile(shared.name, shared.profile);
+  loadProfile(saved);
+  log(`Added shared profile "${saved.name}". Review it, then press Apply to write it to the mouse.`);
+  announce(`Shared profile "${saved.name}" added. Review it before you apply.`);
+}
+window.addEventListener("hashchange", openSharedProfile);
+
 // Restore whatever was selected last time; otherwise start from the
 // productivity preset for this OS, so a first-time visitor sees shortcuts
 // that exist on their machine (Cmd bindings are useless on Windows, and
@@ -825,6 +875,7 @@ function startingProfile(): UserProfile {
 
 loadProfile(startingProfile()); // loadProfile() already calls renderProfileSelect()
 setConnected(false);
+openSharedProfile();
 
 // Say up front that this browser can't do it, rather than letting the user
 // click Connect and get a raw TypeError from deep inside requestM913().
