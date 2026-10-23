@@ -221,11 +221,13 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   keyLabel.htmlFor = "btn-combo-key";
   const keySelect = el("select");
   keySelect.id = "btn-combo-key";
-  keySelect.innerHTML =
-    `<option value="">Choose a key…</option>` +
-    opts.comboKeyGroups
-      .map((g) => `<optgroup label="${g.name}">${g.keys.map((k) => `<option value="${k.value}">${k.label}</option>`).join("")}</optgroup>`)
-      .join("");
+  keySelect.append(new Option("Choose a key…", ""));
+  for (const g of opts.comboKeyGroups) {
+    const group = document.createElement("optgroup");
+    group.label = g.name;
+    for (const k of g.keys) group.append(new Option(k.label, k.value));
+    keySelect.append(group);
+  }
   keySelect.addEventListener("change", updateComboPreview);
   const comboPreview = el("span", "combo-preview");
   const comboUse = el("button", "combo-use", "Use");

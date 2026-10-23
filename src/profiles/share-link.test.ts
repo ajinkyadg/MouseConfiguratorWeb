@@ -6,8 +6,8 @@ import {
   readM908Share,
   readM913Share,
   sanitizeSharedM908Profile,
-  sanitizeSharedM913Config,
 } from "./share-link";
+import { sanitizeM913Config } from "./m913-config-validate";
 import { M908_BUILT_IN_PRESETS, M908_NEUTRAL_PROFILE } from "./m908-presets";
 import { BUILT_IN_PRESETS, defaultConfig, normalizeConfig } from "./user-profiles";
 
@@ -82,7 +82,7 @@ describe("M913 share links", () => {
   });
 
   it("drops invalid buttons and actions, and fixes bad settings", () => {
-    const config = sanitizeSharedM913Config({
+    const config = sanitizeM913Config({
       pollingRateHz: 9000,
       dpi: [400, "800", 99999, 1600.5, 3200],
       dpiEnabled: [false, false, false, false, false],

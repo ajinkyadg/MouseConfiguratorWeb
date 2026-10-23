@@ -3,7 +3,8 @@
 // needs. Built-in presets (BUILT_IN_PRESETS) are never persisted here —
 // they're a static list the UI shows alongside these. Mirrors
 // RedragonM913Configurator's ProfileStore.swift.
-import { type UserProfile, type MouseWebConfig, type PersistedProfiles, type ProfileExportFile, uniqueProfileName, normalizeConfig } from "./user-profiles";
+import { type UserProfile, type MouseWebConfig, type PersistedProfiles, type ProfileExportFile, uniqueProfileName } from "./user-profiles";
+import { cleanProfileName, sanitizeM913Config } from "./m913-config-validate";
 
 // Matches the subset of the DOM Storage interface this needs — lets tests
 // inject an in-memory fake instead of requiring a real browser/jsdom
@@ -31,11 +32,20 @@ export class ProfileStore {
     const raw = this.storage.getItem(this.storageKey);
     if (!raw) return;
     try {
-      const state = JSON.parse(raw) as PersistedProfiles;
-      // Older saves may predate newer fields (e.g. dpiColorsHex) — fill
-      // them with defaults rather than dropping or rejecting the profile.
-      this.profiles = (state.profiles ?? []).map((p) => (p?.config ? { ...p, config: normalizeConfig(p.config) } : p));
-      this.selectedProfileID = state.selectedProfileID ?? null;
+      const state = JSON.parse(raw) as Partial<PersistedProfiles> | null;
+      // Saved data is rebuilt field by field like an import: older saves
+      // gain new fields' defaults, and anything malformed is dropped
+      // rather than sent to the mouse.
+      const saved = Array.isArray(state?.profiles) ? state.profiles : [];
+      const names: string[] = [];
+      for (const p of saved) {
+        if (!p || typeof p !== "object" || typeof p.id !== "string" || !p.config) continue;
+        const name = uniqueProfileName(cleanProfileName(p.name, "Untitled"), names);
+        names.push(name);
+        this.profiles.push({ id: p.id.slice(0, 64), name, config: sanitizeM913Config(p.config) });
+      }
+      const selected = state?.selectedProfileID;
+      this.selectedProfileID = typeof selected === "string" && this.profiles.some((p) => p.id === selected) ? selected : null;
     } catch {
       // Corrupt/foreign data under this key — start fresh rather than throw.
     }
@@ -51,7 +61,7 @@ export class ProfileStore {
   }
 
   addProfile(name: string, config: MouseWebConfig): UserProfile {
-    const name2 = uniqueProfileName(name, this.profiles.map((p) => p.name));
+    const name2 = uniqueProfileName(cleanProfileName(name, "Untitled"), this.profiles.map((p) => p.name));
     const profile: UserProfile = { id: crypto.randomUUID(), name: name2, config };
     this.profiles.push(profile);
     this.selectedProfileID = profile.id;
@@ -69,7 +79,7 @@ export class ProfileStore {
   renameProfile(id: string, name: string): void {
     const profile = this.profiles.find((p) => p.id === id);
     if (!profile) return;
-    const trimmed = name.trim();
+    const trimmed = cleanProfileName(name, "");
     if (!trimmed) return;
     const existing = this.profiles.filter((p) => p.id !== id).map((p) => p.name);
     profile.name = uniqueProfileName(trimmed, existing);
@@ -89,11 +99,11 @@ export class ProfileStore {
     } catch {
       return null;
     }
-    if (!exportFile?.profile?.config) return null;
+    if (!exportFile?.profile?.config || typeof exportFile.profile.config !== "object") return null;
     const profile: UserProfile = {
       id: crypto.randomUUID(), // never trust an id from an external file
-      name: uniqueProfileName(exportFile.profile.name, this.profiles.map((p) => p.name)),
-      config: normalizeConfig(exportFile.profile.config),
+      name: uniqueProfileName(cleanProfileName(exportFile.profile.name, "Imported profile"), this.profiles.map((p) => p.name)),
+      config: sanitizeM913Config(exportFile.profile.config),
     };
     this.profiles.push(profile);
     this.selectedProfileID = profile.id;

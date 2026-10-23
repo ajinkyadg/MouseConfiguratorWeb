@@ -15,7 +15,7 @@ import {
   type M908ProfileIndex,
   type M908ProfileSettings,
 } from "./m908";
-import { M908_BUTTON_NAMES, type M908ButtonName } from "./m908-buttons";
+import { m908ActionSupported, M908_BUTTON_NAMES, type M908ButtonName } from "./m908-buttons";
 import { M908_NEUTRAL_PROFILE } from "./m908-presets";
 
 export const M908_PROFILE_COUNT = 5;
@@ -83,9 +83,11 @@ export function sanitizeM908Profile(raw: unknown): M908ProfileSettings {
   const buttonActions: Partial<Record<M908ButtonName, string>> = {};
   if (r.buttonActions && typeof r.buttonActions === "object") {
     for (const [name, action] of Object.entries(r.buttonActions as Record<string, unknown>)) {
-      if ((M908_BUTTON_NAMES as readonly string[]).includes(name) && typeof action === "string" && action.trim()) {
-        buttonActions[name as M908ButtonName] = action.trim();
-      }
+      if (!(M908_BUTTON_NAMES as readonly string[]).includes(name) || typeof action !== "string") continue;
+      const value = action.trim();
+      // An action the parser can't encode would be skipped at Apply anyway;
+      // dropping it here keeps it from being shown or passed on.
+      if (value && value.length <= 64 && m908ActionSupported(value)) buttonActions[name as M908ButtonName] = value;
     }
   }
 

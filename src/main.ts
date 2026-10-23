@@ -71,6 +71,7 @@ import {
   type UserProfile,
 } from "./profiles/user-profiles";
 import { ProfileStore } from "./profiles/profile-store";
+import { cleanProfileName, sanitizeM913Config } from "./profiles/m913-config-validate";
 import { buildShareUrl, readM913Share } from "./profiles/share-link";
 import { clearShareFragment, copyShareLink } from "./share-ui";
 import { jmkToButtonActions } from "./profiles/jmk-import";
@@ -185,7 +186,8 @@ function deviceKey(device: HIDDevice): string {
 
 function readConfirmedDevices(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(CONFIRMED_DEVICES_KEY) ?? "[]");
+    const saved: unknown = JSON.parse(localStorage.getItem(CONFIRMED_DEVICES_KEY) ?? "[]");
+    return Array.isArray(saved) ? saved.filter((k): k is string => typeof k === "string").slice(0, 50) : [];
   } catch {
     return [];
   }
@@ -771,7 +773,7 @@ profileImportJmkInput.addEventListener("change", async () => {
   if (!file) return;
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const buttonActions = jmkToButtonActions(bytes);
+  const { buttonActions } = sanitizeM913Config({ ...defaultConfig(), buttonActions: jmkToButtonActions(bytes) });
   const mappedCount = Object.keys(buttonActions).length;
   if (mappedCount === 0) {
     log(`Import failed: "${file.name}" doesn't look like a recognizable .jmk profile.`);
@@ -781,7 +783,7 @@ profileImportJmkInput.addEventListener("change", async () => {
 
   const imported: UserProfile = {
     id: crypto.randomUUID(),
-    name: file.name.replace(/\.jmk$/i, ""),
+    name: cleanProfileName(file.name.replace(/\.jmk$/i, ""), "Imported profile"),
     config: { ...defaultConfig(), buttonActions },
   };
   loadProfile(imported);
