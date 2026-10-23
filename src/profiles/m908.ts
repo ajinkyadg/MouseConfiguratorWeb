@@ -132,6 +132,12 @@ export function buildM908SettingsRows(profiles: M908FiveProfiles): { settings1: 
       }
     }
 
+    // Starting DPI stage (0-based), settings3 packet i, byte 8. The
+    // template carries 0,1,2,3,4 from whoever captured it, which made
+    // profile 5 start on stage 5; the official software writes the stage
+    // the profile should start on, 0 in its default profile.
+    settings3[i][8] = Math.max(0, profile.dpiEnabled.indexOf(true));
+
     // Button mapping, settings3 packets `35 + 20*i + j` for button slot j
     // (0-19), 4 mapping bytes at offsets 8-11. Unrecognized/unspecified
     // buttons keep whatever the template row already had — never guessed.

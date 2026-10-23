@@ -289,3 +289,23 @@ describe("matches a capture of the official software", () => {
     expect(settings3[m908DpiRowIndex(0, 4)]).toEqual(hex("02 f3 5c 00 04 00 00 00 01 8c 01 00 00 00 00 00"));
   });
 });
+
+describe("starting DPI stage per profile", () => {
+  const base = (over: Partial<M908ProfileSettings> = {}): M908ProfileSettings => ({
+    lightMode: "static", color: [0, 255, 0], brightness: 128, speed: 3, scrollSpeed: 1, reportRateHz: 1000,
+    dpiEnabled: [true, true, true, true, true], dpiValues: [400, 800, 1600, 3200, 6400], buttonActions: {}, ...over,
+  });
+
+  it("writes stage 1 for every profile at the addresses the official software uses", () => {
+    const { settings3 } = buildM908SettingsRows([base(), base(), base(), base(), base()] as M908FiveProfiles);
+    const address = (row: number[]) => row[2] | (row[3] << 8);
+    expect([0, 1, 2, 3, 4].map((i) => address(settings3[i]))).toEqual([0x42, 0x102, 0x1b2, 0x262, 0x312]);
+    expect([0, 1, 2, 3, 4].map((i) => settings3[i][4])).toEqual([1, 1, 1, 1, 1]); // one byte each
+    expect([0, 1, 2, 3, 4].map((i) => settings3[i][8])).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  it("starts on the first enabled stage when stage 1 is switched off", () => {
+    const profiles = [base({ dpiEnabled: [false, false, true, true, true] }), base(), base(), base(), base()] as M908FiveProfiles;
+    expect(buildM908SettingsRows(profiles).settings3[0][8]).toBe(2);
+  });
+});
