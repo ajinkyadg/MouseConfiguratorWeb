@@ -86,13 +86,12 @@ export function buildM908LargeReadPlan(): M908ReadRequest[] {
   return plan;
 }
 
-/** Puts a reply into the row shape (byte 0 = report ID). Chrome returns
- * the report ID as the first byte on some platforms and not others, and
- * cuts a reply to the size the device declares for that report, which
- * can be shorter than the row. */
+/** Puts a reply into the row shape (byte 0 = report ID, data from byte 8).
+ * A real M908 answers with the report ID, 7 header bytes and exactly the
+ * bytes asked for, so a reply's length is 8 + the requested length — it
+ * can't be used to tell whether the report ID is there. The first byte
+ * can: the header's second byte is 0x08, never the report ID. */
 export function normalizeM908Reply(req: M908ReadRequest, reply: Uint8Array): Uint8Array {
-  if (reply.length === req.row.length) return reply;
-  if (reply.length === req.row.length - 1) return Uint8Array.of(req.row[0], ...reply);
   return reply[0] === req.row[0] ? reply : Uint8Array.of(req.row[0], ...reply);
 }
 

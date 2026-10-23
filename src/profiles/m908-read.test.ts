@@ -114,11 +114,11 @@ describe("reading profiles back from the mouse", () => {
 
 describe("normalizeM908Reply", () => {
   const req = buildM908ReadPlan()[0];
-  it("accepts replies with or without the report ID byte", () => {
-    const full = Uint8Array.from({ length: 16 }, (_, i) => i);
-    expect(normalizeM908Reply(req, full)).toBe(full);
-    const short = Uint8Array.from({ length: 15 }, (_, i) => i + 1);
-    expect(Array.from(normalizeM908Reply(req, short))).toEqual([2, ...Array.from(short)]);
+  it("accepts replies with or without the report ID byte, judged by the first byte", () => {
+    const withId = Uint8Array.of(2, 0x08, 0x2c, 0x60, 0x01, 0, 0xfa, 0xfa, 0x03);
+    expect(normalizeM908Reply(req, withId)).toBe(withId);
+    const withoutId = withId.slice(1);
+    expect(Array.from(normalizeM908Reply(req, withoutId))).toEqual(Array.from(withId));
   });
   it("keeps what a short reply carries instead of failing", () => {
     // Chrome trims replies to the size the device declares for the report.
@@ -157,3 +157,46 @@ describe("describeM908Action", () => {
     expect(parseM908Action("0xabcdef01")).toEqual([0xab, 0xcd, 0xef, 0x01]);
   });
 });
+
+// Replies from a real M908 in Chrome on macOS (device log, 2026-10-23).
+describe("replies from a real M908", () => {
+  const hex = (t: string) => Uint8Array.from(t.split(" ").map((b) => parseInt(b, 16)));
+  const real: [address: number, reply: string][] = [
+    [0x0032, "02 08 32 60 06 00 fa fa 01 00 01 00 01 00"],
+    [0x0449, "02 08 48 64 07 00 fa fa ff 00 ea 01 03 02 03"],
+    [0x0451, "02 08 50 64 07 00 fa fa 00 00 ff 01 03 02 03"],
+    [0x0459, "02 08 58 64 07 00 fa fa 00 ff 00 01 03 02 03"],
+    [0x0042, "03 08 42 60 20 00 fa fa 03 00 01 09 00 09 00 00 01 12 00 12 00 00 01 24 00 24 00 00 01 48 00 48 00 00 01 48 01 00 00 00"],
+    [0x0102, "03 08 02 61 20 00 fa fa 01 00 01 09 00 09 00 00 01 12 00 12 00 00 01 24 00 24 00 00 01 48 00 48 00 00 01 48 01 00 00 00"],
+  ];
+  const plan = buildM908ReadPlan();
+  const memory: M908Memory = new Map();
+  for (const [address, reply] of real) storeM908Reply(memory, plan.find((r) => r.address === address)!, hex(reply));
+  const { set } = decodeM908Memory(memory, defaultM908ProfileSet());
+
+  it("are 8 bytes longer than the request and keep the report ID", () => {
+    for (const [address, reply] of real) {
+      const req = plan.find((r) => r.address === address)!;
+      expect(hex(reply).length).toBe(8 + req.length);
+      expect(m908ReplyDataBytes(req, hex(reply))).toBe(req.length);
+    }
+  });
+
+  it("decode to the lighting stored on the mouse", () => {
+    expect(set.profiles[0]).toMatchObject({ lightMode: "static", color: [255, 0, 234], speed: 3, brightness: 255 });
+    expect(set.profiles[1]).toMatchObject({ lightMode: "static", color: [0, 0, 255] });
+    expect(set.profiles[2]).toMatchObject({ lightMode: "static", color: [0, 255, 0] });
+  });
+
+  it("decode DPI stages and the stage each profile is on", () => {
+    expect(set.profiles[0].dpiValues).toEqual([400, 800, 1600, 3200, 6400]);
+    expect(set.profiles[0].dpiEnabled).toEqual([true, true, true, true, true]);
+    expect(set.profiles[0].dpiStartStage).toBe(3);
+    expect(set.profiles[1].dpiStartStage).toBe(1);
+  });
+
+  it("decode the polling rate", () => {
+    expect(set.profiles.slice(0, 3).map((p) => p.reportRateHz)).toEqual([1000, 1000, 1000]);
+  });
+});
+
