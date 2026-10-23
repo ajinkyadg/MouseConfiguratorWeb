@@ -11,7 +11,8 @@ import {
   requestM908,
   sendM908Rows,
 } from "./core/m908-transport";
-import { buildM908ReadPlan, decodeM908Memory, normalizeM908Reply, storeM908Reply, type M908Memory } from "./profiles/m908-read";
+import { buildM908LargeReadPlan, buildM908ReadPlan, decodeM908Memory, storeM908Reply, type M908Memory, type M908ReadRequest } from "./profiles/m908-read";
+import { describeCollections } from "./core/hid-transport";
 import {
   buildM908ApplySequence,
   M908_KNOWN_DPI_VALUES,
@@ -693,6 +694,9 @@ connectBtn.addEventListener("click", async () => {
     announce(`Connected: ${configDevice.productName || "M908"}`);
     statusEl.classList.add("connected");
     log("Connected.");
+    // What the device declares for each report, which decides how long a
+    // reply the browser will hand back to "Read profiles from mouse".
+    log(`Device reports:\n${devices.map(describeCollections).join("\n")}`);
   } catch (err) {
     log(`Connect failed: ${err instanceof Error ? err.message : String(err)}`);
     announce(`Connect failed: ${err instanceof Error ? err.message : String(err)}`, "warning");
@@ -733,14 +737,40 @@ readMouseBtn.addEventListener("click", async () => {
   const plan = buildM908ReadPlan();
   log(`Reading the five profiles from the mouse (${plan.length} requests)…`);
   announce("Reading profiles from the mouse…");
-  const memory: M908Memory = new Map();
-  try {
+  // Reads every request in `plan` into `memory`; returns how many replies
+  // came back with fewer data bytes than asked for.
+  const runPlan = async (plan: M908ReadRequest[], memory: M908Memory) => {
+    let short = 0;
     for (const req of plan) {
-      const reply = await readM908Row(device, req.row);
-      storeM908Reply(memory, req, reply);
-      // Settings replies (not the 100 button reads) go to the log, so a
-      // read can be checked against the protocol notes.
-      if (req.length > 4) log(`read ${req.address.toString(16).padStart(4, "0")} → ${hexRow(normalizeM908Reply(req, reply).slice(0, 8 + req.length))}`);
+      const reply = await readM908Row(device!, req.row);
+      const stored = storeM908Reply(memory, req, reply);
+      if (stored < req.length) short++;
+      // Raw replies go to the log for every settings read, the first button
+      // read and the first few short replies, so a read can be checked
+      // against the protocol notes.
+      if (req.length > 4 || req === plan[3] || (stored < req.length && short <= 6)) {
+        const what = `report ${req.row[0]}, ${req.length} byte(s) at ${req.address.toString(16).padStart(4, "0")}`;
+        log(`read ${what} → ${reply.length} bytes: ${hexRow(reply)}${stored < req.length ? `  (short: ${stored} of ${req.length} data bytes)` : ""}`);
+      }
+    }
+    return short;
+  };
+  let memory: M908Memory = new Map();
+  try {
+    let shortReplies = await runPlan(plan, memory);
+    if (shortReplies) {
+      const large = buildM908LargeReadPlan();
+      log(`${shortReplies} of ${plan.length} replies were shorter than requested; trying again with ${large.length} larger reads.`);
+      memory = new Map();
+      shortReplies = await runPlan(large, memory);
+      if (shortReplies) {
+        // A partial read would leave a mix of mouse and page settings, so
+        // keep the page as it was and leave the diagnostics in the log.
+        const message = `The mouse's replies were shorter than requested, so nothing on this page was changed. The device log shows the raw replies.`;
+        log(message);
+        announce(message, "warning");
+        return;
+      }
     }
     const { set, warnings } = decodeM908Memory(memory, profileSet);
     profileSet = set;

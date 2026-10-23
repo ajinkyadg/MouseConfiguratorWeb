@@ -71,20 +71,44 @@ export function buildM908ReadPlan(): M908ReadRequest[] {
   return plan;
 }
 
+/** The same memory as buildM908ReadPlan, read only through the 64-byte
+ * report in 32-byte chunks, for when the browser cuts 16-byte replies
+ * short. The official software reads DPI this way; using it for every
+ * range is this page's own extension. */
+export function buildM908LargeReadPlan(): M908ReadRequest[] {
+  const needed = new Set<number>();
+  for (const req of buildM908ReadPlan()) for (let k = 0; k < req.length; k++) needed.add(req.address + k);
+  const plan: M908ReadRequest[] = [];
+  for (const at of [...needed].sort((a, b) => a - b)) {
+    if (plan.some((r) => at >= r.address && at < r.address + r.length)) continue;
+    plan.push(request(3, at, 0x20));
+  }
+  return plan;
+}
+
 /** Puts a reply into the row shape (byte 0 = report ID). Chrome returns
- * the report ID as the first byte on some platforms and not others. */
+ * the report ID as the first byte on some platforms and not others, and
+ * cuts a reply to the size the device declares for that report, which
+ * can be shorter than the row. */
 export function normalizeM908Reply(req: M908ReadRequest, reply: Uint8Array): Uint8Array {
   if (reply.length === req.row.length) return reply;
   if (reply.length === req.row.length - 1) return Uint8Array.of(req.row[0], ...reply);
-  throw new Error(`Reply is ${reply.length} bytes, expected ${req.row.length}`);
+  return reply[0] === req.row[0] ? reply : Uint8Array.of(req.row[0], ...reply);
+}
+
+/** How many of the requested data bytes a reply actually carries. */
+export function m908ReplyDataBytes(req: M908ReadRequest, reply: Uint8Array): number {
+  return Math.max(0, Math.min(req.length, normalizeM908Reply(req, reply).length - 8));
 }
 
 export type M908Memory = Map<number, number>;
 
 /** Stores a reply's data bytes under the addresses they were read from. */
-export function storeM908Reply(memory: M908Memory, req: M908ReadRequest, reply: Uint8Array): void {
+export function storeM908Reply(memory: M908Memory, req: M908ReadRequest, reply: Uint8Array): number {
   const row = normalizeM908Reply(req, reply);
-  for (let k = 0; k < req.length; k++) memory.set(req.address + k, row[8 + k]);
+  const stored = m908ReplyDataBytes(req, reply);
+  for (let k = 0; k < stored; k++) memory.set(req.address + k, row[8 + k]);
+  return stored;
 }
 
 export interface M908ReadResult {

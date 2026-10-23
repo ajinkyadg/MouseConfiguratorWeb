@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildM908ReadPlan, decodeM908Memory, normalizeM908Reply, storeM908Reply, type M908Memory } from "./m908-read";
+import { buildM908LargeReadPlan, buildM908ReadPlan, decodeM908Memory, m908ReplyDataBytes, normalizeM908Reply, storeM908Reply, type M908Memory } from "./m908-read";
 import { buildM908ApplySequence, buildM908SettingsRows, m908ProfileKey, type M908FiveProfiles } from "./m908";
 import { describeM908Action, parseM908Action } from "./m908-buttons";
 import { defaultM908ProfileSet } from "./m908-profile-store";
@@ -69,6 +69,20 @@ describe("reading profiles back from the mouse", () => {
     set.profiles.forEach((p, i) => expect(m908ProfileKey(p), M908_BUILT_IN_PRESETS[i].id).toBe(m908ProfileKey(presets[i])));
   });
 
+  it("reads the same profiles through 64-byte reports alone", () => {
+    const mouse = fakeMouse();
+    for (const step of buildM908ApplySequence(presets, 2)) step.rows.forEach((row) => mouse.write(row));
+    const plan = buildM908LargeReadPlan();
+    expect(plan.every((r) => r.row[0] === 3 && r.row.length === 64 && r.length === 0x20)).toBe(true);
+    expect(plan.length).toBeLessThan(40);
+    const read: M908Memory = new Map();
+    for (const req of plan) storeM908Reply(read, req, mouse.read(req.row));
+    const { set, warnings } = decodeM908Memory(read, defaultM908ProfileSet());
+    expect(warnings).toEqual([]);
+    expect(rowsOf(set.profiles)).toEqual(rowsOf(presets));
+    expect(set.activeProfile).toBe(2);
+  });
+
   it("keeps scroll speed from the page, since the mouse can't report it", () => {
     const current = defaultM908ProfileSet();
     current.profiles[0].scrollSpeed = 7;
@@ -106,8 +120,17 @@ describe("normalizeM908Reply", () => {
     const short = Uint8Array.from({ length: 15 }, (_, i) => i + 1);
     expect(Array.from(normalizeM908Reply(req, short))).toEqual([2, ...Array.from(short)]);
   });
-  it("rejects a reply of the wrong size", () => {
-    expect(() => normalizeM908Reply(req, new Uint8Array(8))).toThrow();
+  it("keeps what a short reply carries instead of failing", () => {
+    // Chrome trims replies to the size the device declares for the report.
+    const led = buildM908ReadPlan().find((r) => r.address === 0x449)!;
+    const memory: M908Memory = new Map();
+    const nine = Uint8Array.of(2, 0xf2, 0x49, 0x04, 0x07, 0, 0, 0, 0xab);
+    expect(m908ReplyDataBytes(led, nine)).toBe(1);
+    expect(storeM908Reply(memory, led, nine)).toBe(1);
+    expect([...memory]).toEqual([[0x449, 0xab]]);
+    const withoutId = nine.slice(1);
+    expect(m908ReplyDataBytes(led, withoutId)).toBe(1);
+    expect(m908ReplyDataBytes(led, new Uint8Array(4))).toBe(0);
   });
 });
 
