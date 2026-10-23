@@ -89,7 +89,9 @@ export function sanitizeM908Profile(raw: unknown): M908ProfileSettings {
     }
   }
 
+  const start = r.dpiStartStage;
   return {
+    ...(typeof start === "number" && Number.isInteger(start) && start >= 0 && start < 5 ? { dpiStartStage: start } : {}),
     lightMode: typeof r.lightMode === "string" && m908LightModeSupported(r.lightMode) ? r.lightMode : d.lightMode,
     color,
     brightness: clampByte(r.brightness, d.brightness),

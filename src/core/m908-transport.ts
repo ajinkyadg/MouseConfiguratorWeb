@@ -81,3 +81,15 @@ export async function sendM908Rows(device: HIDDevice, rows: number[][], gapMs: n
     if (gapMs > 0) await new Promise((resolve) => setTimeout(resolve, gapMs));
   }
 }
+
+/** Sends one read request and returns the mouse's reply, in whatever
+ * shape the browser hands it back (see m908-read.ts normalizeM908Reply).
+ * The official software waits 10 ms either side of the reply. */
+export async function readM908Row(device: HIDDevice, row: number[], settleMs = 10): Promise<Uint8Array> {
+  const { reportId, payload } = toFeatureReportPayload(row);
+  await device.sendFeatureReport(reportId, payload as BufferSource);
+  if (settleMs > 0) await new Promise((resolve) => setTimeout(resolve, settleMs));
+  const view = await device.receiveFeatureReport(reportId);
+  if (settleMs > 0) await new Promise((resolve) => setTimeout(resolve, settleMs));
+  return new Uint8Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));
+}

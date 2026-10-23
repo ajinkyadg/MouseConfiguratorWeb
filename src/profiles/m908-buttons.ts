@@ -124,3 +124,60 @@ export function parseM908Action(actionRaw: string): M908ActionBytes | null {
 export function m908ActionSupported(action: string): boolean {
   return parseM908Action(action) !== null;
 }
+
+// --- Reading a mapping back from the mouse ---
+
+const MODIFIER_NAMES = ["ctrl", "shift", "alt", "super", "ctrl_r", "shift_r", "alt_r", "super_r"];
+const FIRE_MOUSE_KEYS: Record<number, string> = { 0x81: "mouse_left", 0x82: "mouse_right", 0x84: "mouse_middle" };
+
+const sameBytes = (a: readonly number[] | null, b: readonly number[]) => !!a && a.length === b.length && a.every((x, i) => x === b[i]);
+
+// One name per HID usage, chosen so it parses back to the same key: some
+// key names ("left", "right") are also mouse actions on their own.
+const KEY_NAME_BY_CODE = new Map<number, string>();
+// "arrow_up" reads better than "up", so those names go first.
+const KEY_NAMES = Object.entries(KEY_CODES).sort(([a], [b]) => Number(b.startsWith("arrow_")) - Number(a.startsWith("arrow_")));
+for (const [name, code] of KEY_NAMES) {
+  if (KEY_NAME_BY_CODE.has(code) || !/^[a-z0-9_]+$/.test(name)) continue;
+  if (sameBytes(parseM908Action(name), [0x90, 0x00, code, 0x00])) KEY_NAME_BY_CODE.set(code, name);
+}
+
+function keyName(code: number): string | undefined {
+  if (code >= 0xe0 && code <= 0xe7) return MODIFIER_NAMES[code - 0xe0];
+  return KEY_NAME_BY_CODE.get(code);
+}
+
+function candidateFor(b: readonly number[]): string | undefined {
+  const [kind, b1, b2, b3] = b;
+  for (const [name, bytes] of Object.entries(SPECIAL_ACTIONS)) if (sameBytes(bytes, b)) return name;
+  if (kind === 0x90 && b1 === 0 && b3 === 0) return keyName(b2);
+  if (kind === 0x8f && b3 === 0) {
+    const key = keyName(b2);
+    const mods = MODIFIER_NAMES.filter((_, i) => b1 & (1 << i));
+    return key && mods.length ? [...mods, key].join("+") : undefined;
+  }
+  if (kind === 0x99) {
+    const key = FIRE_MOUSE_KEYS[b1] ?? keyName(b1);
+    return key ? `fire:${key}:${b2}:${b3}` : undefined;
+  }
+  if (kind === 0x9a && b1 === 0x01 && b2 === b3) {
+    const dpi = Object.entries(SNIPE_DPI_VALUES).find(([, v]) => v === b2)?.[0];
+    return dpi ? `snipe:${dpi}` : undefined;
+  }
+  if (kind === 0x91) {
+    if (b2 === 0xff && b3 === 0xff && b1 >= 0x7f && b1 < 0x7f + 15) return `macro${b1 - 0x7f + 1}:while`;
+    if (b2 === 0xff && b3 === 0xff && b1 >= 0x3f && b1 < 0x3f + 15) return `macro${b1 - 0x3f + 1}:until`;
+    if (b1 < 15 && b3 === 0) return b2 === 1 ? `macro${b1 + 1}` : `macro${b1 + 1}:${b2}`;
+  }
+  return undefined;
+}
+
+/** The action string for 4 mapping bytes read from the mouse. Anything this
+ * page has no name for comes back as a raw "0x…" code, which the parser
+ * accepts, so applying it again writes the same bytes. */
+export function describeM908Action(bytes: readonly number[]): string {
+  const b = bytes.slice(0, 4);
+  const name = candidateFor(b);
+  if (name && sameBytes(parseM908Action(name), b)) return name;
+  return "0x" + b.map((x) => (x & 0xff).toString(16).padStart(2, "0")).join("");
+}

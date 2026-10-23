@@ -85,6 +85,7 @@
       .slot-switcher button.active .slot-swatch { box-shadow: 0 0 0 1.5px rgb(0 0 0 / 0.45), 0 0 0 3px white; }
       .slot-switcher button.active .slot-swatch.off { box-shadow: inset 0 0 0 1.5px white; }
       .slot-tools { margin-top: 0.75rem; }
+      #dpi-rows .dpi-start { margin-left: 0.5rem; accent-color: var(--accent); }
       .slot-tools select { min-width: 7rem; }
       .editing-slot {
         margin: 0.75rem 0 0;
@@ -189,11 +190,12 @@
               <select id="copy-target"></select>
               <button type="button" id="copy-slot">Copy</button>
             </div>
+            <button type="button" id="read-from-mouse" disabled>Read profiles from mouse</button>
             <button type="button" id="share-profile">Copy share link for this profile</button>
             <button type="button" id="export-set">Export all 5…</button>
             <button type="button" id="import-set">Import all 5…</button>
             <input type="file" id="import-set-input" accept="application/json,.json" hidden />
-            <p class="more-note">Profiles save in this browser automatically. This page can't read what's already on the mouse — recreate profiles from Redragon's software here (or keep an export) before applying.</p>
+            <p class="more-note">Profiles save in this browser automatically. "Read profiles from mouse" loads what's stored on the mouse (all except scroll speed) without changing it.</p>
           </div>
         </details>
       </div>
@@ -226,7 +228,7 @@
           <section>
             <h2><svg class="sec-icon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M10 1.4v3.2M10 15.4v3.2M1.4 10h3.2M15.4 10h3.2"/></svg>DPI Stages</h2>
             <div id="dpi-rows"></div>
-            <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list.</p>
+            <p class="hint">The M908 only accepts specific DPI values (a fixed lookup table, not a formula) — pick from the list. The round button marks the stage the profile starts on.</p>
           </section>
 
           <section>

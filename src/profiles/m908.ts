@@ -44,6 +44,36 @@ export interface M908ProfileSettings {
   /** Button name -> action string (see profiles/m908-buttons.ts). Buttons
    * not present here keep their current/factory mapping. */
   buttonActions: Partial<Record<M908ButtonName, string>>;
+  /** Stage (0-4) the profile starts on; the first enabled stage if unset
+   * or disabled. */
+  dpiStartStage?: number;
+}
+
+/** The stage a profile actually starts on: its chosen stage when that
+ * stage is enabled, otherwise the first enabled one. */
+export function m908StartStage(profile: Pick<M908ProfileSettings, "dpiEnabled" | "dpiStartStage">): number {
+  const chosen = profile.dpiStartStage;
+  if (typeof chosen === "number" && chosen >= 0 && chosen < 5 && profile.dpiEnabled[chosen]) return chosen;
+  return Math.max(0, profile.dpiEnabled.indexOf(true));
+}
+
+export function m908DpiFromCode(code0: number, code1: number): number | undefined {
+  const found = Object.entries(DPI_CODES).find(([, c]) => c[0] === code0 && c[1] === code1);
+  return found ? Number(found[0]) : undefined;
+}
+
+export function m908LightModeFromBytes(a: number, b: number): M908LightMode | undefined {
+  return (Object.entries(LIGHT_MODE_VALUES).find(([, v]) => v[0] === a && v[1] === b)?.[0] as M908LightMode | undefined);
+}
+
+export function m908ReportRateFromByte(byte: number): number | undefined {
+  const found = Object.entries(REPORT_RATE_VALUES).find(([, v]) => v === byte);
+  return found ? Number(found[0]) : undefined;
+}
+
+/** Inverse of m908BrightnessByte for the page's 0-255 slider. */
+export function m908BrightnessFromByte(level: number): number {
+  return Math.min(3, Math.max(1, level)) * 85;
 }
 
 // The mouse stores brightness as a level, not 0-255: the reference
@@ -135,8 +165,8 @@ export function buildM908SettingsRows(profiles: M908FiveProfiles): { settings1: 
     // Starting DPI stage (0-based), settings3 packet i, byte 8. The
     // template carries 0,1,2,3,4 from whoever captured it, which made
     // profile 5 start on stage 5; the official software writes the stage
-    // the profile should start on, 0 in its default profile.
-    settings3[i][8] = Math.max(0, profile.dpiEnabled.indexOf(true));
+    // the profile starts on (0 in its default profile).
+    settings3[i][8] = m908StartStage(profile);
 
     // Button mapping, settings3 packets `35 + 20*i + j` for button slot j
     // (0-19), 4 mapping bytes at offsets 8-11. Unrecognized/unspecified
@@ -209,3 +239,19 @@ export function buildM908ApplySequence(profiles: M908FiveProfiles, activeProfile
 export function toFeatureReportPayload(row: number[]): { reportId: number; payload: Uint8Array } {
   return { reportId: row[0], payload: Uint8Array.from(row.slice(1)) };
 }
+
+/** Identifies a profile by what it writes to the mouse, so two profiles
+ * match when they behave the same however their actions are spelled
+ * ("super+shift+t" and "shift+super+t", or a 200 vs 255 brightness that
+ * both land on level 3). */
+export function m908ProfileKey(p: M908ProfileSettings): string {
+  const actions = Object.entries(p.buttonActions)
+    .filter(([, action]) => action)
+    .map(([button, action]) => [button, parseM908Action(action!)?.join(",") ?? action] as const)
+    .sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify([
+    p.lightMode, p.color, m908BrightnessByte(p.brightness), p.speed, p.scrollSpeed, p.reportRateHz,
+    p.dpiEnabled, p.dpiValues, m908StartStage(p), actions,
+  ]);
+}
+

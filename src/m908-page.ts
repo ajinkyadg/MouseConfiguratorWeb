@@ -7,13 +7,17 @@ import {
   closeDevice,
   findM908ConfigDevice,
   openDevice,
+  readM908Row,
   requestM908,
   sendM908Rows,
 } from "./core/m908-transport";
+import { buildM908ReadPlan, decodeM908Memory, normalizeM908Reply, storeM908Reply, type M908Memory } from "./profiles/m908-read";
 import {
   buildM908ApplySequence,
   M908_KNOWN_DPI_VALUES,
   m908DpiSupported,
+  m908ProfileKey,
+  m908StartStage,
   type M908LightMode,
   type M908ProfileIndex,
   type M908ProfileSettings,
@@ -63,6 +67,7 @@ const copyTargetEl = document.querySelector<HTMLSelectElement>("#copy-target")!;
 const copySlotBtn = document.querySelector<HTMLButtonElement>("#copy-slot")!;
 const exportSetBtn = document.querySelector<HTMLButtonElement>("#export-set")!;
 const shareProfileBtn = document.querySelector<HTMLButtonElement>("#share-profile")!;
+const readMouseBtn = document.querySelector<HTMLButtonElement>("#read-from-mouse")!;
 const importSetBtn = document.querySelector<HTMLButtonElement>("#import-set")!;
 const importSetInput = document.querySelector<HTMLInputElement>("#import-set-input")!;
 
@@ -135,6 +140,7 @@ const APPLY_HINT = applyHintEl.textContent ?? "";
 
 function setConnected(connected: boolean) {
   applyBtn.disabled = !connected;
+  readMouseBtn.disabled = !connected;
   // Disabling the focused Connect button would drop keyboard focus to
   // <body>; hand it to Apply first, which is the next step anyway.
   if (connected && document.activeElement === connectBtn) applyBtn.focus();
@@ -189,9 +195,7 @@ const BLANK_PRESET = "__blank__";
 
 // Key order in buttonActions changes as buttons are edited, so compare
 // profiles by a canonical form.
-function profileKey(p: M908ProfileSettings): string {
-  return JSON.stringify({ ...p, buttonActions: Object.fromEntries(Object.entries(p.buttonActions).sort()) });
-}
+const profileKey = m908ProfileKey;
 const PRESET_KEYS: (readonly [string, string])[] = [
   ...M908_BUILT_IN_PRESETS.map((preset) => [preset.id, profileKey(preset.profile)] as const),
   [BLANK_PRESET, profileKey(M908_NEUTRAL_PROFILE)],
@@ -273,9 +277,34 @@ function renderDpiRows() {
       persist();
     });
 
-    row.append(label, enabledCheckbox, select);
+    const start = document.createElement("input");
+    start.type = "radio";
+    start.name = "dpi-start-stage";
+    start.className = "dpi-start";
+    start.setAttribute("aria-label", `Start on stage ${i + 1}`);
+    start.title = "The profile starts on this stage when you switch to it";
+    start.addEventListener("change", () => {
+      if (!start.checked) return;
+      profile.dpiStartStage = i;
+      persist();
+      syncDpiStartRadios();
+    });
+    enabledCheckbox.addEventListener("change", syncDpiStartRadios);
+
+    row.append(label, enabledCheckbox, select, start);
     dpiRowsEl.append(row);
   }
+  syncDpiStartRadios();
+}
+
+// The starting stage must be an enabled one; a disabled choice falls back
+// to the first enabled stage, the same rule the write uses.
+function syncDpiStartRadios() {
+  const startsOn = m908StartStage(profile);
+  dpiRowsEl.querySelectorAll<HTMLInputElement>("input.dpi-start").forEach((radio, i) => {
+    radio.disabled = !profile.dpiEnabled[i];
+    radio.checked = i === startsOn;
+  });
 }
 
 // --- Buttons ---------------------------------------------------------------
@@ -686,6 +715,55 @@ async function applySection(name: string, fn: () => Promise<void>): Promise<bool
 // Busy state uses aria-disabled rather than disabled: disabling the button
 // the user just activated would drop keyboard focus to <body>.
 let applying = false;
+let reading = false;
+
+const hexRow = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(" ");
+
+readMouseBtn.addEventListener("click", async () => {
+  if (!device || applying || reading) return;
+  const ok = confirm(
+    "Read the five profiles stored on the mouse into this page?\n\n" +
+      "They replace the five profiles shown here. Nothing is written to the mouse. " +
+      "Scroll speed can't be read from the M908, so it keeps its current value."
+  );
+  if (!ok) return;
+  reading = true;
+  readMouseBtn.setAttribute("aria-disabled", "true");
+  applyBtn.setAttribute("aria-disabled", "true"); // never read and write at once
+  const plan = buildM908ReadPlan();
+  log(`Reading the five profiles from the mouse (${plan.length} requests)…`);
+  announce("Reading profiles from the mouse…");
+  const memory: M908Memory = new Map();
+  try {
+    for (const req of plan) {
+      const reply = await readM908Row(device, req.row);
+      storeM908Reply(memory, req, reply);
+      // Settings replies (not the 100 button reads) go to the log, so a
+      // read can be checked against the protocol notes.
+      if (req.length > 4) log(`read ${req.address.toString(16).padStart(4, "0")} → ${hexRow(normalizeM908Reply(req, reply).slice(0, 8 + req.length))}`);
+    }
+    const { set, warnings } = decodeM908Memory(memory, profileSet);
+    profileSet = set;
+    profile = profileSet.profiles[editingSlot];
+    renderAll();
+    syncSlotControls();
+    persist();
+    if (warnings.length) log(`Couldn't decode: ${warnings.join(", ")} — kept their current values.`);
+    const outcome = warnings.length
+      ? `Read the profiles from your mouse, except ${warnings.length} setting${warnings.length === 1 ? "" : "s"} (see the log).`
+      : "Read all five profiles from your mouse.";
+    log(outcome);
+    announce(outcome, warnings.length ? "warning" : "");
+  } catch (err) {
+    const message = `Reading from the mouse failed: ${err instanceof Error ? err.message : String(err)}. Nothing on this page was changed.`;
+    log(message);
+    announce(message, "warning");
+  } finally {
+    reading = false;
+    readMouseBtn.removeAttribute("aria-disabled");
+    applyBtn.removeAttribute("aria-disabled");
+  }
+});
 
 const FULL_WRITE_WARNING =
   "Apply writes all five onboard profiles at once — the M908 has no way to update just one.\n\n" +
@@ -693,7 +771,7 @@ const FULL_WRITE_WARNING =
   "will be replaced by the five profiles shown on this page.\n\nContinue?";
 
 applyBtn.addEventListener("click", async () => {
-  if (!device || applying) return;
+  if (!device || applying || reading) return;
   if (!fullWriteConfirmed) {
     if (!confirm(FULL_WRITE_WARNING)) {
       log("Apply cancelled — nothing was written.");
