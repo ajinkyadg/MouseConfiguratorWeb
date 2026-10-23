@@ -58,7 +58,7 @@
     <style>
       /* 5-slot onboard profile editor (M908 only). */
       .slot-switcher { margin-top: 0.35rem; }
-      .slot-switcher button { min-width: 5.5rem; }
+      .slot-switcher button { min-width: 4.25rem; }
       .slot-switcher .slot-active-mark {
         display: inline-block;
         width: 0.45rem;
@@ -69,6 +69,21 @@
         vertical-align: middle;
       }
       .slot-switcher button.active .slot-active-mark { background: white; }
+      .slot-switcher .slot-swatch {
+        display: inline-block;
+        width: 0.7rem;
+        height: 0.7rem;
+        margin-right: 0.3rem;
+        border-radius: 50%;
+        vertical-align: -0.1rem;
+        box-shadow: 0 0 0 1px var(--border-control);
+      }
+      .slot-switcher .slot-swatch.multicolor {
+        background: conic-gradient(#ff2b2b, #ffd400, #2bd94a, #23c7ff, #3b5bff, #c13bff, #ff2b2b);
+      }
+      .slot-switcher .slot-swatch.off { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-secondary); }
+      .slot-switcher button.active .slot-swatch { box-shadow: 0 0 0 1.5px rgb(0 0 0 / 0.45), 0 0 0 3px white; }
+      .slot-switcher button.active .slot-swatch.off { box-shadow: inset 0 0 0 1.5px white; }
       .slot-tools { margin-top: 0.75rem; }
       .slot-tools select { min-width: 7rem; }
       .editing-slot {

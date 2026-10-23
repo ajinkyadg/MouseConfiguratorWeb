@@ -34,6 +34,7 @@ import {
 } from "./profiles/m908-profile-store";
 import { detectDesktopOS, isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
 import { buildShareUrl, readM908Share } from "./profiles/share-link";
+import { m908ProfileSwatch } from "./profiles/m908-swatch";
 import { clearShareFragment, copyShareLink } from "./share-ui";
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
@@ -120,6 +121,7 @@ function renderSettingsSummary() {
 
 function persist() {
   renderSettingsSummary();
+  syncSlotControls();
   if (saveM908ProfileSet(storage, profileSet) || storageWarned) return;
   storageWarned = true;
   log("Couldn't save your profiles in this browser (storage unavailable) — use Export to keep a copy.");
@@ -429,8 +431,15 @@ function syncSlotControls() {
     const selected = i === editingSlot;
     btn.classList.toggle("active", selected);
     btn.setAttribute("aria-pressed", String(selected));
-    btn.replaceChildren(String(i + 1)); // the toolbar label says "Profile"
-    btn.setAttribute("aria-label", `Profile ${i + 1}`);
+    const slotProfile = profileSet.profiles[i];
+    const swatch = m908ProfileSwatch(slotProfile);
+    const lighting = `${LIGHT_MODES.find((m) => m.value === slotProfile.lightMode)?.label ?? slotProfile.lightMode} lighting`;
+    const dot = document.createElement("span");
+    dot.className = `slot-swatch ${swatch.kind}`;
+    dot.setAttribute("aria-hidden", "true");
+    if (swatch.kind === "solid") dot.style.background = swatch.hex;
+    btn.replaceChildren(dot, String(i + 1)); // the toolbar label says "Profile"
+    btn.setAttribute("aria-label", `Profile ${i + 1}, ${lighting}`);
     if (i === profileSet.activeProfile) {
       const mark = document.createElement("span");
       mark.className = "slot-active-mark";
@@ -439,10 +448,10 @@ function syncSlotControls() {
       srText.className = "visually-hidden";
       srText.textContent = " (active on mouse)";
       btn.append(mark, srText);
-      btn.setAttribute("aria-label", `Profile ${i + 1} (active on mouse)`);
-      btn.title = "Active on the mouse after Apply";
+      btn.setAttribute("aria-label", `Profile ${i + 1}, ${lighting} (active on mouse)`);
+      btn.title = `${lighting} · active on the mouse after Apply`;
     } else {
-      btn.removeAttribute("title");
+      btn.title = lighting;
     }
   }
   activeProfileEl.value = String(profileSet.activeProfile);
