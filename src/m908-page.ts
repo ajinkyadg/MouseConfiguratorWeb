@@ -148,6 +148,9 @@ function setConnected(connected: boolean) {
   connectBtn.disabled = connected;
   applyHintEl.textContent = connected ? APPLY_HINT : "Connect your mouse (top of page) to enable Apply.";
   applyBtn.title = applyHintEl.textContent; // the hint line is a tooltip
+  readMouseBtn.title = connected
+    ? "Load the five profiles stored on the mouse into this page"
+    : "Connect your mouse (top of page) to read its profiles";
 }
 
 // Short outcome for screen readers and anyone scrolled away from the log.
@@ -695,7 +698,7 @@ connectBtn.addEventListener("click", async () => {
     statusEl.classList.add("connected");
     log("Connected.");
     // What the device declares for each report, which decides how long a
-    // reply the browser will hand back to "Read profiles from mouse".
+    // reply the browser will hand back to "Read from mouse".
     log(`Device reports:\n${devices.map(describeCollections).join("\n")}`);
   } catch (err) {
     log(`Connect failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -733,6 +736,7 @@ readMouseBtn.addEventListener("click", async () => {
   if (!ok) return;
   reading = true;
   readMouseBtn.setAttribute("aria-disabled", "true");
+  readMouseBtn.textContent = "Reading…";
   applyBtn.setAttribute("aria-disabled", "true"); // never read and write at once
   const plan = buildM908ReadPlan();
   log(`Reading the five profiles from the mouse (${plan.length} requests)…`);
@@ -791,6 +795,7 @@ readMouseBtn.addEventListener("click", async () => {
   } finally {
     reading = false;
     readMouseBtn.removeAttribute("aria-disabled");
+    readMouseBtn.textContent = "Read from mouse";
     applyBtn.removeAttribute("aria-disabled");
   }
 });

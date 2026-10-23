@@ -85,6 +85,10 @@
       .slot-switcher button.active .slot-swatch { box-shadow: 0 0 0 1.5px rgb(0 0 0 / 0.45), 0 0 0 3px white; }
       .slot-switcher button.active .slot-swatch.off { box-shadow: inset 0 0 0 1.5px white; }
       .slot-tools { margin-top: 0.75rem; }
+      /* Keep each label on the same line as its control when the toolbar wraps. */
+      .toolbar-pair { display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+      .config-toolbar #preset-select { min-inline-size: 11rem; max-inline-size: 14rem; }
+      .config-toolbar #active-profile { min-inline-size: 0; }
       #dpi-rows .dpi-start { margin-left: 0.5rem; accent-color: var(--accent); }
       .slot-tools select { min-width: 7rem; }
       .editing-slot {
@@ -176,12 +180,16 @@
         <span class="toolbar-label" id="slots-heading">Profile</span>
         <div class="segmented slot-switcher" id="slot-buttons" role="group" aria-labelledby="slots-heading"></div>
         <p class="visually-hidden" id="editing-slot"></p>
+        <span class="toolbar-pair">
         <label for="preset-select">Preset</label>
         <select id="preset-select" title="Loads DPI, LED and buttons into the profile you're editing; the other four stay as they are.">
           <option value="">Custom</option>
         </select>
+        </span>
+        <span class="toolbar-pair">
         <label for="active-profile">Active on mouse</label>
         <select id="active-profile"></select>
+        </span>
         <details class="dropdown toolbar-more">
           <summary aria-label="More profile actions">⋯</summary>
           <div class="dropdown-panel">
@@ -190,17 +198,18 @@
               <select id="copy-target"></select>
               <button type="button" id="copy-slot">Copy</button>
             </div>
-            <button type="button" id="read-from-mouse" disabled>Read profiles from mouse</button>
             <button type="button" id="share-profile">Copy share link for this profile</button>
             <button type="button" id="export-set">Export all 5…</button>
             <button type="button" id="import-set">Import all 5…</button>
             <input type="file" id="import-set-input" accept="application/json,.json" hidden />
-            <p class="more-note">Profiles save in this browser automatically. "Read profiles from mouse" loads what's stored on the mouse (all except scroll speed) without changing it.</p>
+            <p class="more-note">Profiles save in this browser automatically. "Read from mouse" loads what's stored on the mouse (all except scroll speed) without changing it.</p>
           </div>
         </details>
       </div>
       <p id="apply-hint" class="visually-hidden">Writes all five profiles shown here to the mouse (the M908 only accepts them together), then switches it to the active profile.</p>
+      <p id="read-hint" class="visually-hidden">Loads the five profiles stored on the mouse into this page. Nothing is written to the mouse.</p>
       <div class="toolbar-apply">
+        <button type="button" id="read-from-mouse" disabled aria-describedby="read-hint">Read from mouse</button>
         <button class="primary" id="apply" disabled aria-describedby="apply-hint">Apply to mouse</button>
       </div>
     </section>
