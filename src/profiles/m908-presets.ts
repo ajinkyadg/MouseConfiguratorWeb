@@ -115,7 +115,30 @@ const M908_MY_SETUP: M908Preset = {
   },
 };
 
+// Redragon's own default profile, as its Windows software writes it to a
+// real M908 (USB capture, 2026-10-05): red wave lighting, 500 Hz, DPI
+// 500-6200, and the factory button layout (left/right/middle, 3-shot fire,
+// DPI up/down, side buttons 1-9, 0, numpad + and -), which is what an
+// empty buttonActions writes.
+const M908_FACTORY_DEFAULT: M908Preset = {
+  id: "m908-preset-factory",
+  name: "Factory default (Redragon)",
+  profile: {
+    ...M908_NEUTRAL_PROFILE,
+    lightMode: "wave",
+    color: [255, 0, 0],
+    brightness: 170,
+    speed: 4,
+    scrollSpeed: 1,
+    reportRateHz: 500,
+    dpiEnabled: [true, true, true, true, true],
+    dpiValues: [500, 1000, 2000, 3000, 6200],
+    buttonActions: {},
+  },
+};
+
 export const M908_BUILT_IN_PRESETS: M908Preset[] = [
+  M908_FACTORY_DEFAULT,
   ...BUILT_IN_PRESETS.map((preset) => (preset.id === "preset-default" ? M908_MY_SETUP : fromM913(preset))),
   {
     id: "m908-preset-mmo",

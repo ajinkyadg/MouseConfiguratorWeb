@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { M908_BUILT_IN_PRESETS, M908_NEUTRAL_PROFILE } from "./m908-presets";
 import { parseM908Action, m908ActionSupported } from "./m908-buttons";
-import { buildM908SettingsRows, m908DpiSupported } from "./m908";
+import { buildM908SettingsRows, m908DpiSupported, type M908FiveProfiles } from "./m908";
 
 describe("M908_BUILT_IN_PRESETS", () => {
   it("every button action in every preset actually resolves (no silently-dead bindings)", () => {
@@ -97,3 +97,28 @@ describe("M908_BUILT_IN_PRESETS", () => {
     expect(lowDpi.profile.dpiEnabled).toEqual([true, true, true, false, false]);
   });
 });
+
+describe("Factory default (Redragon) preset", () => {
+  it("writes the same lighting, DPI, polling rate and buttons as Redragon's software (USB capture)", () => {
+    const factory = M908_BUILT_IN_PRESETS.find((p) => p.id === "m908-preset-factory")!.profile;
+    const { settings1, settings3 } = buildM908SettingsRows([factory, factory, factory, factory, factory] as M908FiveProfiles);
+    const memory = new Map<number, number>();
+    for (const row of [...settings1, ...settings3]) {
+      if (row[1] !== 0xf3) continue;
+      for (let k = 0; k < row[4]; k++) memory.set((row[2] | (row[3] << 8)) + k, row[8 + k]);
+    }
+    const captured: [number, number[]][] = [
+      [0x0449, [0xff, 0x00, 0x00, 0x02, 0x04, 0x00, 0x02]], // red, wave, speed 4, brightness 2
+      [0x0044, [0x01, 0x0b, 0x00, 0x0b, 0x00]], // 500 DPI
+      [0x005c, [0x01, 0x8c, 0x00, 0x8c, 0x00]], // 6200 DPI
+      [0x0032, [0x02, 0x00, 0x02, 0x00, 0x02]], // 500 Hz
+      [0x008e, [0x99, 0x81, 0x03, 0x00]], // fire: 3 left clicks
+      [0x00c2, [0x90, 0x00, 0x57, 0x00]], // side 11: numpad +
+      [0x00c6, [0x90, 0x00, 0x56, 0x00]], // side 12: numpad -
+    ];
+    for (const [address, bytes] of captured) {
+      bytes.forEach((b, k) => expect(memory.get(address + k), `0x${(address + k).toString(16)}`).toBe(b));
+    }
+  });
+});
+
