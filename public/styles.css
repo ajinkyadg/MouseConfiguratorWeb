@@ -561,7 +561,10 @@ body.wide { max-width: 1320px; }
 .group-side .button-tile:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .group-side .button-tile::before {
   content: ""; position: absolute; inset: 0; z-index: -1;
-  border-radius: var(--r-tl, 5px) var(--r-tr, 5px) var(--r-br, 5px) var(--r-bl, 5px);
+  border-top-left-radius: var(--r-tl, 5px);
+  border-top-right-radius: var(--r-tr, 5px);
+  border-bottom-right-radius: var(--r-br, 5px);
+  border-bottom-left-radius: var(--r-bl, 5px);
   /* Angled facet along each key's top edge, as on the real keys, which
      makes each column read as a stepped strip. */
   background:
@@ -618,10 +621,15 @@ body.wide { max-width: 1320px; }
    top corner and the rear column's outer edge rounded most (as photographed). */
 .group-side .button-tile[data-row="0"] { --r-tl: 14px; --r-tr: 14px; }
 .group-side .button-tile[data-row="2"] { --r-bl: 16px; --r-br: 16px; }
-.group-side .button-tile[data-col="0"][data-row="0"] { --r-tl: 24px; }
-.group-side .button-tile[data-col="3"][data-row="0"] { --r-tr: 32px; }
-.group-side .button-tile[data-col="3"][data-row="1"] { --r-tr: 10px; --r-br: 10px; }
-.group-side .button-tile[data-col="3"][data-row="2"] { --r-br: 32px; }
+/* The four corner keys sweep round in a long wedge-like curve (1 and 3 at
+   the front, 10 and 12 at the rear); their text moves in off the curve.
+   The outer columns' middle keys round a little to continue the line. */
+.group-side .button-tile[data-col="0"][data-row="0"] { --r-tl: 58% 82%; padding-inline-start: 1.55rem; padding-block-start: 0.95rem; }
+.group-side .button-tile[data-col="0"][data-row="1"] { --r-tl: 12px; --r-bl: 12px; }
+.group-side .button-tile[data-col="0"][data-row="2"] { --r-bl: 58% 82%; padding-inline-start: 1.55rem; }
+.group-side .button-tile[data-col="3"][data-row="0"] { --r-tr: 62% 86%; padding-inline-end: 1.4rem; padding-block-start: 0.95rem; }
+.group-side .button-tile[data-col="3"][data-row="1"] { --r-tr: 18px; --r-br: 18px; }
+.group-side .button-tile[data-col="3"][data-row="2"] { --r-br: 62% 86%; padding-inline-end: 1.4rem; }
 /* Backlit numerals, lit in the profile's colour like the real keys —
    on every key, assigned or not. */
 .group-side .tile-slot { font-size: var(--fs-md); font-weight: 800; letter-spacing: 0.01em; color: var(--side-ink, var(--text-secondary)); }
