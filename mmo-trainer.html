@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MMO Mouse Trainer: Learn Your 12 Side Buttons | MouseConfig</title>
+    <meta name="description" content="Free browser game that teaches the 12 side buttons of an MMO mouse by feel. Press the matching button to beat each enemy. Works with Redragon M908 and M913." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/mmo-trainer" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="MMO Mouse Trainer: Learn Your 12 Side Buttons | MouseConfig" />
+    <meta property="og:description" content="Free browser game that teaches the 12 side buttons of an MMO mouse by feel. Press the matching button to beat each enemy. Works with Redragon M908 and M913." />
+    <meta property="og:url" content="https://mouseconfig.app/mmo-trainer" />
+    <meta property="og:image" content="https://mouseconfig.app/brand/share.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MouseConfig: Redragon mouse software for Mac, Linux and Windows, in your browser" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://mouseconfig.app/brand/share.png" />
+    <meta name="twitter:title" content="MMO Mouse Trainer: Learn Your 12 Side Buttons | MouseConfig" />
+    <meta name="twitter:description" content="Free browser game that teaches the 12 side buttons of an MMO mouse by feel. Press the matching button to beat each enemy. Works with Redragon M908 and M913." />
+
+    <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
+    <script>
+      /* Theme before first paint, so neither face ever flashes: the stored
+         choice if there is one, otherwise Pro — the brand's default face. */
+      (function () {
+        var theme = null;
+        try { theme = localStorage.getItem("mouseconfig.theme"); } catch (e) { /* blocked storage */ }
+        document.documentElement.setAttribute("data-theme", theme === "play" ? "play" : "pro");
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      #game { display: grid; gap: 0.75rem; }
+      .mt-hud { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: flex-start; }
+      .mt-stat { display: grid; gap: 0.1rem; min-width: 4.5rem; }
+      .mt-label { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
+      .mt-value { font-size: var(--fs-xl); font-weight: 750; font-variant-numeric: tabular-nums; color: var(--text); }
+      .mt-lives { grid-template-columns: auto auto; column-gap: 0.5rem; align-items: center; }
+      .mt-lives .mt-label { grid-column: 1 / -1; }
+      .mt-squares, .mt-bar { display: inline-flex; gap: 4px; }
+      .mt-squares span { width: 14px; height: 14px; border-radius: 3px; border: 2px solid var(--border-control); }
+      .mt-squares span.on { background: var(--accent); border-color: var(--accent); }
+      .mt-lives .mt-value { font-size: var(--fs-sm); color: var(--text-secondary); font-weight: 600; }
+      .mt-combo { margin-inline-start: auto; }
+      .mt-bar span { width: 18px; height: 5px; border-radius: 2px; background: var(--border); }
+      .mt-bar span.on { background: var(--accent); }
+      .mt-stage { position: relative; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface-sunken); }
+      .mt-field { display: block; width: 100%; }
+      .mt-overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 1rem;
+        background: color-mix(in srgb, var(--surface-sunken) 72%, transparent); }
+      .mt-overlay[hidden] { display: none; }
+      .mt-card { background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-sm);
+        padding: 1.25rem 1.5rem; max-width: 30rem; width: 100%; text-align: center; display: grid; gap: 0.6rem; justify-items: center;
+        max-height: 100%; overflow: auto; }
+      .mt-card h2 { margin: 0; font-size: 1.25rem; text-transform: none; letter-spacing: 0; color: var(--text); }
+      .mt-card p { margin: 0; color: var(--text); }
+      .mt-muted { color: var(--text-secondary) !important; font-size: var(--fs-sm); }
+      .mt-new-best { color: var(--success) !important; font-weight: 700; }
+      .mt-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+      .mt-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; width: 100%; }
+      .mt-tile { display: grid; gap: 0.15rem; padding: 0.5rem; border-radius: 8px; background: var(--surface-sunken); }
+      .mt-tile-value { font-size: var(--fs-md); font-weight: 750; font-variant-numeric: tabular-nums; color: var(--text); }
+      .mt-slow { margin: 0; padding-inline-start: 1.25rem; text-align: start; font-size: var(--fs-sm); color: var(--text); }
+      .mt-keys { display: grid; grid-template-columns: repeat(4, minmax(0, 4.5rem)); grid-template-rows: repeat(3, 3rem);
+        gap: 6px; justify-content: center; }
+      .mt-key { grid-column: calc(var(--c) + 1); grid-row: calc(var(--r) + 1); position: relative; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 2px;
+        padding: 0; border-radius: 10px; border: 2px solid var(--border-control); background: var(--surface); color: var(--text-secondary);
+        font: inherit; cursor: pointer; touch-action: manipulation; transition: background 120ms, border-color 120ms; }
+      .mt-key-num { font-size: var(--fs-md); font-weight: 750; line-height: 1; }
+      .mt-key-note { font-size: var(--fs-2xs); color: var(--text-secondary); }
+      .mt-key-note:empty { display: none; }
+      .mt-key[data-hint="full"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+      .mt-key[data-hint="outline"] { border-color: var(--accent); color: var(--text); border-style: dashed; }
+      .mt-key.is-locked { opacity: 0.35; }
+      .mt-key.is-pressed { transform: translateY(1px); background: var(--accent-soft); }
+      .mt-key.is-wrong { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 18%, var(--surface)); }
+      .mt-key[data-rank]:not([data-rank=""]) { border-color: var(--warning); color: var(--text); }
+      .mt-key[data-rank]:not([data-rank=""])::after { content: "#" attr(data-rank); position: absolute; top: 3px; left: 6px;
+        font-size: var(--fs-2xs); font-weight: 700; color: var(--warning); }
+      .mt-keys-ends { display: flex; justify-content: space-between; width: min(100%, calc(4 * 4.5rem + 18px)); margin: -0.4rem auto 0;
+        font-size: var(--fs-2xs); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+      .mt-help { margin: 0; font-size: var(--fs-sm); color: var(--text-secondary); max-width: 68ch; line-height: 1.6; }
+      /* Phones: the play area is too short to hold the cards, so they sit below it. */
+      @media (max-width: 639px) {
+        .mt-overlay { position: static; padding: 0.75rem 0 0; background: none; }
+        .mt-stage { overflow: visible; border: 0; background: none; }
+        .mt-field { border: 1px solid var(--border); border-radius: 12px; }
+      }
+      @media (prefers-reduced-motion: reduce) { .mt-key { transition: none; } .mt-key.is-pressed { transform: none; } }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="currentColor"/><g stroke="var(--on-accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 13c-8.2 0-13.5 6.2-13.5 14.5v9C18.5 45 23.8 51 32 51s13.5-6 13.5-14.5v-9C45.5 19.2 40.2 13 32 13Z"/><path d="M18.8 32.4h26.4"/><path d="M32 20.5v6"/></g><g fill="var(--on-accent)"><circle cx="12" cy="27" r="2.1"/><circle cx="12" cy="33.5" r="2.1"/><circle cx="12" cy="40" r="2.1"/></g></svg></span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Five onboard profiles, buttons, DPI and RGB</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/mmo-trainer" aria-current="page"><span class="nav-item-title">MMO mouse trainer</span><span class="nav-item-desc">Learn your 12 side buttons by feel</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/redragon-m913-mac"><span class="nav-item-title">M913 software for Mac</span><span class="nav-item-desc">Set up the M913 on a Mac without Windows</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+      <div class="theme-switch" role="radiogroup" aria-label="Site theme">
+        <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-value="play">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="currentColor"><path d="M11.6 1.8 4 11.6h4.2L8.4 18.2 16 8.4h-4.3l-.1-6.6Z"/></svg>
+          <span class="theme-label">Play</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-value="pro">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="6.2" width="15.6" height="11" rx="2"/><path d="M7.2 6.2V4.6a1.6 1.6 0 0 1 1.6-1.6h2.4a1.6 1.6 0 0 1 1.6 1.6v1.6M2.2 10.6h15.6"/></svg>
+          <span class="theme-label">Pro</span>
+        </button>
+      </div>
+    </nav>
+    <header>
+      <div>
+        <p class="eyebrow">Tool</p>
+        <h1>MMO Mouse Trainer</h1>
+        <p>Learn your 12 side buttons by feel. Press the matching button to beat each enemy before it reaches you.</p>
+      </div>
+    </header>
+
+    <main id="main">
+    <section aria-labelledby="game-heading">
+      <h2 id="game-heading" class="visually-hidden">Game</h2>
+      <div id="game"></div>
+    </section>
+    </main>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/mmo-trainer">MMO mouse trainer</a> · <a href="/productivity-setup">Productivity button mapping</a> · <a href="/redragon-m913-mac">M913 software for Mac</a></p>
+      <p>Legal: <a href="/privacy">Privacy policy</a> · <a href="/terms">Terms of use</a></p>
+    </footer>
+    <script type="module" src="/src/mmo-trainer-page.ts"></script>
+  </body>
+</html>

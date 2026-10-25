@@ -45,6 +45,7 @@ export default defineConfig({
         sensitivityConverter: resolve(__dirname, "sensitivity-converter.html"),
         privacy: resolve(__dirname, "privacy.html"),
         terms: resolve(__dirname, "terms.html"),
+        mmoTrainer: resolve(__dirname, "mmo-trainer.html"),
       },
     },
   },
