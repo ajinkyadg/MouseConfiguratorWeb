@@ -559,3 +559,72 @@ strip and the pad, maybe an isometric three-quarter view instead of the current 
 top-down — and spend the generation budget on Shots 3 and 5, where raster genuinely
 buys something the SVG can't. Then, if the owner's own mouse is ever manufactured,
 photograph it for real and retire the renders entirely.
+
+## 9. Side-panel reference shots (button editor)
+
+Added 2026-10-25. These are for agreeing the look of the 3D side panel in the
+button editor, which is built in CSS (`public/styles.css`, `.button-grid.group-side`)
+so it can follow the theme and each profile's lighting colour. They follow §0
+(no brand marks), §5 (state the count three ways, pad big in frame, square
+camera, describe the gaps) and §6 (no manufacturer names, no photos of real
+Redragon mice as references). The pad follows `hardware-reference.md` — four
+columns of three, keys wider than tall — not the "four rows of three … domed
+square" wording in §2, which contradicts it and should be corrected. Keys stay
+blank; the numbers come from the UI.
+
+**Shared pad clause** (use word for word):
+
+> a recessed side keypad set into the left flank inside a continuous raised
+> bezel, carrying exactly twelve blank keys arranged in four columns of three —
+> column one has three keys, column two has three, column three has three,
+> column four has three, twelve in total and no others; each key is a low
+> rounded rectangle about one and a half times wider than it is tall, its long
+> side running front-to-back along the mouse, with a narrow 1.5 mm gap between
+> neighbours and a slightly wider channel between the two middle columns; the
+> columns follow a gentle wave, each column sitting slightly higher than the one
+> in front of it, and the front and rear columns turn away with the curve of
+> the flank; the four keys in the middle of the two centre columns each carry a
+> small raised bar, and the outer front and rear columns have a raised lip on
+> their outside edge; below the keypad a pronounced thumb shelf curves outward.
+
+**A — Play, three-quarter view** (3:2, 2K, 12–16 candidates):
+
+> Studio macro product photograph of the left side of an unbranded right-handed
+> ergonomic computer mouse, matte charcoal-black polycarbonate with a soft satin
+> finish, [PAD CLAUSE]. The camera is 35 degrees off the mouse's long axis toward
+> the keypad side and 30 degrees above the desk, nose up-left, so the keypad
+> fills two thirds of the frame. A single large softbox at upper-left, 45
+> degrees, rakes across the keys: their top and left edges catch a thin
+> highlight, their lower-right side walls fall into shadow, and each key casts a
+> short soft shadow down-right into the recess. One faint crimson glow, hex
+> #e2001a, leaks from a thin light line between the bottom of the keypad and the
+> thumb shelf. The keys themselves are unlit grey. Seamless near-black
+> background, hex #0b0b0c. 100 mm macro, f/11, focus stacked, every key sharp.
+> The product is completely blank — no logos, no numbers, no lettering anywhere.
+
+Negative (Midjourney / Stable Diffusion): text, numbers on keys, logo,
+watermark, square keys, four rows of three, nine keys, ten keys, sixteen keys,
+merged keys, RGB rainbow, glowing keys, glossy plastic, calculator, phone
+keypad, hands. For Nano Banana Pro, Seedream and FLUX.2 append instead: *Each of
+the twelve keys is blank. The only coloured light is one thin crimson line below
+the keypad; the keys are unlit. One mouse, no hands, nothing else in frame.*
+
+**B — Play, straight-on** (21:9, 2K): as A, but replace the camera sentence with
+*Camera perpendicular to the keypad and square to it, orthographic feel, no
+perspective keystoning; the keypad's whole outline is rotated a few degrees so
+its rear end sits higher than its front.* This is the direct reference for the
+CSS build.
+
+**C — Pro, edit of the approved B** (21:9, image strength 0.25–0.35):
+
+> Using the attached keypad exactly as it is — identical outline, identical
+> twelve keys in four columns of three, identical wave, bars and lips — re-light
+> it as a graphite-grey matte soft-touch object on seamless cool off-white, hex
+> #f4f5f7. Large softbox at upper-left 45 degrees plus a white bounce at
+> lower-right; soft open shadows falling down-right. Nothing glows. A single thin
+> deep oxblood trim line, hex #b01020, runs along the front edge of the keypad
+> bezel like an anodised accent. Completely blank — no logos, numbers or
+> lettering.
+
+Append: *Shape and key layout are unchanged from the reference; no light is
+emitted anywhere.*

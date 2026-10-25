@@ -5,10 +5,11 @@
 
 export type RGB = readonly [number, number, number];
 
-// Backgrounds of an assigned key in each theme (see public/styles.css):
-// --surface-sunken in Pro, --surface-elevated in Play.
-export const KEY_BACKGROUND_LIGHT: RGB = [0xec, 0xee, 0xf1];
-export const KEY_BACKGROUND_DARK: RGB = [0x22, 0x22, 0x26];
+// The worst-case keycap face behind the text in each theme (see the
+// side-panel tokens in public/styles.css): the darkest face in Pro (a
+// pressed/selected key) and the lightest in Play (a hovered key).
+export const KEY_BACKGROUND_LIGHT: RGB = [0xdd, 0xe1, 0xe6];
+export const KEY_BACKGROUND_DARK: RGB = [0x32, 0x32, 0x38];
 // WCAG AA for normal-size text.
 const MIN_CONTRAST = 4.5;
 
@@ -43,10 +44,11 @@ export function readableInk(color: RGB, background: RGB): string {
  * the keys use the normal text colour (lighting off or colour-cycling). */
 export function setSideInk(root: HTMLElement, color: RGB | null): void {
   if (!color) {
-    root.style.removeProperty("--side-ink-light");
-    root.style.removeProperty("--side-ink-dark");
+    for (const name of ["--side-ink-light", "--side-ink-dark", "--side-led"]) root.style.removeProperty(name);
     return;
   }
   root.style.setProperty("--side-ink-light", readableInk(color, KEY_BACKGROUND_LIGHT));
   root.style.setProperty("--side-ink-dark", readableInk(color, KEY_BACKGROUND_DARK));
+  // The light strip shows the colour as the LEDs would, unadjusted.
+  root.style.setProperty("--side-led", hex(color));
 }

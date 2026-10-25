@@ -479,39 +479,151 @@ body.wide { max-width: 1320px; }
 .button-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.4rem; }
 .button-grid + .tile-group-label { margin-top: 0.75rem; }
 
-/* Side panel, drawn like the mouse's own 12-key thumb panel: a curved
-   panel of slanted keycaps, each row set a little further in as the
-   mouse's side curves away. Keys are tall enough for a two-line
-   description. Assigned actions take the profile's lighting colour
-   (--side-ink-*, set by the page through side-ink.ts). */
-.button-grid.group-side {
-  gap: 0.55rem 0.6rem;
-  padding: 0.9rem 1.9rem 1.1rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 26px 26px 44px 44px / 20px 20px 48px 48px;
-  background: linear-gradient(170deg, var(--surface-elevated), var(--surface-sunken) 70%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), inset 0 -3px 8px rgb(0 0 0 / 0.16);
+/* Side panel, drawn as the mouse's 12-key thumb pad (see
+   docs/brand/hardware-reference.md §2): keys sunk into a recessed housing
+   with a raised bezel, lit from the upper left (shadows fall down-right),
+   columns rising slightly toward the rear, outer columns turned away
+   (narrower), raised landmark bars on the four centre keys, and a light
+   strip in the profile's colour along the lower lip. The tile stays flat
+   so its text is never transformed; the keycap is drawn on ::before.
+   --side-ink-* / --side-led are set by the page (src/side-ink.ts). */
+.button-editor {
+  --pad-bezel: #1a1a1d; --pad-well-hi: #0b0b0d; --pad-well-lo: #151518;
+  --cap-hi: #2c2c31; --cap-mid: #232327; --cap-lo: #1b1b1f;
+  --cap-hover-hi: #323238; --cap-press-hi: #18181b; --cap-press-lo: #222226;
+  --cap-default-hi: #17171a; --cap-default-lo: #121215;
+  --cap-rim-lit: rgb(255 255 255 / 0.09); --cap-rim-shade: rgb(0 0 0 / 0.35);
+  --cap-skirt: #0a0a0c; --cap-cast: rgb(0 0 0 / 0.55); --cap-press-inset: rgb(0 0 0 / 0.6);
+  --cap-mark: rgb(255 255 255 / 0.16); --cap-lip: rgb(255 255 255 / 0.07);
+  --pad-strip-glow: 0 0 10px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="play"]) .button-editor {
+    --pad-bezel: #eef0f3; --pad-well-hi: #c9ced6; --pad-well-lo: #e3e6ea;
+    --cap-hi: #f7f8fa; --cap-mid: #eceef1; --cap-lo: #dfe2e7;
+    --cap-hover-hi: #fbfcfd; --cap-press-hi: #dde1e6; --cap-press-lo: #e9ebee;
+    --cap-default-hi: #e9ecef; --cap-default-lo: #e1e4e8;
+    --cap-rim-lit: rgb(255 255 255 / 0.9); --cap-rim-shade: rgb(21 23 28 / 0.1);
+    --cap-skirt: #c3c8d0; --cap-cast: rgb(21 23 28 / 0.16); --cap-press-inset: rgb(21 23 28 / 0.2);
+    --cap-mark: rgb(21 23 28 / 0.2); --cap-lip: rgb(21 23 28 / 0.08);
+    --pad-strip-glow: 0 0 0;
+  }
+}
+:root[data-theme="pro"] .button-editor {
+  --pad-bezel: #eef0f3; --pad-well-hi: #c9ced6; --pad-well-lo: #e3e6ea;
+  --cap-hi: #f7f8fa; --cap-mid: #eceef1; --cap-lo: #dfe2e7;
+  --cap-hover-hi: #fbfcfd; --cap-press-hi: #dde1e6; --cap-press-lo: #e9ebee;
+  --cap-default-hi: #e9ecef; --cap-default-lo: #e1e4e8;
+  --cap-rim-lit: rgb(255 255 255 / 0.9); --cap-rim-shade: rgb(21 23 28 / 0.1);
+  --cap-skirt: #c3c8d0; --cap-cast: rgb(21 23 28 / 0.16); --cap-press-inset: rgb(21 23 28 / 0.2);
+  --cap-mark: rgb(21 23 28 / 0.2); --cap-lip: rgb(21 23 28 / 0.08);
+  --pad-strip-glow: 0 0 0;
 }
 :root[data-theme="pro"] .button-editor { --side-ink: var(--side-ink-light); }
 :root[data-theme="play"] .button-editor { --side-ink: var(--side-ink-dark); }
-.group-side .button-tile {
-  align-content: start;
-  min-block-size: 4.9rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 9px 9px 13px 13px;
-  transform: skewX(-7deg);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 2px 0 rgb(0 0 0 / 0.22);
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .button-editor { --side-ink: var(--side-ink-light); }
 }
-.group-side .button-tile > * { transform: skewX(7deg); }
-.group-side .button-tile.unchanged { background: var(--surface); }
+
+.button-grid.group-side {
+  position: relative; isolation: isolate;
+  grid-template-columns: 0.94fr 1fr 1fr 0.94fr;
+  gap: 0.5rem 0.6rem;
+  padding: 1rem 1.2rem 1.6rem 1.1rem;
+  border-radius: 22px 30px 42px 28px / 18px 24px 46px 36px;
+  background: linear-gradient(135deg, var(--pad-well-hi), var(--pad-well-lo));
+  box-shadow:
+    inset 3px 4px 8px rgb(0 0 0 / 0.3), inset -1px -1px 0 var(--cap-rim-lit),
+    0 0 0 1px var(--border), 0 0 0 6px var(--pad-bezel), 0 0 0 7px var(--border),
+    4px 8px 18px -6px var(--cap-cast);
+  margin: 7px 7px 12px;
+}
+.button-grid.group-side.numbered-down { grid-auto-flow: column; grid-template-rows: repeat(3, auto); }
+/* Light strip along the lower lip, in the profile's lighting colour. */
+.button-grid.group-side::after {
+  content: ""; position: absolute; inset-inline: 12% 8%; inset-block-end: 0.55rem; block-size: 3px;
+  border-radius: 2px; background: var(--side-led, var(--accent)); opacity: 0.85;
+  box-shadow: var(--pad-strip-glow) var(--side-led, var(--accent));
+}
+
+.group-side .button-tile {
+  isolation: isolate; align-content: start;
+  min-block-size: 4.9rem; padding: 0.6rem 0.75rem 0.75rem 0.85rem;
+  background: none; border: 0; border-radius: 1.1rem; box-shadow: none; transform: none;
+  translate: 0 var(--rise, 0rem);
+  outline: 2px solid transparent; outline-offset: 3px;
+}
+.group-side .button-tile:hover { background: none; }
+.group-side .button-tile.selected { outline-color: transparent; }
+.group-side .button-tile:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.group-side .button-tile::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  border-radius: 1.1rem 1.1rem 1.25rem 1.25rem;
+  transform: rotate(var(--tilt, 0deg)) skewX(-4deg);
+  background:
+    var(--landmark, linear-gradient(transparent, transparent)) no-repeat right 0.9rem bottom 0.5rem / 1.1rem 3px,
+    linear-gradient(135deg, var(--face-hi, var(--cap-hi)) 0%, var(--cap-mid) 48%, var(--cap-lo) 100%);
+  box-shadow:
+    var(--lip, 0 0 transparent),
+    inset 1px 1px 0 var(--cap-rim-lit), inset -1px -1px 0 var(--cap-rim-shade),
+    1px 3px 0 var(--cap-skirt), 3px 6px 10px -2px var(--cap-cast);
+  transition: translate 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+.group-side .button-tile:hover::before { --face-hi: var(--cap-hover-hi); translate: 0 -1px; }
+.group-side .button-tile:is(.selected, :active)::before {
+  translate: 0 2px;
+  background: linear-gradient(135deg, var(--cap-press-hi), var(--cap-press-lo));
+  box-shadow: inset 2px 3px 6px var(--cap-press-inset), inset -1px -1px 0 var(--cap-rim-lit), 1px 1px 0 var(--cap-skirt);
+}
+.group-side .button-tile.selected::before {
+  box-shadow: inset 0 0 0 2px var(--accent), inset 2px 3px 6px var(--cap-press-inset), 1px 1px 0 var(--cap-skirt);
+}
+/* Unassigned keys sit lower in the well, unlit, with a dashed edge. */
+.group-side .button-tile.unchanged { border: 0; background: none; }
+.group-side .button-tile.unchanged:not(.selected)::before {
+  background: linear-gradient(135deg, var(--cap-default-hi), var(--cap-default-lo));
+  translate: 0 1px;
+  box-shadow: inset 2px 2px 4px rgb(0 0 0 / 0.18), inset -1px -1px 0 var(--cap-rim-lit);
+  outline: 1px dashed var(--border-control); outline-offset: -3px;
+}
+.group-side .button-tile.changed::after {
+  inline-size: 0.5rem; block-size: 0.5rem; inset-block-start: 0.55rem; inset-inline-end: 0.75rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), 0 0 0 2px var(--cap-lo);
+}
+:root[data-theme="play"] .group-side .button-tile.changed::after {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), 0 0 0 2px var(--cap-lo), 0 0 6px var(--accent);
+}
 .group-side .tile-line { flex-direction: column; align-items: flex-start; gap: 0.15rem; }
 .group-side .tile-name {
   white-space: normal;
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
 }
 .group-side .button-tile:not(.unchanged) .tile-name { color: var(--side-ink, var(--text)); }
-.group-side .button-tile:nth-child(n + 5):nth-child(-n + 8) { translate: 0.45rem 0; }
-.group-side .button-tile:nth-child(n + 9) { translate: 0.9rem 0; }
+:root[data-theme="play"] .group-side .button-tile:not(.unchanged) .tile-name {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--side-ink, transparent) 35%, transparent);
+}
+/* The wave: each column a little higher toward the rear (front = col 0),
+   with the outer columns turned away and lipped on their outside edge. */
+.group-side .button-tile[data-col="0"] { --rise: 0.75rem; --tilt: -1.5deg; --lip: inset 3px 0 0 var(--cap-lip); }
+.group-side .button-tile[data-col="1"] { --rise: 0.375rem; --tilt: -1deg; margin-inline-end: 0.15rem; }
+.group-side .button-tile[data-col="2"] { --rise: 0.125rem; --tilt: -0.5deg; margin-inline-start: 0.15rem; }
+.group-side .button-tile[data-col="3"] { --rise: 0rem; --lip: inset -3px 0 0 var(--cap-lip); }
+/* Landmark bars on the four centre keys, felt rather than seen. */
+.group-side .button-tile:is([data-col="1"], [data-col="2"]):is([data-row="0"], [data-row="1"]) {
+  --landmark: linear-gradient(var(--cap-mark), var(--cap-mark));
+}
+.button-grid.group-side { padding-block-start: 1rem; }
+@media (prefers-reduced-motion: reduce) {
+  .group-side .button-tile::before { transition: none; }
+  .group-side .button-tile:hover::before { translate: none; }
+}
+@media (forced-colors: active) {
+  .button-grid.group-side { border: 1px solid CanvasText; }
+  .button-grid.group-side::after { display: none; }
+  .group-side .button-tile { border: 1px solid ButtonText; }
+  .group-side .button-tile::before { display: none; }
+  .group-side .button-tile:is(.selected, :focus-visible) { outline: 2px solid Highlight; }
+}
 
 /* Tile: one line (tag + action name) plus keycaps when it's a shortcut.
    One box per level: tiles are filled, not bordered; red marks only state
@@ -616,13 +728,14 @@ body.wide { max-width: 1320px; }
   .panel-close { display: inline-block; }
   .button-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
   .button-tile { padding: 0.4rem 0.5rem; min-block-size: 3rem; }
-  /* Three keys per row on phones: step the rows by threes instead. */
-  .button-grid.group-side { padding: 0.75rem 1.4rem 0.9rem 0.75rem; gap: 0.45rem; }
-  .group-side .button-tile { min-block-size: 4.4rem; padding: 0.45rem 0.55rem; }
-  .group-side .button-tile:nth-child(n) { translate: none; }
-  .group-side .button-tile:nth-child(n + 4):nth-child(-n + 6) { translate: 0.25rem 0; }
-  .group-side .button-tile:nth-child(n + 7):nth-child(-n + 9) { translate: 0.5rem 0; }
-  .group-side .button-tile:nth-child(n + 10) { translate: 0.75rem 0; }
+  /* Phones: three keys per row in reading order, so the wave, tilt and
+     landmarks (which follow the 4-column pad) are dropped. */
+  .button-grid.group-side, .button-grid.group-side.numbered-down {
+    grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none;
+    gap: 0.45rem; padding: 0.8rem 0.8rem 1.4rem;
+  }
+  .group-side .button-tile[data-col][data-row] { --rise: 0rem; --tilt: 0deg; --landmark: none; --lip: 0 0 transparent; margin: 0; min-block-size: 4.4rem; padding: 0.5rem 0.55rem 0.6rem 0.65rem; }
+  .group-side .button-tile::before { transform: skewX(-3deg); }
   .tile-line { flex-direction: column; align-items: flex-start; gap: 0; }
   .toolbar-more .dropdown-panel { inset-inline: 0 auto; }
   .toolbar-apply { inline-size: 100%; }
@@ -946,7 +1059,7 @@ footer .buy-links { font-size: var(--fs-xs); color: var(--text-secondary); }
 .more-note { margin: 0.3rem 0.65rem 0.4rem; max-inline-size: 22rem; font-size: var(--fs-xs); color: var(--text-secondary); }
 
 /* Play (dark): lift remapped tiles off the card so they read as filled. */
-:root:not([data-theme="pro"]) .button-tile:not(.unchanged) { background: var(--surface-elevated); }
+:root:not([data-theme="pro"]) .button-grid:not(.group-side) .button-tile:not(.unchanged) { background: var(--surface-elevated); }
 .settings-drawer .settings-row { align-items: stretch; }
 /* Phones: the five profile buttons get a fixed full-width row, so the
    toolbar is the same height before and after the script fills it. */

@@ -85,6 +85,14 @@ function keycaps(keys: string[]): HTMLSpanElement {
   return wrap;
 }
 
+// How the side keys are numbered on the mouse: across each row (1 2 3 4 on
+// top), or down each column (1 2 3 in the front column, the Naga
+// convention docs/brand/hardware-reference.md §5.1 expects). Unconfirmed
+// for the M908/M913; switching only changes where each key is drawn.
+const SIDE_NUMBERING: "rows" | "columns" = "rows";
+const SIDE_COLUMNS = 4;
+const SIDE_ROWS = 3;
+
 export function createButtonEditor(opts: ButtonEditorOptions) {
   const { root, slots } = opts;
   let selected = slots[0]!.id;
@@ -99,25 +107,39 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     const grid = el("div", `button-grid group-${group.id}`);
     grid.setAttribute("role", "group");
     grid.setAttribute("aria-labelledby", label.id);
-    for (const slot of slots.filter((s) => s.group === group.id)) {
+    const side = group.id === "side";
+    if (side && SIDE_NUMBERING === "columns") grid.classList.add("numbered-down");
+    slots.filter((s) => s.group === group.id).forEach((slot, i) => {
       const tile = el("button", "button-tile");
       tile.type = "button";
       tile.dataset.slot = slot.id;
+      // Physical position on the pad, for the 3D styling (wave, landmarks).
+      if (side) {
+        tile.dataset.col = String(SIDE_NUMBERING === "columns" ? Math.floor(i / SIDE_ROWS) : i % SIDE_COLUMNS);
+        tile.dataset.row = String(SIDE_NUMBERING === "columns" ? i % SIDE_ROWS : Math.floor(i / SIDE_COLUMNS));
+      }
       tile.setAttribute("aria-controls", "btn-panel");
       tile.addEventListener("click", () => select(slot.id, true));
       tiles.set(slot.id, tile);
       grid.append(tile);
-    }
+    });
     map.append(label, grid);
   }
 
-  // Arrow keys move between tiles (4 columns, across groups); Tab leaves the
-  // grid in one stop — roving tabindex.
+  // Arrow keys move between tiles as they are drawn (across groups); Tab
+  // leaves the grid in one stop — roving tabindex.
   map.addEventListener("keydown", (event) => {
     const order = [...tiles.keys()];
-    const index = order.indexOf((event.target as HTMLElement).dataset?.slot ?? "");
+    const current = event.target as HTMLElement;
+    const index = order.indexOf(current.dataset?.slot ?? "");
     if (index < 0) return;
-    const moves: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 4, ArrowUp: -4 };
+    const grid = current.parentElement!;
+    // Phones show 3 tiles per row, desktops 4, so read the real count.
+    const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 4;
+    const down = grid.classList.contains("numbered-down") && columns === SIDE_COLUMNS;
+    const moves: Record<string, number> = down
+      ? { ArrowRight: SIDE_ROWS, ArrowLeft: -SIDE_ROWS, ArrowDown: 1, ArrowUp: -1 }
+      : { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns };
     let target: number;
     if (event.key === "Home") target = 0;
     else if (event.key === "End") target = order.length - 1;

@@ -13,13 +13,15 @@ describe("readableInk", () => {
   });
 
   it("leaves a colour alone when it is already readable", () => {
-    expect(readableInk([176, 16, 32], KEY_BACKGROUND_LIGHT)).toBe("#b01020");
+    expect(readableInk([140, 10, 25], KEY_BACKGROUND_LIGHT)).toBe("#8c0a19");
     expect(readableInk([0, 255, 0], KEY_BACKGROUND_DARK)).toBe("#00ff00");
   });
 
-  it("darkens only slightly when a colour is just short of readable", () => {
+  it("adjusts only as far as needed when a colour is just short of readable", () => {
     expect(contrastRatio([226, 0, 26], KEY_BACKGROUND_LIGHT)).toBeLessThan(4.5);
-    expect(readableInk([226, 0, 26], KEY_BACKGROUND_LIGHT)).toBe("#d70019");
+    const adjusted = rgbOf(readableInk([226, 0, 26], KEY_BACKGROUND_LIGHT));
+    expect(contrastRatio(adjusted, KEY_BACKGROUND_LIGHT)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(adjusted, KEY_BACKGROUND_LIGHT)).toBeLessThan(5.5); // a small step, not black
   });
 
   it("keeps the hue: blue stays bluish on dark, yellow stays yellowish on light", () => {
