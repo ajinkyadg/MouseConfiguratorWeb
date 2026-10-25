@@ -760,6 +760,92 @@ body.wide { max-width: 1320px; }
 }
 @media (prefers-reduced-motion: reduce) { .btn-panel { transition: none; } }
 
+/* The mouse drawn around the side keys (src/mouse-side-art.ts), on wide
+   screens. The grid's padding puts the keys inside the drawn keypad
+   housing; the drawing stretches to the grid. Black mouse in Play, white
+   in Pro. */
+.mouse-art { display: none; }
+@media (min-width: 761px) {
+  .button-grid.group-side.has-art {
+    background: none; box-shadow: none; border-radius: 0; margin: 0 0 0.5rem;
+    padding: 5rem 20.6% 4.5rem 15%;
+    gap: 3px 0.7rem;
+  }
+  .mouse-art {
+    display: block; position: absolute; inset: 0; inline-size: 100%; block-size: 100%;
+    z-index: -1; pointer-events: none; overflow: visible;
+  }
+}
+.mouse-art .ma-shell-hi { stop-color: #2c2c31; }
+.mouse-art .ma-shell-mid { stop-color: #17171a; }
+.mouse-art .ma-shell-lo { stop-color: #0a0a0c; }
+.mouse-art .ma-top-hi { stop-color: #38383e; }
+.mouse-art .ma-top-lo { stop-color: #1c1c20; }
+.mouse-art .ma-shelf-hi { stop-color: #222226; }
+.mouse-art .ma-shelf-lo { stop-color: #0d0d0f; }
+.mouse-art .ma-well-hi { stop-color: #050506; }
+.mouse-art .ma-well-lo { stop-color: #131316; }
+.mouse-art .ma-sheen { stop-color: #ffffff; stop-opacity: 0.09; }
+.mouse-art .ma-floor { fill: rgb(0 0 0 / 0.6); }
+.mouse-art .ma-shell { fill: url(#ma-shell); stroke: rgb(255 255 255 / 0.05); stroke-width: 1.5; }
+.mouse-art .ma-top { fill: url(#ma-top); }
+.mouse-art .ma-sheen-shape { fill: url(#ma-sheen); }
+.mouse-art .ma-seam { fill: none; stroke: rgb(0 0 0 / 0.6); stroke-width: 2.5; }
+.mouse-art .ma-shelf { fill: url(#ma-shelf); stroke: rgb(255 255 255 / 0.05); stroke-width: 1.5; }
+.mouse-art .ma-bezel { fill: #222227; stroke: rgb(255 255 255 / 0.07); stroke-width: 1.5; }
+.mouse-art .ma-well { fill: url(#ma-well); }
+.mouse-art .ma-fire { fill: #1c1c20; stroke: rgb(255 255 255 / 0.1); stroke-width: 1.5; }
+.mouse-art .ma-fire-hi { fill: rgb(255 255 255 / 0.08); }
+.mouse-art .ma-grip { fill: url(#ma-grip); opacity: 0.9; }
+.mouse-art .ma-grip-bg { fill: #0c0c0e; }
+.mouse-art .ma-grip-cell { fill: #1a1a1e; }
+.mouse-art .ma-led, .mouse-art .ma-led-glow { fill: none; stroke: var(--side-led, var(--accent)); stroke-linecap: round; }
+.mouse-art .ma-led { stroke-width: 5; }
+.mouse-art .ma-led-glow { stroke-width: 14; opacity: 0.55; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="play"]) .mouse-art .ma-shell-hi { stop-color: #ffffff; }
+  :root:not([data-theme="play"]) .mouse-art .ma-shell-mid { stop-color: #eceef1; }
+  :root:not([data-theme="play"]) .mouse-art .ma-shell-lo { stop-color: #cfd4da; }
+  :root:not([data-theme="play"]) .mouse-art .ma-top-hi { stop-color: #ffffff; }
+  :root:not([data-theme="play"]) .mouse-art .ma-top-lo { stop-color: #e8ebee; }
+  :root:not([data-theme="play"]) .mouse-art .ma-shelf-hi { stop-color: #e8ebee; }
+  :root:not([data-theme="play"]) .mouse-art .ma-shelf-lo { stop-color: #c4c9d0; }
+  :root:not([data-theme="play"]) .mouse-art .ma-well-hi { stop-color: #c2c7cf; }
+  :root:not([data-theme="play"]) .mouse-art .ma-well-lo { stop-color: #dde1e6; }
+  :root:not([data-theme="play"]) .mouse-art .ma-sheen { stop-color: #ffffff; stop-opacity: 0.75; }
+  :root:not([data-theme="play"]) .mouse-art .ma-floor { fill: rgb(21 23 28 / 0.2); }
+  :root:not([data-theme="play"]) .mouse-art .ma-shell, :root:not([data-theme="play"]) .mouse-art .ma-shelf { stroke: rgb(21 23 28 / 0.12); }
+  :root:not([data-theme="play"]) .mouse-art .ma-seam { stroke: rgb(21 23 28 / 0.14); }
+  :root:not([data-theme="play"]) .mouse-art .ma-bezel { fill: #f6f7f9; stroke: rgb(21 23 28 / 0.12); }
+  :root:not([data-theme="play"]) .mouse-art .ma-fire { fill: #f3f4f6; stroke: rgb(21 23 28 / 0.15); }
+  :root:not([data-theme="play"]) .mouse-art .ma-fire-hi { fill: rgb(255 255 255 / 0.9); }
+  :root:not([data-theme="play"]) .mouse-art .ma-grip-bg { fill: #d9dde3; }
+  :root:not([data-theme="play"]) .mouse-art .ma-grip-cell { fill: #eef0f3; }
+  :root:not([data-theme="play"]) .mouse-art .ma-led { stroke-width: 4; }
+  :root:not([data-theme="play"]) .mouse-art .ma-led-glow { display: none; }
+}
+:root[data-theme="pro"] .mouse-art .ma-shell-hi { stop-color: #ffffff; }
+:root[data-theme="pro"] .mouse-art .ma-shell-mid { stop-color: #eceef1; }
+:root[data-theme="pro"] .mouse-art .ma-shell-lo { stop-color: #cfd4da; }
+:root[data-theme="pro"] .mouse-art .ma-top-hi { stop-color: #ffffff; }
+:root[data-theme="pro"] .mouse-art .ma-top-lo { stop-color: #e8ebee; }
+:root[data-theme="pro"] .mouse-art .ma-shelf-hi { stop-color: #e8ebee; }
+:root[data-theme="pro"] .mouse-art .ma-shelf-lo { stop-color: #c4c9d0; }
+:root[data-theme="pro"] .mouse-art .ma-well-hi { stop-color: #c2c7cf; }
+:root[data-theme="pro"] .mouse-art .ma-well-lo { stop-color: #dde1e6; }
+:root[data-theme="pro"] .mouse-art .ma-sheen { stop-color: #ffffff; stop-opacity: 0.75; }
+:root[data-theme="pro"] .mouse-art .ma-floor { fill: rgb(21 23 28 / 0.2); }
+:root[data-theme="pro"] .mouse-art .ma-shell, :root[data-theme="pro"] .mouse-art .ma-shelf { stroke: rgb(21 23 28 / 0.12); }
+:root[data-theme="pro"] .mouse-art .ma-seam { stroke: rgb(21 23 28 / 0.14); }
+:root[data-theme="pro"] .mouse-art .ma-bezel { fill: #f6f7f9; stroke: rgb(21 23 28 / 0.12); }
+:root[data-theme="pro"] .mouse-art .ma-fire { fill: #f3f4f6; stroke: rgb(21 23 28 / 0.15); }
+:root[data-theme="pro"] .mouse-art .ma-fire-hi { fill: rgb(255 255 255 / 0.9); }
+:root[data-theme="pro"] .mouse-art .ma-grip-bg { fill: #d9dde3; }
+:root[data-theme="pro"] .mouse-art .ma-grip-cell { fill: #eef0f3; }
+:root[data-theme="pro"] .mouse-art .ma-led { stroke-width: 4; }
+:root[data-theme="pro"] .mouse-art .ma-led-glow { display: none; }
+@media (forced-colors: active) { .mouse-art { display: none !important; } }
+
 /* Settings under the buttons: DPI · LED · Polling. */
 .settings-row { display: grid; gap: 0 0.85rem; align-items: start; }
 @media (min-width: 1100px) { .settings-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

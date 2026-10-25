@@ -6,6 +6,7 @@
 //
 // The page owns the data (getValue/setValue) and the device rules
 // (validate/describe); this module owns only the interaction.
+import { createMouseSideArt } from "./mouse-side-art";
 import type { ActionCategory } from "./profiles/m913-action-catalog";
 import { MODIFIER_ORDER } from "./profiles/shortcut-names";
 
@@ -113,6 +114,10 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     grid.setAttribute("role", "group");
     grid.setAttribute("aria-labelledby", label.id);
     const side = group.id === "side";
+    if (side) {
+      grid.classList.add("has-art");
+      grid.append(createMouseSideArt());
+    }
     slots.filter((s) => s.group === group.id).forEach((slot, i) => {
       const tile = el("button", "button-tile");
       tile.type = "button";
