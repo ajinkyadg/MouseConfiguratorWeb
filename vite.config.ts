@@ -46,6 +46,7 @@ export default defineConfig({
         privacy: resolve(__dirname, "privacy.html"),
         terms: resolve(__dirname, "terms.html"),
         mmoTrainer: resolve(__dirname, "mmo-trainer.html"),
+        typingTest: resolve(__dirname, "typing-test.html"),
       },
     },
   },

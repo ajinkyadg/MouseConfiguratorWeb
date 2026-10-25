@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Typing Speed Test: Check Your WPM in 60 Seconds | MouseConfig</title>
+    <meta name="description" content="Free typing speed test. Type for 15, 30, 60 or 120 seconds and get your WPM, accuracy and your most-missed keys. Challenge a friend with a link. No sign-up." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://mouseconfig.app/typing-test" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MouseConfig" />
+    <meta property="og:title" content="Typing Speed Test: How Many WPM Can You Type?" />
+    <meta property="og:description" content="Type for 15 to 120 seconds and see your WPM, accuracy and most-missed keys. Then send a friend a link to beat your score." />
+    <meta property="og:url" content="https://mouseconfig.app/typing-test" />
+    <meta property="og:image" content="https://mouseconfig.app/brand/share.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="MouseConfig: Redragon mouse software for Mac, Linux and Windows, in your browser" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://mouseconfig.app/brand/share.png" />
+    <meta name="twitter:title" content="Typing Speed Test: How Many WPM Can You Type?" />
+    <meta name="twitter:description" content="Type for 15 to 120 seconds and see your WPM, accuracy and most-missed keys. Then send a friend a link to beat your score." />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is a good typing speed?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Most adults type around 35 to 45 words per minute. 50 to 70 WPM is comfortably fast for office work, above 80 is fast enough for most typing-heavy jobs, and competitive typists reach well over 120 WPM." }
+          },
+          {
+            "@type": "Question",
+            "name": "How is WPM calculated?",
+            "acceptedAnswer": { "@type": "Answer", "text": "A word is counted as five characters, spaces included. WPM is the number of characters in correctly typed words, divided by five, divided by the minutes taken. Raw WPM counts every character typed, mistakes included." }
+          },
+          {
+            "@type": "Question",
+            "name": "How is typing accuracy calculated?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Accuracy is correct keystrokes divided by all keystrokes. A mistake you fix with Backspace still counts against accuracy, because the wrong key was pressed." }
+          },
+          {
+            "@type": "Question",
+            "name": "Which test length should I use?",
+            "acceptedAnswer": { "@type": "Answer", "text": "60 seconds is the common standard and the best number to compare with other people. 15 and 30 seconds show your burst speed, and 120 seconds shows the speed you can keep up." }
+          }
+        ]
+      }
+    </script>
+    <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
+    <script>
+      /* Theme before first paint, so neither face ever flashes: the stored
+         choice if there is one, otherwise Pro — the brand's default face. */
+      (function () {
+        var theme = null;
+        try { theme = localStorage.getItem("mouseconfig.theme"); } catch (e) { /* blocked storage */ }
+        document.documentElement.setAttribute("data-theme", theme === "play" ? "play" : "pro");
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .tt-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; margin-bottom: 1rem; }
+      .tt-controls .segmented button { min-inline-size: 3.25rem; }
+      .tt-check { display: inline-flex; gap: 0.4rem; align-items: center; font-size: var(--fs-sm); color: var(--text-secondary); cursor: pointer; }
+      .tt-challenge { margin: 0 0 1rem; padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--text); font-size: var(--fs-sm); }
+      .tt-live { display: flex; gap: 1.5rem; align-items: baseline; min-block-size: 2.4rem; margin-bottom: 0.25rem; font-variant-numeric: tabular-nums; }
+      .tt-time { font-size: 2rem; font-weight: 750; color: var(--accent-text); }
+      .tt-live-wpm { font-size: var(--fs-md); color: var(--text-secondary); }
+      .tt-box { position: relative; cursor: text; border-radius: 10px; padding: 0.75rem 0.25rem; outline: none; }
+      .tt-box.is-focused { box-shadow: none; }
+      .tt-input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; border: 0; padding: 0; font-size: 16px; cursor: text; }
+      .tt-viewport { --line: 2.6rem; height: calc(var(--line) * 3); overflow: hidden; }
+      .tt-words { position: relative; display: flex; flex-wrap: wrap; column-gap: 0.65em; font-family: var(--font-mono); font-size: 1.5rem; line-height: var(--line);
+        color: var(--text-secondary); transition: transform 120ms ease-out; user-select: none; }
+      .tt-word { position: relative; white-space: nowrap; }
+      .tt-word.is-wrong { text-decoration: underline wavy var(--danger); text-underline-offset: 6px; text-decoration-thickness: 1px; }
+      .tt-c.ok { color: var(--text); }
+      .tt-c.bad { color: var(--danger); }
+      .tt-c.extra { color: var(--danger); opacity: 0.7; }
+      .tt-box.is-focused .tt-c.caret { box-shadow: -2px 0 0 0 var(--accent); }
+      .tt-box.is-focused .tt-word.caret-end::after { content: ""; position: absolute; right: -2px; top: 0.45rem; bottom: 0.45rem; width: 2px; background: var(--accent); }
+      .tt-box.is-focused.is-idle .tt-c.caret, .tt-box.is-focused.is-idle .tt-word.caret-end::after { animation: tt-blink 1s steps(1) infinite; }
+      @keyframes tt-blink { 50% { box-shadow: none; opacity: 0; } }
+      .tt-blur { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 10px; font-size: var(--fs-md); color: var(--text);
+        background: color-mix(in srgb, var(--surface) 80%, transparent); backdrop-filter: blur(3px); pointer-events: none; }
+      .tt-box.is-focused .tt-blur { display: none; }
+      .tt-actions { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin-top: 0.75rem; }
+      .tt-actions .hint { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); }
+      kbd { font-family: var(--font-mono); font-size: var(--fs-xs); padding: 0.05rem 0.35rem; border: 1px solid var(--border-control); border-bottom-width: 2px; border-radius: 4px; background: var(--surface-elevated); color: var(--text); }
+
+      #result-section:focus { outline: none; }
+      .tt-result-top { display: flex; flex-wrap: wrap; gap: 1rem 2.5rem; align-items: flex-end; }
+      .tt-big { display: grid; }
+      .tt-big-value { font-size: 3.5rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent-text); }
+      .tt-label { font-size: var(--fs-2xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); }
+      .tt-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 0.5rem; margin-top: 1rem; }
+      .tt-stat { display: grid; gap: 0.15rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--surface-sunken); }
+      .tt-stat-value { font-size: var(--fs-md); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+      .tt-verdict { margin: 0.75rem 0 0; color: var(--text); }
+      .tt-chart { display: block; width: 100%; height: 140px; margin-top: 1rem; }
+      .tt-chart .grid { stroke: var(--border-subtle); stroke-width: 1; }
+      .tt-chart .axis { fill: var(--text-secondary); font-size: 11px; font-family: var(--font-sans); }
+      .tt-chart .wpm { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+      .tt-chart .raw { fill: none; stroke: var(--text-secondary); stroke-width: 1.5; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+      .tt-legend { display: flex; gap: 1rem; font-size: var(--fs-xs); color: var(--text-secondary); margin: 0.25rem 0 0; }
+      .tt-legend span::before { content: ""; display: inline-block; width: 14px; height: 0; margin-inline-end: 0.35rem; vertical-align: middle; border-top: 2.5px solid var(--accent); }
+      .tt-legend span.raw::before { border-top: 1.5px dashed var(--text-secondary); }
+      .tt-share { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 1rem; }
+      .tt-share-status { font-size: var(--fs-sm); color: var(--success); }
+      .tt-table { border-collapse: collapse; font-size: var(--fs-sm); margin: 0.5rem 0 0.75rem; }
+      .tt-table th, .tt-table td { text-align: start; padding: 0.4rem 1.25rem 0.4rem 0; border-bottom: 1px solid var(--border-subtle); color: var(--text); }
+      .tt-table th { color: var(--text-secondary); font-weight: 600; }
+      .steps { margin: 0; padding-left: 1.25rem; color: var(--text-secondary); line-height: 1.6; }
+      .steps li { margin-bottom: 0.4rem; }
+      .prose-muted { margin: 0 0 0.75rem; }
+      .prose-muted:last-child { margin-bottom: 0; }
+      .os-list { margin: 0; padding-left: 1.1rem; color: var(--text-secondary); line-height: 1.6; }
+      .os-list li { margin-bottom: 0.4rem; }
+      .os-list strong { color: var(--text); }
+      .faq h3 { font-size: var(--fs-md); margin: 1.1rem 0 0.35rem; }
+      .faq h3:first-of-type { margin-top: 0; }
+      @media (max-width: 639px) {
+        .tt-words { font-size: 1.2rem; }
+        .tt-viewport { --line: 2.2rem; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .tt-words { transition: none; }
+        .tt-box.is-focused.is-idle .tt-c.caret, .tt-box.is-focused.is-idle .tt-word.caret-end::after { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav" aria-label="Main">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="currentColor"/><g stroke="var(--on-accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 13c-8.2 0-13.5 6.2-13.5 14.5v9C18.5 45 23.8 51 32 51s13.5-6 13.5-14.5v-9C45.5 19.2 40.2 13 32 13Z"/><path d="M18.8 32.4h26.4"/><path d="M32 20.5v6"/></g><g fill="var(--on-accent)"><circle cx="12" cy="27" r="2.1"/><circle cx="12" cy="33.5" r="2.1"/><circle cx="12" cy="40" r="2.1"/></g></svg></span><span class="brand-name">MouseConfig</span></a>
+      <ul class="nav-menus">
+        <li><details class="dropdown nav-menu">
+          <summary>Configure</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/"><span class="nav-item-title">M913 Impact Elite</span><span class="nav-item-desc">Configure DPI, buttons, and RGB</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/m908"><span class="nav-item-title">M908 Impact</span><span class="nav-item-desc">Five onboard profiles, buttons, DPI and RGB</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Tools</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/dpi-checker"><span class="nav-item-title">DPI checker</span><span class="nav-item-desc">Measure your mouse's real DPI</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/sensitivity-converter"><span class="nav-item-title">Sensitivity converter</span><span class="nav-item-desc">Keep your aim when you change DPI or game</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/jmk-decoder"><span class="nav-item-title">.jmk file decoder</span><span class="nav-item-desc">Read a Redragon Windows profile on Mac or Linux</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/mmo-trainer"><span class="nav-item-title">MMO mouse trainer</span><span class="nav-item-desc">Learn your 12 side buttons by feel</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/typing-test" aria-current="page"><span class="nav-item-title">Typing speed test</span><span class="nav-item-desc">Check your WPM and most-missed keys</span></a></li>
+          </ul></div>
+        </details></li>
+        <li><details class="dropdown nav-menu">
+          <summary>Guides</summary>
+          <div class="dropdown-panel"><ul>
+            <li><a class="dropdown-item nav-item" href="/productivity-setup"><span class="nav-item-title">Productivity button mapping</span><span class="nav-item-desc">Set up the M913's 12 side buttons for work</span></a></li>
+            <li><a class="dropdown-item nav-item" href="/redragon-m913-mac"><span class="nav-item-title">M913 software for Mac</span><span class="nav-item-desc">Set up the M913 on a Mac without Windows</span></a></li>
+          </ul></div>
+        </details></li>
+      </ul>
+      <div class="theme-switch" role="radiogroup" aria-label="Site theme">
+        <button type="button" role="radio" aria-checked="true" tabindex="0" data-theme-value="play">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="currentColor"><path d="M11.6 1.8 4 11.6h4.2L8.4 18.2 16 8.4h-4.3l-.1-6.6Z"/></svg>
+          <span class="theme-label">Play</span>
+        </button>
+        <button type="button" role="radio" aria-checked="false" tabindex="-1" data-theme-value="pro">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="2.2" y="6.2" width="15.6" height="11" rx="2"/><path d="M7.2 6.2V4.6a1.6 1.6 0 0 1 1.6-1.6h2.4a1.6 1.6 0 0 1 1.6 1.6v1.6M2.2 10.6h15.6"/></svg>
+          <span class="theme-label">Pro</span>
+        </button>
+      </div>
+    </nav>
+    <header>
+      <div>
+        <p class="eyebrow">Tool</p>
+        <h1>Typing Speed Test</h1>
+        <p>Type the words below as fast and accurately as you can. The clock starts with your first key.</p>
+      </div>
+    </header>
+
+    <main id="main">
+    <section aria-labelledby="test-heading" id="test-section">
+      <h2 id="test-heading" class="visually-hidden">Test</h2>
+      <p class="tt-challenge" id="challenge" hidden></p>
+      <div class="tt-controls">
+        <div class="segmented" id="durations" role="group" aria-label="Test length"></div>
+        <label class="tt-check"><input type="checkbox" id="opt-punctuation" /> Punctuation</label>
+        <label class="tt-check"><input type="checkbox" id="opt-numbers" /> Numbers</label>
+      </div>
+      <div class="tt-live" aria-hidden="true">
+        <span class="tt-time" id="time-left">60</span>
+        <span class="tt-live-wpm" id="live-wpm"></span>
+      </div>
+      <div class="tt-box" id="box">
+        <div class="tt-viewport"><div class="tt-words" id="words" aria-hidden="true"></div></div>
+        <input class="tt-input" id="type-input" type="text" aria-label="Type the words shown. The test starts with your first key." aria-describedby="current-word"
+          autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="next" />
+        <p class="visually-hidden" id="current-word" aria-live="polite"></p>
+        <div class="tt-blur" aria-hidden="true">Start typing, or click here</div>
+      </div>
+      <div class="tt-actions">
+        <button type="button" id="restart">Restart</button>
+        <p class="hint"><kbd>Esc</kbd> restarts with new words. Backspace can go back into a word with a mistake.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="result-heading" id="result-section" hidden tabindex="-1">
+      <h2 id="result-heading">Your result</h2>
+      <div class="tt-result-top">
+        <div class="tt-big"><span class="tt-big-value" id="r-wpm">0</span><span class="tt-label">Words per minute</span></div>
+        <div class="tt-big"><span class="tt-big-value" id="r-acc">0%</span><span class="tt-label">Accuracy</span></div>
+      </div>
+      <p class="tt-verdict" id="r-verdict"></p>
+      <div class="tt-stats" id="r-stats"></div>
+      <svg class="tt-chart" id="r-chart" role="img" aria-labelledby="r-chart-title"><title id="r-chart-title">Speed over the test</title></svg>
+      <p class="tt-legend" aria-hidden="true"><span>WPM</span><span class="raw">Raw</span></p>
+      <div class="tt-share">
+        <button type="button" class="primary" id="again">Try again</button>
+        <button type="button" id="share">Challenge a friend</button>
+        <span class="tt-share-status" id="share-status" role="status"></span>
+      </div>
+    </section>
+
+    <section aria-labelledby="good-heading">
+      <h2 id="good-heading">What's a good typing speed?</h2>
+      <p class="prose-muted">Most adults type around 40 words per minute. Here is roughly how speeds compare on a 60-second test:</p>
+      <table class="tt-table">
+        <thead><tr><th scope="col">WPM</th><th scope="col">What it means</th></tr></thead>
+        <tbody>
+          <tr><td>Under 30</td><td>Still learning; looking at the keys</td></tr>
+          <tr><td>30–49</td><td>Average</td></tr>
+          <tr><td>50–69</td><td>Above average; comfortable for office work</td></tr>
+          <tr><td>70–89</td><td>Fast; enough for most typing-heavy jobs</td></tr>
+          <tr><td>90–119</td><td>Very fast</td></tr>
+          <tr><td>120+</td><td>Competitive typist</td></tr>
+        </tbody>
+      </table>
+      <p class="prose-muted">Accuracy matters as much as speed. Below about 95%, the time spent fixing mistakes cancels out the extra speed, so slow down until mistakes are rare.</p>
+    </section>
+
+    <section aria-labelledby="calc-heading">
+      <h2 id="calc-heading">How the score is worked out</h2>
+      <ul class="os-list">
+        <li><strong>WPM</strong> counts the characters of words you typed correctly, plus the space after each, divided by five (the standard length of a "word") and by the minutes taken. A word with a mistake in it adds nothing.</li>
+        <li><strong>Raw WPM</strong> counts every character you typed, mistakes included. A big gap between raw and WPM means mistakes are costing you speed.</li>
+        <li><strong>Accuracy</strong> is correct keystrokes out of all keystrokes. A mistake you fix with Backspace still counts, because the wrong key was pressed.</li>
+        <li><strong>Consistency</strong> shows how steady your speed was from second to second. 100% is perfectly even.</li>
+        <li><strong>Most-missed keys</strong> are the letters you typed wrong most often: the ones worth practising.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="tips-heading">
+      <h2 id="tips-heading">How to type faster</h2>
+      <ol class="steps">
+        <li>Keep your fingers on the home row (<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> and <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>;</kbd>) and return to it after each key.</li>
+        <li>Look at the screen, not the keyboard. It's slower for a week or two, then much faster.</li>
+        <li>Aim for accuracy first. Speed follows once the movements are automatic.</li>
+        <li>Read a word or two ahead, so your fingers never wait for your eyes.</li>
+        <li>Practise little and often: ten minutes a day beats an hour once a week.</li>
+      </ol>
+      <p class="prose-muted">Gaming mouse with a side keypad? The <a href="/mmo-trainer">MMO mouse trainer</a> · <a href="/typing-test">Typing speed test</a> teaches its 12 side buttons the same way: by feel, against the clock.</p>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Questions</h2>
+      <h3>Which test length should I use?</h3>
+      <p class="prose-muted">60 seconds is the usual standard and the best number to compare with other people. 15 and 30 seconds show your burst speed; 120 seconds shows the speed you can keep up.</p>
+      <h3>Does it work on a phone?</h3>
+      <p class="prose-muted">Yes, but phone keyboards are much slower than physical ones, so phone scores aren't comparable with keyboard scores.</p>
+      <h3>How does "Challenge a friend" work?</h3>
+      <p class="prose-muted">It makes a link with your WPM in it. Whoever opens it sees the score to beat. The link carries only that number: no name and no account.</p>
+      <h3>Is anything I type sent anywhere?</h3>
+      <p class="prose-muted">No. The test runs in your browser. Only your best score for each length is kept, in your browser's storage.</p>
+    </section>
+    </main>
+
+    <footer>
+      <p>MouseConfig is an independent project by Panther Tech. Not affiliated with, endorsed by, or sponsored by Redragon — brand and model names are used only to identify the hardware this tool configures.</p>
+      <p>Pages: <a href="/">M913 configurator</a> · <a href="/m908">M908 configurator</a> · <a href="/dpi-checker">DPI checker</a> · <a href="/sensitivity-converter">Sensitivity converter</a> · <a href="/jmk-decoder">.jmk file decoder</a> · <a href="/mmo-trainer">MMO mouse trainer</a> · <a href="/productivity-setup">Productivity button mapping</a> · <a href="/redragon-m913-mac">M913 software for Mac</a></p>
+      <p>Legal: <a href="/privacy">Privacy policy</a> · <a href="/terms">Terms of use</a></p>
+    </footer>
+    <script type="module" src="/src/typing-test-page.ts"></script>
+  </body>
+</html>
