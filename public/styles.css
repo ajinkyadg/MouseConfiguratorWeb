@@ -538,7 +538,16 @@ body.wide { max-width: 1320px; }
     4px 8px 18px -6px var(--cap-cast);
   margin: 7px 7px 12px;
 }
-.button-grid.group-side.numbered-down { grid-auto-flow: column; grid-template-rows: repeat(3, auto); }
+/* Each key is placed where it sits on the mouse (data-col/data-row from
+   button-editor.ts): numbers run up each column, front column first. */
+.button-grid.group-side { grid-template-rows: repeat(3, auto); }
+.group-side .button-tile[data-col="0"] { grid-column: 1; }
+.group-side .button-tile[data-col="1"] { grid-column: 2; }
+.group-side .button-tile[data-col="2"] { grid-column: 3; }
+.group-side .button-tile[data-col="3"] { grid-column: 4; }
+.group-side .button-tile[data-row="0"] { grid-row: 1; }
+.group-side .button-tile[data-row="1"] { grid-row: 2; }
+.group-side .button-tile[data-row="2"] { grid-row: 3; }
 /* Light strip along the lower lip, in the profile's lighting colour. */
 .button-grid.group-side::after {
   content: ""; position: absolute; inset-inline: 12% 8%; inset-block-end: 0.55rem; block-size: 3px;
@@ -608,8 +617,8 @@ body.wide { max-width: 1320px; }
 .group-side .button-tile[data-col="1"] { --rise: 0.375rem; --tilt: -1deg; margin-inline-end: 0.15rem; }
 .group-side .button-tile[data-col="2"] { --rise: 0.125rem; --tilt: -0.5deg; margin-inline-start: 0.15rem; }
 .group-side .button-tile[data-col="3"] { --rise: 0rem; --lip: inset -3px 0 0 var(--cap-lip); }
-/* Landmark bars on the four centre keys, felt rather than seen. */
-.group-side .button-tile:is([data-col="1"], [data-col="2"]):is([data-row="0"], [data-row="1"]) {
+/* Landmark bars on the two centre keys of the middle row (5 and 8). */
+.group-side .button-tile:is([data-col="1"], [data-col="2"])[data-row="1"] {
   --landmark: linear-gradient(var(--cap-mark), var(--cap-mark));
 }
 .button-grid.group-side { padding-block-start: 1rem; }
@@ -730,10 +739,12 @@ body.wide { max-width: 1320px; }
   .button-tile { padding: 0.4rem 0.5rem; min-block-size: 3rem; }
   /* Phones: three keys per row in reading order, so the wave, tilt and
      landmarks (which follow the 4-column pad) are dropped. */
-  .button-grid.group-side, .button-grid.group-side.numbered-down {
+  .button-grid.group-side {
     grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none;
     gap: 0.45rem; padding: 0.8rem 0.8rem 1.4rem;
   }
+  /* Phones list the keys in number order, one physical column per row. */
+  .group-side .button-tile[data-col][data-row] { grid-column: auto; grid-row: auto; }
   .group-side .button-tile[data-col][data-row] { --rise: 0rem; --tilt: 0deg; --landmark: none; --lip: 0 0 transparent; margin: 0; min-block-size: 4.4rem; padding: 0.5rem 0.55rem 0.6rem 0.65rem; }
   .group-side .button-tile::before { transform: skewX(-3deg); }
   .tile-line { flex-direction: column; align-items: flex-start; gap: 0; }

@@ -358,41 +358,43 @@ numbering is later corrected against real hardware, this section changes with it
 ### 5.1 The grid
 
 **4 columns × 3 rows.** Columns run front-to-back along the mouse's length;
-rows run top-to-bottom up the flank. Numbers increase **down each column**, and
-columns proceed **front to rear** — the Razer Naga convention the whole category
-copied.
+rows run top-to-bottom up the flank. Numbers increase **up each column,
+starting at the bottom of the front column**, and columns proceed **front to
+rear**. Seen from the left side with the nose on the left:
 
 ```
    front (fingertips)  →  →  →  rear (palm heel)
 
-   row A (top)        [ 1 ]  [ 4 ]  [ 7 ]  [ 10 ]
+   row A (top)        [ 3 ]  [ 6 ]  [ 9 ]  [ 12 ]
    row B (middle)     [ 2 ]  [ 5 ]  [ 8 ]  [ 11 ]
-   row C (bottom)     [ 3 ]  [ 6 ]  [ 9 ]  [ 12 ]
-
-                       ^tier2  ^tier1 ^tier1  ^tier3
+   row C (bottom)     [ 1 ]  [ 4 ]  [ 7 ]  [ 10 ]
 ```
 
-In the codebase these are the slots `side1` … `side12`.
+In the codebase these are the slots `side1` … `side12` (M913) and
+`button_1` … `button_12` (M908); `src/button-editor.ts` `sidePosition()`
+draws them in this arrangement.
 
-> `[UNVERIFIED]`, carried over from `../game-presets.md` §2.1: the physical
-> position→number correspondence is inferred from the Naga-family convention
-> and from user reports that 10/11/12 are the awkward ones, not from a
-> published M913 diagram — Redragon's manual does not print one
-> ([manuals.plus](https://manuals.plus/ae/1005004662195682)). **If this is
-> confirmed wrong on real hardware, the labels on the artwork are what change;
-> the geometry does not.** Build the asset so relabelling is a text edit.
+> **Verified 2026-10-25** from two Redragon sources that print the numbers on
+> the keys: the M908 Impact product photo on the official store
+> (`redragon-store.com/wp-content/uploads/redragon-m908-impact.jpg`, the front
+> column reads 3 / 2 / 1 top to bottom beside the fire button) and the M913
+> render in Redragon's own Windows software (`skins/mouse_nr.png` in
+> `M913_Gaming_Mouse_Software.exe`, same arrangement). This replaces the
+> earlier `[UNVERIFIED]` Naga-style assumption that numbers run *down* each
+> column from the top, which was wrong.
 
 ### 5.2 Drawing the numbers
 
 - If a physical number is moulded or printed on a key, it goes on the key face,
   reading along the mouse's length (nose-up), not rotated per-key.
-- Real M913/M908 keys are **unmarked**. `[JUDGEMENT]` For a hero shot, prefer
-  unmarked keys plus an external callout — markings on a 9 mm key at hero scale
-  are unreadable and make the pad look like a calculator. For an explanatory
-  diagram, number them.
+- Real M913/M908 keys **carry backlit numerals** (visible in Redragon's own
+  product photo and software render, see §5.1). `[JUDGEMENT]` For a hero shot,
+  still prefer blank keys plus an external callout — markings on a 9 mm key at
+  hero scale are unreadable and make the pad look like a calculator. For an
+  explanatory diagram, number them.
 - Never number them in **reading order across the rows** (1-2-3-4 left to
-  right). Anyone who has configured one of these knows the numbers run *down*.
-  This is the kind of error that costs trust in one glance.
+  right). On these mice the numbers run *up* each column from the bottom of the
+  front column (§5.1). This is the kind of error that costs trust in one glance.
 
 ### 5.3 If the illustration becomes interactive
 

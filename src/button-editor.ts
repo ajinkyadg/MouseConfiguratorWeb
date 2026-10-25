@@ -85,13 +85,18 @@ function keycaps(keys: string[]): HTMLSpanElement {
   return wrap;
 }
 
-// How the side keys are numbered on the mouse: across each row (1 2 3 4 on
-// top), or down each column (1 2 3 in the front column, the Naga
-// convention docs/brand/hardware-reference.md §5.1 expects). Unconfirmed
-// for the M908/M913; switching only changes where each key is drawn.
-const SIDE_NUMBERING: "rows" | "columns" = "rows";
-const SIDE_COLUMNS = 4;
+// Where side key i (0-11) sits on the mouse's thumb pad, seen from the
+// left with the front of the mouse on the left. From Redragon's own M908
+// product photo and the M913 render in its Windows software: numbers go
+// up each column, starting at the bottom of the front column —
+//   top     3  6  9  12
+//   middle  2  5  8  11
+//   bottom  1  4  7  10
+// col 0 = front, row 0 = top.
 const SIDE_ROWS = 3;
+function sidePosition(i: number): { col: number; row: number } {
+  return { col: Math.floor(i / SIDE_ROWS), row: SIDE_ROWS - 1 - (i % SIDE_ROWS) };
+}
 
 export function createButtonEditor(opts: ButtonEditorOptions) {
   const { root, slots } = opts;
@@ -108,15 +113,16 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     grid.setAttribute("role", "group");
     grid.setAttribute("aria-labelledby", label.id);
     const side = group.id === "side";
-    if (side && SIDE_NUMBERING === "columns") grid.classList.add("numbered-down");
     slots.filter((s) => s.group === group.id).forEach((slot, i) => {
       const tile = el("button", "button-tile");
       tile.type = "button";
       tile.dataset.slot = slot.id;
-      // Physical position on the pad, for the 3D styling (wave, landmarks).
+      // Physical position on the pad: drawn there on wide screens (the
+      // DOM and Tab order stay 1-12), and used for the 3D styling.
       if (side) {
-        tile.dataset.col = String(SIDE_NUMBERING === "columns" ? Math.floor(i / SIDE_ROWS) : i % SIDE_COLUMNS);
-        tile.dataset.row = String(SIDE_NUMBERING === "columns" ? i % SIDE_ROWS : Math.floor(i / SIDE_COLUMNS));
+        const { col, row } = sidePosition(i);
+        tile.dataset.col = String(col);
+        tile.dataset.row = String(row);
       }
       tile.setAttribute("aria-controls", "btn-panel");
       tile.addEventListener("click", () => select(slot.id, true));
@@ -136,10 +142,39 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     const grid = current.parentElement!;
     // Phones show 3 tiles per row, desktops 4, so read the real count.
     const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length || 4;
-    const down = grid.classList.contains("numbered-down") && columns === SIDE_COLUMNS;
-    const moves: Record<string, number> = down
-      ? { ArrowRight: SIDE_ROWS, ArrowLeft: -SIDE_ROWS, ArrowDown: 1, ArrowUp: -1 }
-      : { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns };
+    const go = (tile: HTMLElement | null | undefined) => {
+      event.preventDefault();
+      if (!tile?.dataset.slot) return;
+      select(tile.dataset.slot, false);
+      tile.focus();
+    };
+    const padded = columns === 4;
+    // On the drawn thumb pad, arrows go to the physically adjacent key;
+    // Up from its top row leaves for the row of tiles above it.
+    if (current.dataset.col && padded && event.key.startsWith("Arrow")) {
+      const step: Record<string, [number, number]> = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] };
+      const [dc, dr] = step[event.key] ?? [0, 0];
+      const col = Number(current.dataset.col) + dc;
+      const row = Number(current.dataset.row) + dr;
+      const next = grid.querySelector<HTMLElement>(`[data-col="${col}"][data-row="${row}"]`);
+      if (next) return go(next);
+      if (event.key === "ArrowUp") {
+        const above = grid.previousElementSibling?.previousElementSibling;
+        const tilesAbove = above ? [...above.querySelectorAll<HTMLElement>(".button-tile")] : [];
+        return go(tilesAbove[tilesAbove.length - 4 + col] ?? tilesAbove[tilesAbove.length - 1]);
+      }
+      return go(null);
+    }
+    // Down into the pad lands on its top row, in the same column.
+    if (event.key === "ArrowDown" && padded) {
+      const inGrid = [...grid.querySelectorAll<HTMLElement>(".button-tile")];
+      const position = inGrid.indexOf(current);
+      const below = grid.nextElementSibling?.nextElementSibling;
+      if (position >= inGrid.length - 4 && below?.querySelector("[data-col]")) {
+        return go(below.querySelector<HTMLElement>(`[data-col="${position % 4}"][data-row="0"]`));
+      }
+    }
+    const moves: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns };
     let target: number;
     if (event.key === "Home") target = 0;
     else if (event.key === "End") target = order.length - 1;
