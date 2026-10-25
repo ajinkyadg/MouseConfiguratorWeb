@@ -33,12 +33,12 @@ export interface LevelSpec { keys: KeyNum[]; travelMs: number; maxEnemies: numbe
 const k = (n: number) => KEYS.slice(0, n);
 const LEVELS: LevelSpec[] = [
   { keys: k(3), travelMs: 4500, maxEnemies: 1, spawnGapMs: 600, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 6 },
-  { keys: k(6), travelMs: 4000, maxEnemies: 1, spawnGapMs: 500, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 8 },
-  { keys: k(6), travelMs: 3400, maxEnemies: 2, spawnGapMs: 1400, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 8 },
-  { keys: k(9), travelMs: 3200, maxEnemies: 2, spawnGapMs: 1300, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 10 },
-  { keys: k(9), travelMs: 2800, maxEnemies: 2, spawnGapMs: 1100, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 10 },
-  { keys: k(12), travelMs: 2800, maxEnemies: 2, spawnGapMs: 1100, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 12 },
-  { keys: k(12), travelMs: 2500, maxEnemies: 3, spawnGapMs: 1000, combo: 0.2, comboNeighboursOnly: true, defeatsToLevel: 12 },
+  { keys: k(6), travelMs: 4000, maxEnemies: 1, spawnGapMs: 500, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 7 },
+  { keys: k(6), travelMs: 3400, maxEnemies: 2, spawnGapMs: 1000, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 7 },
+  { keys: k(9), travelMs: 3200, maxEnemies: 2, spawnGapMs: 950, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 8 },
+  { keys: k(9), travelMs: 2800, maxEnemies: 2, spawnGapMs: 900, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 8 },
+  { keys: k(12), travelMs: 2800, maxEnemies: 2, spawnGapMs: 850, combo: 0, comboNeighboursOnly: false, defeatsToLevel: 9 },
+  { keys: k(12), travelMs: 2800, maxEnemies: 3, spawnGapMs: 1000, combo: 0.2, comboNeighboursOnly: true, defeatsToLevel: 10 },
   { keys: k(12), travelMs: 2200, maxEnemies: 3, spawnGapMs: 900, combo: 0.35, comboNeighboursOnly: false, defeatsToLevel: 14 },
 ];
 export function levelSpec(level: number): LevelSpec {
@@ -52,7 +52,8 @@ export const COUNTDOWN_MS = 2400;
 export const FORGIVING_MS = 20_000;
 export const START_LIVES = 3;
 const MAX_MASTERY = 6;
-const QUEUE_SPACING = 0.14; // enemies keep this much of the lane between them
+/** Share of the lane enemies keep between them; the page raises it on narrow screens. */
+export const QUEUE_SPACING = 0.14;
 
 export type HintState = "full" | "outline" | "off";
 export function hintFor(mastery: number): HintState {
@@ -103,6 +104,7 @@ export interface Game {
   forcedNewKeys: KeyNum[]; // a new level's keys, used for its first spawns
   nextId: number;
   touch: boolean;
+  spacing: number; // QUEUE_SPACING, or more where the lane is short
   events: GameEvent[]; // drained by the page each frame
 }
 
@@ -113,12 +115,12 @@ export function createGame(): Game {
     phase: "ready", time: 0, countdownLeft: COUNTDOWN_MS, level: 1, defeatsThisLevel: 0, lives: START_LIVES,
     score: 0, streak: 0, correct: 0, wrong: 0, arrived: 0, enemies: [],
     mastery: perKey(() => 0), recent: perKey(() => []), rts: perKey(() => []),
-    lastKey: null, lastSpawnAt: -Infinity, forcedNewKeys: [], nextId: 1, touch: false, events: [],
+    lastKey: null, lastSpawnAt: -Infinity, forcedNewKeys: [], nextId: 1, touch: false, spacing: QUEUE_SPACING, events: [],
   };
 }
 
 export function startRun(game: Game): void {
-  Object.assign(game, createGame(), { phase: "countdown", touch: game.touch });
+  Object.assign(game, createGame(), { phase: "countdown", touch: game.touch, spacing: game.spacing });
 }
 
 export function multiplier(streak: number): number {
@@ -224,12 +226,15 @@ export function tick(game: Game, dt: number, rng: () => number = Math.random): v
   if (game.enemies.length < spec.maxEnemies && game.time - game.lastSpawnAt >= spec.spawnGapMs) spawn(game, rng);
   becomeFront(game);
 
-  // Move enemies in single file; nobody overtakes the one ahead.
+  // Move enemies in single file; nobody overtakes the one ahead. A held
+  // enemy's clock is wound back to match, so it doesn't leap forward when
+  // the one ahead goes.
   let limit = Infinity;
   for (const enemy of game.enemies) {
     const raw = (game.time - enemy.enteredAt) / enemy.travelMs;
+    if (raw > limit) enemy.enteredAt = game.time - limit * enemy.travelMs;
     enemy.progress = Math.min(raw, limit);
-    limit = enemy.progress - QUEUE_SPACING;
+    limit = enemy.progress - game.spacing;
   }
 
   const front = game.enemies[0];

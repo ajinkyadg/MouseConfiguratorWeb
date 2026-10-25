@@ -142,6 +142,20 @@ describe("a run", () => {
     expect(g.enemies[1].progress).toBeLessThan(g.enemies[0].progress);
   });
 
+  it("a held enemy doesn't leap forward when the one ahead goes", () => {
+    const g = running();
+    g.level = 3;
+    const enemy = (id: number, travelMs: number) => ({ id, keys: [1] as KeyNum[], step: 0, travelMs, enteredAt: g.time, frontSince: null, stepStart: null, progress: 0, wrongThisStep: false, missedAny: false, rescued: false, rtTotal: 0 });
+    g.enemies = [enemy(1, 10000), enemy(2, 1000)]; // a slow one with a fast one stuck behind it
+    g.lastSpawnAt = Infinity;
+    for (let i = 0; i < 40; i++) tick(g, 50, rngFixed());
+    const held = g.enemies[1].progress;
+    press(g, 1);
+    tick(g, 50, rngFixed());
+    expect(g.enemies[0].id).toBe(2);
+    expect(g.enemies[0].progress).toBeLessThan(held + 0.1);
+  });
+
   it("a combo needs both keys in order; a wrong second press restarts it", () => {
     const g = running();
     g.level = 8;

@@ -5,7 +5,7 @@
 import "./site-nav";
 import {
   createGame, startRun, tick, press, mapKey, keyPosition, hintFor, levelSpec, summarize,
-  COUNTDOWN_MS, RUN_MS, START_LIVES, KEYS, type Enemy, type Game, type KeyNum,
+  COUNTDOWN_MS, RUN_MS, START_LIVES, KEYS, QUEUE_SPACING, type Enemy, type Game, type KeyNum,
 } from "./mmo-trainer/game";
 
 const BEST_KEY = "mouseconfig.mmoTrainer.best";
@@ -44,7 +44,7 @@ const comboValue = el("span", "mt-value", "×1");
 const comboBar = el("span", "mt-bar");
 comboBar.setAttribute("aria-hidden", "true");
 for (let i = 0; i < 4; i++) comboBar.append(el("span"));
-comboBox.append(el("span", "mt-label", "Combo"), comboValue, comboBar);
+comboBox.append(el("span", "mt-label", "Streak"), comboValue, comboBar);
 hud.append(comboBox);
 
 const stage = el("div", "mt-stage");
@@ -64,12 +64,13 @@ for (const n of KEYS) {
   const { col, row } = keyPosition(n);
   b.style.setProperty("--c", String(col));
   b.style.setProperty("--r", String(row));
-  b.append(el("span", "mt-key-num", String(n)), el("span", "mt-key-note"));
-  b.setAttribute("aria-label", `Side button ${n}`);
+  b.append(el("span", "visually-hidden", "Side button "), el("span", "mt-key-num", String(n)), el("span", "mt-key-note"));
   b.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     input(n, "touch");
   });
+  // Assistive tech (VoiceOver double-tap, switch access) sends only a click.
+  b.addEventListener("click", (event) => event.detail === 0 && input(n, "key"));
   keyButtons.set(n, b);
   strip.append(b);
 }
@@ -132,7 +133,7 @@ game.touch = coarse.matches;
 let paused = false;
 let resumeLeft = 0; // countdown after a pause
 let now = performance.now();
-interface Effect { kind: "cast" | "hit" | "wrong" | "arrive" | "back" | "level"; start: number; dur: number; x: number; y: number; text?: string }
+interface Effect { kind: "cast" | "hit" | "wrong" | "arrive" | "back" | "level"; start: number; dur: number; x: number; y: number; text?: string; sub?: string }
 let effects: Effect[] = [];
 let shake = { until: 0, size: 0 };
 const flash = new Map<KeyNum, { cls: string; until: number }>();
@@ -147,7 +148,18 @@ const enemyX = (e: Enemy) => {
   const g = geometry();
   return g.spawn - e.progress * (g.spawn - g.danger);
 };
-const addEffect = (kind: Effect["kind"], dur: number, x: number, y: number, text?: string) => effects.push({ kind, start: now, dur, x, y, text });
+const addEffect = (kind: Effect["kind"], dur: number, x: number, y: number, text?: string, sub?: string) => effects.push({ kind, start: now, dur, x, y, text, sub });
+let warnedTime = false;
+
+/** What a new level brings, for its banner. */
+function levelNews(level: number): string {
+  const before = levelSpec(level - 1);
+  const spec = levelSpec(level);
+  const added = spec.keys.filter((n) => !before.keys.includes(n));
+  if (added.length) return `New buttons: ${added[0]}–${added[added.length - 1]}`;
+  if (spec.combo && !before.combo) return "Combos: press both numbers, left to right";
+  return "Faster enemies";
+}
 
 // --- Input -------------------------------------------------------------------
 function input(n: KeyNum, source: "key" | "touch") {
@@ -164,6 +176,7 @@ addEventListener("keydown", (event) => {
   if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
   const target = event.target as HTMLElement;
   if (target.closest("input, textarea, select")) return;
+  if (event.code === "Space" && target.closest("button")) return; // let Space press the focused button
   if (event.key === "Escape" || (event.code === "Space" && (game.phase === "running" || game.phase === "countdown"))) {
     if (game.phase === "running" || game.phase === "countdown") {
       event.preventDefault();
@@ -183,7 +196,7 @@ addEventListener("blur", () => pause());
 // --- Run control -----------------------------------------------------------
 function begin() {
   startRun(game);
-  game.touch = coarse.matches;
+  warnedTime = false;
   paused = false;
   resumeLeft = 0;
   effects = [];
@@ -220,7 +233,7 @@ function button(text: string, primary: boolean, onClick: () => void) {
   b.addEventListener("click", onClick);
   return b;
 }
-function showOverlay(kind: "start" | "paused") {
+function showOverlay(kind: "start" | "paused", focus = true) {
   overlay.hidden = false;
   const card = el("div", "mt-card");
   if (kind === "start") {
@@ -237,7 +250,7 @@ function showOverlay(kind: "start" | "paused") {
     card.append(row);
   }
   overlay.replaceChildren(card);
-  card.querySelector<HTMLButtonElement>("button.primary")?.focus({ preventScroll: true });
+  if (focus) card.querySelector<HTMLButtonElement>("button.primary")?.focus({ preventScroll: true });
 }
 function finish() {
   const s = summarize(game);
@@ -252,7 +265,9 @@ function finish() {
   }
   overlay.hidden = false;
   const card = el("div", "mt-card mt-summary");
-  card.append(el("h2", "", "Run over"));
+  const heading = el("h2", "", "Run over");
+  heading.tabIndex = -1;
+  card.append(heading);
   if (newBest) card.append(el("p", "mt-new-best", "New best!"));
   const tiles = el("div", "mt-tiles");
   const tile = (label: string, value: string) => {
@@ -279,7 +294,8 @@ function finish() {
   row.append(button("Play again", true, begin));
   card.append(row);
   overlay.replaceChildren(card);
-  card.querySelector<HTMLButtonElement>("button.primary")?.focus({ preventScroll: true });
+  // Focus the heading, not Play again: keys still being pressed mustn't restart.
+  heading.focus({ preventScroll: true });
   // The key strip marks the slowest three with their typical reaction time.
   for (const n of KEYS) {
     const b = keyButtons.get(n)!;
@@ -306,13 +322,15 @@ function drainEvents() {
     } else if (e.type === "arrive") {
       if (e.lifeLost) {
         addEffect("arrive", 400, g.player, g.lane, "−1");
+        say(`Life lost. ${game.lives} left`);
         if (!reduceMotion.matches) shake = { until: now + 240, size: 6 };
       } else {
         addEffect("back", 600, enemyX(e.enemy), g.lane - 70, "Sent back");
       }
     } else if (e.type === "level") {
-      addEffect("level", reduceMotion.matches ? 1400 : 1620, W / 2, 110, `Level ${e.level}`);
-      say(`Level ${e.level}`);
+      const sub = levelNews(e.level);
+      addEffect("level", reduceMotion.matches ? 1400 : 1620, W / 2, 110, `Level ${e.level}`, sub);
+      say(`Level ${e.level}. ${sub}`);
     } else if (e.type === "over") {
       finish();
     }
@@ -407,7 +425,8 @@ function drawEnemy(e: Enemy, isTarget: boolean) {
   ctx.strokeStyle = isTarget ? p.text : p.muted;
   ctx.stroke();
   if (combo) {
-    text(String(e.keys[0]), x - 18, y, 26, e.step > 0 ? p.muted : p.enemyText);
+    if (e.step > 0) text("✓", x - 18, y, 26, p.success);
+    else text(String(e.keys[0]), x - 18, y, 26, p.enemyText);
     text("›", x, y, 22, p.enemyText, 700);
     text(String(e.keys[1]), x + 18, y, 26, p.enemyText);
   } else {
@@ -499,7 +518,7 @@ function drawEffects() {
       ctx.fillStyle = p.accent;
       ctx.fillRect(f.x - 180, f.y - 30, 3, 60);
       text(f.text ?? "", f.x, f.y - 8, 26, p.text);
-      text("New buttons and faster enemies", f.x, f.y + 20, 13, p.muted, 500);
+      text(f.sub ?? "", f.x, f.y + 20, 13, p.muted, 500);
     }
     ctx.globalAlpha = 1;
   }
@@ -540,6 +559,11 @@ function frame(t: number) {
   now = t;
   const dt = Math.min(50, t - last);
   last = t;
+  game.spacing = W === 540 ? 0.2 : QUEUE_SPACING; // combo enemies need more room on the short lane
+  if (game.phase === "running" && !warnedTime && RUN_MS - game.time <= 10_000) {
+    warnedTime = true;
+    say("10 seconds left");
+  }
   if (!paused && game.phase !== "over" && game.phase !== "ready") {
     if (resumeLeft > 0) resumeLeft -= dt;
     else tick(game, dt);
@@ -550,5 +574,5 @@ function frame(t: number) {
   draw();
   requestAnimationFrame(frame);
 }
-showOverlay("start");
+showOverlay("start", false);
 requestAnimationFrame(frame);
