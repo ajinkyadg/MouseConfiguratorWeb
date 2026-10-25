@@ -40,6 +40,7 @@ import {
 import { detectDesktopOS, isWebHidAvailable, WEBHID_UNAVAILABLE_MESSAGE } from "./core/platform";
 import { buildShareUrl, readM908Share } from "./profiles/share-link";
 import { m908ProfileSwatch } from "./profiles/m908-swatch";
+import { setSideInk } from "./side-ink";
 import { clearShareFragment, copyShareLink } from "./share-ui";
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
@@ -125,9 +126,15 @@ function renderSettingsSummary() {
   el.textContent = `DPI ${dpi || "—"}  |  LED ${profile.lightMode.replace(/_/g, " ")}  |  ${profile.reportRateHz} Hz  |  Scroll ${profile.scrollSpeed}`;
 }
 
+// Side-panel actions take the edited profile's lighting colour.
+function syncSideInk() {
+  setSideInk(buttonEditorEl, m908ProfileSwatch(profile).kind === "solid" ? profile.color : null);
+}
+
 function persist() {
   renderSettingsSummary();
   syncSlotControls();
+  syncSideInk();
   if (saveM908ProfileSet(storage, profileSet) || storageWarned) return;
   storageWarned = true;
   log("Couldn't save your profiles in this browser (storage unavailable) — use Export to keep a copy.");
@@ -512,6 +519,7 @@ function selectSlot(slot: M908ProfileIndex) {
 }
 
 function renderAll() {
+  syncSideInk();
   renderDpiRows();
   renderLedControls();
   renderReportRateButtons();

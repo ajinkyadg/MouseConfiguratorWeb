@@ -71,6 +71,7 @@ import {
   type UserProfile,
 } from "./profiles/user-profiles";
 import { ProfileStore } from "./profiles/profile-store";
+import { setSideInk } from "./side-ink";
 import { cleanProfileName, sanitizeM913Config } from "./profiles/m913-config-validate";
 import { buildShareUrl, readM913Share } from "./profiles/share-link";
 import { clearShareFragment, copyShareLink } from "./share-ui";
@@ -451,6 +452,15 @@ function updateLedVisibility() {
   ledSpeedRow.style.display = mode === "respiration" ? "flex" : "none";
 }
 ledModeEl.addEventListener("change", updateLedVisibility);
+
+// Side-panel actions take the LED colour when the lighting shows one.
+function syncSideInk() {
+  const mode = ledModeEl.value as LedMode;
+  const rgb = parseInt(ledColorEl.value.slice(1), 16);
+  setSideInk(buttonEditorEl, mode === "steady" || mode === "respiration" ? [(rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff] : null);
+}
+ledModeEl.addEventListener("change", syncSideInk);
+ledColorEl.addEventListener("input", syncSideInk);
 updateLedVisibility();
 
 // --- Buttons -----------------------------------------------------------
@@ -647,6 +657,7 @@ function applyConfigToUI(config: MouseWebConfig) {
   ledSpeedEl.value = String(config.ledSpeed);
   syncRangeSliders();
   updateLedVisibility();
+  syncSideInk();
   for (const slot of BUTTON_SLOTS) buttonActions[slot.id] = config.buttonActions[slot.id] ?? "";
   buttonEditor.refresh();
 }
