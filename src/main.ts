@@ -41,7 +41,7 @@ import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog"
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
 import { comboKeyGroups } from "./profiles/key-combo-keys";
-import { BATTERY_REQUEST, decodeConfig, parseBatteryReply, parseReply, readPlan, type Memory } from "./profiles/m913-read";
+import { BATTERY_REQUEST, decodeBattery, decodeConfig, parseBatteryReply, parseReply, readPlan, type Memory } from "./profiles/m913-read";
 import { parseAction } from "./profiles/m913-buttons";
 
 // Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
@@ -78,6 +78,8 @@ import { jmkToButtonActions } from "./profiles/jmk-import";
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const batteryRowEl = document.querySelector<HTMLDivElement>("#battery-row")!;
 const batteryEl = document.querySelector<HTMLParagraphElement>("#battery-status")!;
+const batteryMeterEl = document.querySelector<HTMLSpanElement>("#battery-meter")!;
+const batteryFillEl = document.querySelector<HTMLSpanElement>("#battery-fill")!;
 const checkBatteryBtn = document.querySelector<HTMLButtonElement>("#check-battery")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
 const connectBtn = document.querySelector<HTMLButtonElement>("#connect")!;
@@ -331,6 +333,9 @@ connectBtn.addEventListener("click", async () => {
   }
   batteryEl.textContent = "";
   updateBatteryRow();
+  // Read the battery straight away, unless the automatic settings read
+  // (which includes it) is already running.
+  if (!batteryRowEl.hidden && !reading) void checkBattery();
 });
 
 // --- macOS tip: copy the sudo Chrome command -------------------------------
@@ -988,24 +993,45 @@ async function loadFromMouse(auto: boolean) {
 
 loadFromMouseBtn.addEventListener("click", () => loadFromMouse(false));
 
-// --- Battery (experimental) ------------------------------------------------
+// --- Battery -----------------------------------------------------------------
 //
-// Command 0x04 is what Redragon's software appears to poll for the battery
-// (docs/protocol-notes/m913-read.md). What its two bytes mean isn't known
-// yet, so they're shown raw for owners to report against their battery.
+// Command 0x04 is what Redragon's software polls for the battery
+// (docs/protocol-notes/m913-read.md). The reading is decoded as tenths
+// plus a charging flag; the scale isn't confirmed yet, so it's shown as
+// an estimate and the raw bytes go to the log.
 
 function showBattery(bytes: number[]) {
-  const raw = bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ");
-  batteryEl.textContent = `Battery (experimental): reply ${raw || "empty"}${bytes.length ? ` (${bytes.join(", ")})` : ""}`;
-  log(`Battery status (experimental): ${raw || "empty"} = ${bytes.join(", ") || "no data"}. Not decoded yet: note it with your battery state.`);
+  const raw = bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ") || "empty";
+  const battery = decodeBattery(bytes);
+  log(`Battery: ${raw}${battery ? ` → ≈${battery.percent}%${battery.charging ? ", charging" : ""}` : " (not understood)"}`);
+  batteryMeterEl.hidden = !battery;
+  if (!battery) {
+    batteryEl.textContent = `Battery: unrecognised reply ${raw}`;
+    return;
+  }
+  batteryFillEl.style.inlineSize = `${battery.percent}%`;
+  batteryMeterEl.dataset.level = battery.percent <= 10 ? "critical" : battery.percent <= 30 ? "low" : "ok";
+  batteryMeterEl.classList.toggle("charging", battery.charging);
+  batteryMeterEl.setAttribute("aria-valuenow", String(battery.percent));
+  batteryMeterEl.setAttribute("aria-valuetext", `About ${battery.percent}%${battery.charging ? ", charging" : ""}`);
+  batteryEl.textContent = `≈${battery.percent}%${battery.charging ? " · charging" : ""}`;
+  checkBatteryBtn.textContent = "Refresh";
 }
 
 function updateBatteryRow() {
   batteryRowEl.hidden = !device || hardware !== "areson";
+  if (batteryRowEl.hidden) {
+    batteryMeterEl.hidden = true;
+    batteryEl.textContent = "";
+    checkBatteryBtn.textContent = "Check battery";
+  }
 }
 
-checkBatteryBtn.addEventListener("click", async () => {
+// Holds the `reading` flag while it runs so a read or Apply can't start
+// mid-request and take its reply.
+async function checkBattery() {
   if (!device || reading || applying) return;
+  reading = true;
   checkBatteryBtn.setAttribute("aria-disabled", "true");
   try {
     log(`→ battery status: ${toHex(BATTERY_REQUEST)}`);
@@ -1014,11 +1040,13 @@ checkBatteryBtn.addEventListener("click", async () => {
     showBattery(parseBatteryReply(reply));
   } catch (err) {
     log(`Battery check failed: ${(err as Error).message}`);
-    batteryEl.textContent = "Battery (experimental): no answer, see the log";
+    batteryEl.textContent = "Battery: no answer (move the mouse to wake it, then Refresh)";
   } finally {
+    reading = false;
     checkBatteryBtn.removeAttribute("aria-disabled");
   }
-});
+}
+checkBatteryBtn.addEventListener("click", () => void checkBattery());
 
 // --- Apply ---------------------------------------------------------------
 

@@ -73,8 +73,10 @@ cable/charging flag; byte 6 reads higher while on the cable, as battery
 voltage does when charging. Best guess: byte 6 is the
 battery level (10 = full?) and byte 7 a flag (1 = charging?).
 
-The page shows the raw reply as "Battery (experimental)", from Read from
-mouse and from a Check battery button that sends only this command. To
+The page decodes it that way (level × 10 = percent, flag = charging) and
+shows a battery bar marked as an estimate, from Read from mouse, on
+connect, and from a Refresh button that sends only this command; the raw
+bytes go to the log. To
 decode it, collect replies at known battery states: on the cable, on the
 wireless receiver, and with a low battery. A Windows capture taken while
 Redragon's software shows its battery percentage would give the scale.

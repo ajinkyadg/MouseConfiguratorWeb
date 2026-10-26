@@ -189,6 +189,25 @@ header p { margin: 0.3rem 0 0; font-size: var(--fs-sm); color: var(--text-second
 .battery-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.75rem; margin-top: 0.5rem; }
 .battery-row[hidden] { display: none; }
 .battery-row p { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.battery-row button { padding: 0.2rem 0.6rem; font-size: var(--fs-xs); }
+/* A battery outline: body with a nub on the right, filled to the level. */
+.battery-meter {
+  position: relative; display: inline-flex; inline-size: 2.75rem; block-size: 1.15rem; padding: 2px;
+  border: 2px solid var(--text-secondary); border-radius: 4px; margin-inline-end: 4px;
+}
+.battery-meter[hidden] { display: none; }
+.battery-meter::after {
+  content: ""; position: absolute; inset-inline-end: -6px; inset-block-start: 50%; translate: 0 -50%;
+  inline-size: 3px; block-size: 0.45rem; border-radius: 0 2px 2px 0; background: var(--text-secondary);
+}
+.battery-fill { display: block; block-size: 100%; inline-size: 0; border-radius: 1px; background: var(--success); transition: inline-size 300ms ease-out; }
+.battery-meter[data-level="low"] .battery-fill { background: var(--warning); }
+.battery-meter[data-level="critical"] .battery-fill { background: var(--danger); }
+.battery-meter.charging::before {
+  content: "⚡"; position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 0.7rem; line-height: 1; color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) { .battery-fill { transition: none; } }
 
 footer {
   margin-top: 2rem;

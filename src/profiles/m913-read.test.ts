@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BATTERY_REQUEST, buildReadPacket, decodeConfig, parseBatteryReply, parseReply, readPlan, type Memory } from "./m913-read";
+import { BATTERY_REQUEST, buildReadPacket, decodeBattery, decodeConfig, parseBatteryReply, parseReply, readPlan, type Memory } from "./m913-read";
 
 // Request/reply pairs from a USBPcap capture of Redragon's Windows software
 // reading a real M913 (2026-10-01) — see docs/protocol-notes/m913-read.md.
@@ -120,6 +120,15 @@ describe("M913 config read", () => {
     expect(parseBatteryReply(fromHex("0904000000020a0100000000000000003b"))).toEqual([0x0a, 0x01]);
     expect(() => parseBatteryReply(fromHex("0904000000020a0100000000000000003c"))).toThrow(/checksum/);
     expect(() => parseBatteryReply(fromHex("09030000000101000000000000000000" + "47"))).toThrow(/command/);
+  });
+
+  it("reads the battery reply as tenths plus a charging flag", () => {
+    expect(decodeBattery([0x07, 0x00])).toEqual({ percent: 70, charging: false });
+    expect(decodeBattery([0x09, 0x01])).toEqual({ percent: 90, charging: true });
+    expect(decodeBattery([0x0a, 0x01])).toEqual({ percent: 100, charging: true });
+    expect(decodeBattery([0x0b, 0x00])).toBeNull();
+    expect(decodeBattery([0x05, 0x02])).toBeNull();
+    expect(decodeBattery([0x05])).toBeNull();
   });
 
   it("rejects a reply for the wrong address", () => {

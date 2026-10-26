@@ -41,6 +41,16 @@ export function parseBatteryReply(reply: Uint8Array): number[] {
   return Array.from(reply.slice(6, 6 + Math.min(reply[5]!, 10)));
 }
 
+export interface Battery { percent: number; charging: boolean }
+
+/// Best reading of the reply so far: byte 6 is the level in tenths (10 on a
+/// full cable-charged mouse, 9 then 7 as it ran on battery) and byte 7 is 1
+/// while on the cable. Null when the reply doesn't fit that shape.
+export function decodeBattery(bytes: readonly number[]): Battery | null {
+  if (bytes.length < 2 || bytes[0]! > 10 || bytes[1]! > 1) return null;
+  return { percent: bytes[0]! * 10, charging: bytes[1] === 1 };
+}
+
 const BUTTON_ORDER = tables.buttonIndexOrder as string[];
 const KEY_EVENT_ADDRESSES = (tables.keyboardKeyAddressByProtocolSlot as [number, number][]).map(([hi, lo]) => (hi << 8) | lo);
 
