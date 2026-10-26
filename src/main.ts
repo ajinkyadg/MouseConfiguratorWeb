@@ -290,16 +290,20 @@ connectBtn.addEventListener("click", async () => {
     const identity = identifyM913(device);
     log(`Device check: ${identity.reason}`);
 
-    if (!wired) {
-      announce(`Connected: ${device.productName} — wireless receiver detected. Plug in the USB cable to apply settings.`, "warning");
-      setConnected(false);
-      log("The wireless receiver only relays mouse movement/clicks — configuration commands need the wired USB connection. Plug in the cable and reconnect.");
-    } else if (!isApprovedDevice(identity, device)) {
+    if (!isApprovedDevice(identity, device)) {
       log(`Not configuring "${device.productName}": you didn't confirm it's an M913. Nothing was sent to it.`);
       announce(`Not configuring "${device.productName || "this device"}" — it doesn't identify as an M913 and wasn't confirmed. Nothing was sent.`, "warning");
       await closeDevice(device);
       device = null;
       setConnected(false);
+    } else if (!wired) {
+      // The receiver relays the config channel (a battery read answered
+      // through it, 2026-10-26), so reading and applying are offered, marked
+      // experimental until a write through it is confirmed. A bad wireless
+      // write is recoverable: Apply over the cable rewrites every setting.
+      announce(`Connected through the wireless receiver (experimental). If a setting doesn't take, plug in the USB cable and apply again.`, "warning");
+      setConnected(true);
+      log("Wireless receiver: reading and applying through it are experimental. If anything doesn't take, plug in the USB cable and Apply again; that rewrites every setting.");
     } else if (identity.kind !== "m913") {
       log(`You confirmed "${device.productName}" is an M913 — Apply enabled.`);
       announce(`Connected: ${device.productName} (${hardware} hardware, wired) — not identified as an M913, enabled because you confirmed it is.`, "warning");

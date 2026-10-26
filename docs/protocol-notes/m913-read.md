@@ -66,8 +66,11 @@ clicks.
 
 The software sends `08 04` about 3.8 s after launch (after the reads) and
 again at the start of a write session, not at the end, so it looks like a
-status poll rather than a "finalize". Every capture so far has the same
-2-byte reply, `0a 01`, from a mouse on its cable. Best guess: byte 6 is the
+status poll rather than a "finalize". Replies so far: `0a 01` in the
+Windows captures (cable), `09 01` on the cable and `07 00` through the
+wireless receiver minutes later (macOS, 2026-10-26). Byte 7 looks like a
+cable/charging flag; byte 6 reads higher while on the cable, as battery
+voltage does when charging. Best guess: byte 6 is the
 battery level (10 = full?) and byte 7 a flag (1 = charging?).
 
 The page shows the raw reply as "Battery (experimental)", from Read from
