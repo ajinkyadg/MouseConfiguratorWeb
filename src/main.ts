@@ -10,9 +10,7 @@ import {
   identifyM913,
   isWiredConnection,
   describeCollections,
-  sendConfigPacket,
   requestReply,
-  waitForResponse,
   toHex,
   type HardwareRevision,
   type M913Identification,
@@ -235,16 +233,21 @@ function confirmNonM913(identity: M913Identification, productName: string): bool
   );
 }
 
+// Areson mice echo every write, so a missing echo means the write most
+// likely didn't arrive (seen through the wireless receiver when the mouse
+// stops answering); it fails the section instead of passing as "ok".
 async function sendAndLog(label: string, packet: Uint8Array) {
   if (!device) return;
   log(`→ ${label}: ${toHex(packet)}`);
-  await sendConfigPacket(device, hardware, packet);
+  let resp: Uint8Array;
   try {
-    const resp = await waitForResponse(device, 800);
-    log(`← response: ${toHex(resp)}`);
-  } catch {
+    resp = await requestReply(device, hardware, packet);
+  } catch (err) {
+    if (hardware !== "areson" || isWriteRefusedError(err)) throw err;
     log(`  (no response within 800ms)`);
+    throw new Error(`the mouse didn't answer ${label}`);
   }
+  log(`← response: ${toHex(resp)}`);
 }
 
 // --- Connect -----------------------------------------------------------
@@ -944,7 +947,9 @@ async function loadFromMouse(auto: boolean) {
     const plan = readPlan();
     log(`Reading the configuration from the mouse (${plan.length} requests)…`);
     for (const packet of plan) {
-      const reply = await requestReply(device, hardware, packet);
+      const reply = await requestReply(device, hardware, packet).catch((err: Error) => {
+        throw new Error(`${err.message} (request ${toHex(packet)})`);
+      });
       if (packet === BATTERY_REQUEST) showBattery(parseBatteryReply(reply));
       const data = parseReply(packet, reply);
       if (!data) continue;
