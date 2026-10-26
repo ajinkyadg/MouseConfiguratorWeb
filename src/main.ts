@@ -1003,7 +1003,7 @@ loadFromMouseBtn.addEventListener("click", () => loadFromMouse(false));
 function showBattery(bytes: number[]) {
   const raw = bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ") || "empty";
   const battery = decodeBattery(bytes);
-  log(`Battery: ${raw}${battery ? ` → ≈${battery.percent}%${battery.charging ? ", charging" : ""}` : " (not understood)"}`);
+  log(`Battery: ${raw}${battery ? ` → ${battery.percent}%${battery.charging ? ", charging" : ""}` : " (not understood)"}`);
   batteryMeterEl.hidden = !battery;
   if (!battery) {
     batteryEl.textContent = `Battery: unrecognised reply ${raw}`;
@@ -1014,7 +1014,7 @@ function showBattery(bytes: number[]) {
   batteryMeterEl.classList.toggle("charging", battery.charging);
   batteryMeterEl.setAttribute("aria-valuenow", String(battery.percent));
   batteryMeterEl.setAttribute("aria-valuetext", `About ${battery.percent}%${battery.charging ? ", charging" : ""}`);
-  batteryEl.textContent = `≈${battery.percent}%${battery.charging ? " · charging" : ""}`;
+  batteryEl.textContent = `${battery.percent}%${battery.charging ? " · charging" : ""}`;
   checkBatteryBtn.textContent = "Refresh";
 }
 

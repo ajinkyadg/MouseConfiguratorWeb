@@ -62,7 +62,7 @@ alone** (events: shift down, shift up — so the firmware stores a bare
 modifier), side12 `ctrl+up`, fire `enter`; left/right/middle = default
 clicks.
 
-## Command `0x04`: battery status? (unconfirmed)
+## Command `0x04`: battery status
 
 The software sends `08 04` about 3.8 s after launch (after the reads) and
 again at the start of a write session, not at the end, so it looks like a
@@ -73,13 +73,13 @@ cable/charging flag; byte 6 reads higher while on the cable, as battery
 voltage does when charging. Best guess: byte 6 is the
 battery level (10 = full?) and byte 7 a flag (1 = charging?).
 
-The page decodes it that way (level × 10 = percent, flag = charging) and
-shows a battery bar marked as an estimate, from Read from mouse, on
-connect, and from a Refresh button that sends only this command; the raw
-bytes go to the log. To
-decode it, collect replies at known battery states: on the cable, on the
-wireless receiver, and with a low battery. A Windows capture taken while
-Redragon's software shows its battery percentage would give the scale.
+Confirmed on 2026-10-26 that byte 6 counts down with use: on the receiver it
+read `07 00` from 4:26 PM to 7:01 PM and `06 00` at 9:41 PM. So it is a
+level in ten steps, and the page shows level × 10 as the percent (a reading
+of 6 means roughly 60–69%), with byte 7 = 1 shown as charging. It reads on
+Read from mouse, on connect, and from a Refresh button that sends only this
+command; the raw bytes go to the log. Still unconfirmed: that 10 (`0a`) is
+the top, and what the mouse's own low-battery warning corresponds to.
 
 ## Open questions before shipping "Load from mouse"
 
