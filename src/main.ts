@@ -43,7 +43,7 @@ import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog"
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
 import { comboKeyGroups } from "./profiles/key-combo-keys";
-import { decodeConfig, parseReply, readPlan, type Memory } from "./profiles/m913-read";
+import { BATTERY_REQUEST, decodeConfig, parseBatteryReply, parseReply, readPlan, type Memory } from "./profiles/m913-read";
 import { parseAction } from "./profiles/m913-buttons";
 
 // Which OS's shortcut names the button list uses ("super+s" is Save on macOS,
@@ -78,6 +78,9 @@ import { clearShareFragment, copyShareLink } from "./share-ui";
 import { jmkToButtonActions } from "./profiles/jmk-import";
 
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
+const batteryRowEl = document.querySelector<HTMLDivElement>("#battery-row")!;
+const batteryEl = document.querySelector<HTMLParagraphElement>("#battery-status")!;
+const checkBatteryBtn = document.querySelector<HTMLButtonElement>("#check-battery")!;
 const logEl = document.querySelector<HTMLDivElement>("#log")!;
 const connectBtn = document.querySelector<HTMLButtonElement>("#connect")!;
 const pollButtonsEl = document.querySelector<HTMLDivElement>("#poll-buttons")!;
@@ -318,6 +321,8 @@ connectBtn.addEventListener("click", async () => {
     log(`Connect failed: ${(err as Error).message}`);
     announce(`Connect failed: ${(err as Error).message}`, "warning");
   }
+  batteryEl.textContent = "";
+  updateBatteryRow();
 });
 
 // --- macOS tip: copy the sudo Chrome command -------------------------------
@@ -936,6 +941,7 @@ async function loadFromMouse(auto: boolean) {
     log(`Reading the configuration from the mouse (${plan.length} requests)…`);
     for (const packet of plan) {
       const reply = await requestReply(device, hardware, packet);
+      if (packet === BATTERY_REQUEST) showBattery(parseBatteryReply(reply));
       const data = parseReply(packet, reply);
       if (!data) continue;
       const address = (packet[3]! << 8) | packet[4]!;
@@ -971,6 +977,38 @@ async function loadFromMouse(auto: boolean) {
 }
 
 loadFromMouseBtn.addEventListener("click", () => loadFromMouse(false));
+
+// --- Battery (experimental) ------------------------------------------------
+//
+// Command 0x04 is what Redragon's software appears to poll for the battery
+// (docs/protocol-notes/m913-read.md). What its two bytes mean isn't known
+// yet, so they're shown raw for owners to report against their battery.
+
+function showBattery(bytes: number[]) {
+  const raw = bytes.map((b) => b.toString(16).padStart(2, "0")).join(" ");
+  batteryEl.textContent = `Battery (experimental): reply ${raw || "empty"}${bytes.length ? ` (${bytes.join(", ")})` : ""}`;
+  log(`Battery status (experimental): ${raw || "empty"} = ${bytes.join(", ") || "no data"}. Not decoded yet: note it with your battery state.`);
+}
+
+function updateBatteryRow() {
+  batteryRowEl.hidden = !device || hardware !== "areson";
+}
+
+checkBatteryBtn.addEventListener("click", async () => {
+  if (!device || reading || applying) return;
+  checkBatteryBtn.setAttribute("aria-disabled", "true");
+  try {
+    log(`→ battery status: ${toHex(BATTERY_REQUEST)}`);
+    const reply = await requestReply(device, hardware, BATTERY_REQUEST);
+    log(`← response: ${toHex(reply)}`);
+    showBattery(parseBatteryReply(reply));
+  } catch (err) {
+    log(`Battery check failed: ${(err as Error).message}`);
+    batteryEl.textContent = "Battery (experimental): no answer, see the log";
+  } finally {
+    checkBatteryBtn.removeAttribute("aria-disabled");
+  }
+});
 
 // --- Apply ---------------------------------------------------------------
 

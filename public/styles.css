@@ -186,6 +186,9 @@ header p { margin: 0.3rem 0 0; font-size: var(--fs-sm); color: var(--text-second
 #status.connected::before { background: var(--success); }
 #status.warning { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 45%, var(--border)); }
 #status.warning::before { background: var(--warning); }
+.battery-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.75rem; margin-top: 0.5rem; }
+.battery-row[hidden] { display: none; }
+.battery-row p { margin: 0; font-size: var(--fs-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
 footer {
   margin-top: 2rem;

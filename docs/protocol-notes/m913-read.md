@@ -32,7 +32,7 @@ Checksum is the same as for writes, on both directions:
 | 3 | `08 08 00 00 04 02 …` | `09 08 00 00 04 02 03 52 …` | read 2 bytes at `0x0004` |
 | 4 | `08 02 00 00 00 01 01 …` | `09 02 00 00 00 01 01 …` | unknown |
 | 5… | `08 08 00 HH LL 0a …` | `09 08 00 HH LL 0a d0 … d9` | **read 10 bytes at address `HHLL`** |
-| last | `08 04 00…` | `09 04 00 00 00 02 0a 01 …` | finalize (same sub-command as write finalize) |
+| last | `08 04 00…` | `09 04 00 00 00 02 0a 01 …` | probably **battery status** (see below) |
 
 So **sub-command `0x08` = read**: byte 3–4 = address (big-endian), byte 5 =
 length (always `0x0a` here); the reply echoes bytes 1–5 and carries the data
@@ -61,6 +61,20 @@ side8 `super+space`, side9 `alt+tab`, side10 `super+w`, side11 **`shift`
 alone** (events: shift down, shift up — so the firmware stores a bare
 modifier), side12 `ctrl+up`, fire `enter`; left/right/middle = default
 clicks.
+
+## Command `0x04`: battery status? (unconfirmed)
+
+The software sends `08 04` about 3.8 s after launch (after the reads) and
+again at the start of a write session, not at the end, so it looks like a
+status poll rather than a "finalize". Every capture so far has the same
+2-byte reply, `0a 01`, from a mouse on its cable. Best guess: byte 6 is the
+battery level (10 = full?) and byte 7 a flag (1 = charging?).
+
+The page shows the raw reply as "Battery (experimental)", from Read from
+mouse and from a Check battery button that sends only this command. To
+decode it, collect replies at known battery states: on the cable, on the
+wireless receiver, and with a low battery. A Windows capture taken while
+Redragon's software shows its battery percentage would give the scale.
 
 ## Open questions before shipping "Load from mouse"
 

@@ -29,6 +29,18 @@ export function buildReadPacket(address: number, len = 0x0a): Packet {
   return packet([0x08, 0x08, 0x00, (address >> 8) & 0xff, address & 0xff, len]);
 }
 
+/// Sub-command 0x04. The Windows software sends it after reading the
+/// settings and again before each write; the mouse answers with 2 bytes
+/// (`0a 01` on a cabled mouse). Thought to be the battery status: a level,
+/// then a flag (charging?). Unconfirmed, so the page shows it raw.
+export const BATTERY_REQUEST: Packet = packet([0x08, 0x04]);
+
+/// Checks a reply to BATTERY_REQUEST and returns its data bytes.
+export function parseBatteryReply(reply: Uint8Array): number[] {
+  parseReply(BATTERY_REQUEST, reply);
+  return Array.from(reply.slice(6, 6 + Math.min(reply[5]!, 10)));
+}
+
 const BUTTON_ORDER = tables.buttonIndexOrder as string[];
 const KEY_EVENT_ADDRESSES = (tables.keyboardKeyAddressByProtocolSlot as [number, number][]).map(([hi, lo]) => (hi << 8) | lo);
 
@@ -46,7 +58,7 @@ export function readPlan(): Packet[] {
   for (let a = 0x00; a < 0xa0; a += 0x0a) plan.push(buildReadPacket(a));
   // Each keyboard binding's event list: 20 bytes covers up to 6 events.
   for (const base of KEY_EVENT_ADDRESSES) plan.push(buildReadPacket(base), buildReadPacket(base + 0x0a));
-  plan.push(packet([0x08, 0x04]));
+  plan.push(BATTERY_REQUEST);
   return plan;
 }
 

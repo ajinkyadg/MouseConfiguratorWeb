@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildReadPacket, decodeConfig, parseReply, readPlan, type Memory } from "./m913-read";
+import { BATTERY_REQUEST, buildReadPacket, decodeConfig, parseBatteryReply, parseReply, readPlan, type Memory } from "./m913-read";
 
 // Request/reply pairs from a USBPcap capture of Redragon's Windows software
 // reading a real M913 (2026-10-01) — see docs/protocol-notes/m913-read.md.
@@ -112,6 +112,14 @@ describe("M913 config read", () => {
     // Every read in the plan was also made by the Windows software.
     const captured = new Set(CAPTURE.map(([req]) => req));
     expect(plan.every((p) => captured.has(p))).toBe(true);
+  });
+
+  it("asks for the battery status like Redragon's software and keeps the raw reply", () => {
+    // From a Windows capture: request, then the cabled mouse's reply.
+    expect(BATTERY_REQUEST).toEqual(fromHex("08040000000000000000000000000000" + "49"));
+    expect(parseBatteryReply(fromHex("0904000000020a0100000000000000003b"))).toEqual([0x0a, 0x01]);
+    expect(() => parseBatteryReply(fromHex("0904000000020a0100000000000000003c"))).toThrow(/checksum/);
+    expect(() => parseBatteryReply(fromHex("09030000000101000000000000000000" + "47"))).toThrow(/command/);
   });
 
   it("rejects a reply for the wrong address", () => {
