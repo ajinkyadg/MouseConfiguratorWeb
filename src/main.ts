@@ -300,13 +300,14 @@ connectBtn.addEventListener("click", async () => {
       device = null;
       setConnected(false);
     } else if (!wired) {
-      // The receiver relays the config channel (a battery read answered
-      // through it, 2026-10-26), so reading and applying are offered, marked
-      // experimental until a write through it is confirmed. A bad wireless
-      // write is recoverable: Apply over the cable rewrites every setting.
-      announce(`Connected through the wireless receiver (experimental). If a setting doesn't take, plug in the USB cable and apply again.`, "warning");
+      // The receiver relays the config channel: reads, writes and a visible
+      // lighting change all confirmed through it on hardware, 2026-10-26.
+      // If the mouse is asleep or out of range a write gets no echo and
+      // Apply reports it failed; the cable is always the fallback.
+      announce(`Connected: ${device.productName} (${hardware} hardware, wireless)`);
+      statusEl.classList.add("connected");
       setConnected(true);
-      log("Wireless receiver: reading and applying through it are experimental. If anything doesn't take, plug in the USB cable and Apply again; that rewrites every setting.");
+      log("Wireless receiver: settings are read and applied over 2.4 GHz. If Apply reports a section failed, move the mouse to wake it and apply again, or use the USB cable.");
     } else if (identity.kind !== "m913") {
       log(`You confirmed "${device.productName}" is an M913 — Apply enabled.`);
       announce(`Connected: ${device.productName} (${hardware} hardware, wired) — not identified as an M913, enabled because you confirmed it is.`, "warning");
