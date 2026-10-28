@@ -12,11 +12,13 @@
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-// Drawn in a 1000 × 540 box that keeps its proportions: the side-panel
-// grid takes the same aspect ratio, and its padding (in cqi, so 10 units =
-// 1cqi) puts the keys inside the keypad housing, which starts at x 150,
-// y 150 and is skewed 3° so its rear end sits higher. The body is drawn
-// faded (.ma-body) so the keys stand out.
+// Drawn in a 1000 × 540 box, of which the page shows only the middle
+// (x 100-900, y 60-520) so the keys can be large: nose, tail and hump run
+// off the edges. The view keeps its proportions; the side-panel grid takes
+// the same aspect ratio, and its padding (in cqi, so 8 units = 1cqi) puts
+// the keys inside the keypad housing, which starts at x 150, y 150 and is
+// skewed 3° so its rear end sits higher. The body is drawn faded
+// (.ma-body) so the keys stand out.
 const ART = `
 <defs>
   <linearGradient id="ma-shell" x1="0" y1="0" x2="0" y2="1">
@@ -63,7 +65,7 @@ const ART = `
 export function createMouseSideArt(): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("class", "mouse-art");
-  svg.setAttribute("viewBox", "0 0 1000 540");
+  svg.setAttribute("viewBox", "100 60 800 460");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   svg.innerHTML = ART; // a fixed drawing; nothing from user data

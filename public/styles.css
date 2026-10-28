@@ -788,23 +788,25 @@ body.wide { max-width: 1320px; }
 
 /* The mouse drawn around the side keys (src/mouse-side-art.ts), when the
    button map is wide enough for the keys to hold their text. The drawing
-   keeps its 1000:540 proportions; the grid takes the same aspect ratio and its
-   padding, gaps and wave are in cqi (1cqi = 10 drawing units), so the keys
+   keeps its proportions, cropped to the keypad; the grid takes the same aspect ratio and its
+   padding, gaps and wave are in cqi (1cqi = 8 drawing units), so the keys
    stay inside the drawn keypad housing at every width. Black mouse in Play,
    white in Pro. Narrower maps keep the plain panel. */
 .btn-map { container: btnmap / inline-size; }
 .mouse-art { display: none; }
 @container btnmap (min-width: 680px) {
   .button-grid.group-side.has-art {
-    aspect-ratio: 1000 / 540; margin: 0 0 0.25rem;
+    aspect-ratio: 800 / 460; margin: 0 0 0.25rem;
     background: none; box-shadow: none; border-radius: 0;
-    padding: 15.72cqi 16.2cqi 10.68cqi;
+    padding: 12.15cqi 7.75cqi 10.85cqi;
     grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr));
-    gap: 0.35cqi 1.2cqi;
+    gap: 0.4cqi 1.5cqi;
   }
   .mouse-art {
     display: block; position: absolute; inset: 0; inline-size: 100%; block-size: 100%;
-    z-index: -1; pointer-events: none; overflow: visible;
+    z-index: -1; pointer-events: none; overflow: hidden;
+    /* The mouse runs off both ends; fade it out rather than cut it hard. */
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
   }
   /* Keys are wider than tall, as on the mouse: number and action on one
      line, keycaps under it. The housing is skewed 3°, so each column sits
@@ -814,17 +816,17 @@ body.wide { max-width: 1320px; }
     --lip: 0 0 transparent; --r-tl: 0.5cqi; --r-tr: 0.5cqi; --r-br: 0.5cqi; --r-bl: 0.5cqi;
   }
   .has-art .button-tile[data-col="0"] { --rise: 0cqi; }
-  .has-art .button-tile[data-col="1"] { --rise: -0.9cqi; }
-  .has-art .button-tile[data-col="2"] { --rise: -1.8cqi; }
-  .has-art .button-tile[data-col="3"] { --rise: -2.7cqi; }
+  .has-art .button-tile[data-col="1"] { --rise: -1.125cqi; }
+  .has-art .button-tile[data-col="2"] { --rise: -2.25cqi; }
+  .has-art .button-tile[data-col="3"] { --rise: -3.375cqi; }
   /* Each column is one strip, rounded at its ends; the four corner keys
      follow the housing's rounded corners. */
   .has-art .button-tile[data-col][data-row="0"] { --r-tl: 1.1cqi; --r-tr: 1.1cqi; }
   .has-art .button-tile[data-col][data-row="2"] { --r-bl: 1.1cqi; --r-br: 1.1cqi; }
-  .has-art .button-tile[data-col="0"][data-row="0"] { --r-tl: 2.6cqi; }
-  .has-art .button-tile[data-col="0"][data-row="2"] { --r-bl: 2.6cqi; }
-  .has-art .button-tile[data-col="3"][data-row="0"] { --r-tr: 2.6cqi; }
-  .has-art .button-tile[data-col="3"][data-row="2"] { --r-br: 2.6cqi; }
+  .has-art .button-tile[data-col="0"][data-row="0"] { --r-tl: 3.3cqi; }
+  .has-art .button-tile[data-col="0"][data-row="2"] { --r-bl: 3.3cqi; }
+  .has-art .button-tile[data-col="3"][data-row="0"] { --r-tr: 3.3cqi; }
+  .has-art .button-tile[data-col="3"][data-row="2"] { --r-br: 3.3cqi; }
   .has-art .tile-line { flex-direction: row; align-items: baseline; gap: 0.4rem; max-inline-size: 100%; }
   .has-art .tile-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .has-art .keycaps { flex-wrap: nowrap; overflow: hidden; max-inline-size: 100%; }
