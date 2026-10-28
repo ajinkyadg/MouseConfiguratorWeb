@@ -788,7 +788,7 @@ body.wide { max-width: 1320px; }
 
 /* The mouse drawn around the side keys (src/mouse-side-art.ts), when the
    button map is wide enough for the keys to hold their text. The drawing
-   keeps its 2:1 proportions; the grid takes the same aspect ratio and its
+   keeps its 1000:540 proportions; the grid takes the same aspect ratio and its
    padding, gaps and wave are in cqi (1cqi = 10 drawing units), so the keys
    stay inside the drawn keypad housing at every width. Black mouse in Play,
    white in Pro. Narrower maps keep the plain panel. */
@@ -796,9 +796,9 @@ body.wide { max-width: 1320px; }
 .mouse-art { display: none; }
 @container btnmap (min-width: 680px) {
   .button-grid.group-side.has-art {
-    aspect-ratio: 2; margin: 0 0 0.25rem;
+    aspect-ratio: 1000 / 540; margin: 0 0 0.25rem;
     background: none; box-shadow: none; border-radius: 0;
-    padding: 18.37cqi 20.3cqi 9.43cqi;
+    padding: 15.72cqi 16.2cqi 10.68cqi;
     grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr));
     gap: 0.35cqi 1.2cqi;
   }
@@ -810,13 +810,13 @@ body.wide { max-width: 1320px; }
      line, keycaps under it. The housing is skewed 3°, so each column sits
      a step higher toward the rear. */
   .has-art .button-tile[data-col][data-row] {
-    min-block-size: 0; padding: 0.3rem 0.5rem; align-content: center; overflow: hidden;
+    min-block-size: 0; padding: 0.4rem 0.65rem; align-content: center; overflow: hidden;
     --lip: 0 0 transparent; --r-tl: 0.5cqi; --r-tr: 0.5cqi; --r-br: 0.5cqi; --r-bl: 0.5cqi;
   }
   .has-art .button-tile[data-col="0"] { --rise: 0cqi; }
-  .has-art .button-tile[data-col="1"] { --rise: -0.79cqi; }
-  .has-art .button-tile[data-col="2"] { --rise: -1.58cqi; }
-  .has-art .button-tile[data-col="3"] { --rise: -2.37cqi; }
+  .has-art .button-tile[data-col="1"] { --rise: -0.9cqi; }
+  .has-art .button-tile[data-col="2"] { --rise: -1.8cqi; }
+  .has-art .button-tile[data-col="3"] { --rise: -2.7cqi; }
   /* Each column is one strip, rounded at its ends; the four corner keys
      follow the housing's rounded corners. */
   .has-art .button-tile[data-col][data-row="0"] { --r-tl: 1.1cqi; --r-tr: 1.1cqi; }
@@ -826,7 +826,7 @@ body.wide { max-width: 1320px; }
   .has-art .button-tile[data-col="3"][data-row="0"] { --r-tr: 2.6cqi; }
   .has-art .button-tile[data-col="3"][data-row="2"] { --r-br: 2.6cqi; }
   .has-art .tile-line { flex-direction: row; align-items: baseline; gap: 0.4rem; max-inline-size: 100%; }
-  .has-art .tile-name { display: block; font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .has-art .tile-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .has-art .keycaps { flex-wrap: nowrap; overflow: hidden; max-inline-size: 100%; }
   .has-art .button-tile::before { background:
     linear-gradient(180deg, var(--cap-bevel) 0 0.3rem, var(--cap-crease) 0.3rem calc(0.3rem + 1px), transparent calc(0.3rem + 1px)),
@@ -850,6 +850,7 @@ body.wide { max-width: 1320px; }
 .mouse-art .ma-shelf { fill: url(#ma-shelf); stroke: rgb(255 255 255 / 0.05); stroke-width: 1.5; }
 .mouse-art .ma-bezel { fill: #222227; stroke: rgb(255 255 255 / 0.07); stroke-width: 1.5; }
 .mouse-art .ma-well { fill: url(#ma-well); }
+.mouse-art .ma-body { opacity: 0.4; }
 .mouse-art .ma-wheel { fill: #2a2a2f; stroke: rgb(255 255 255 / 0.12); stroke-width: 1.5; }
 .mouse-art .ma-fire { fill: #1c1c20; stroke: rgb(255 255 255 / 0.1); stroke-width: 1.5; }
 .mouse-art .ma-fire-hi { fill: rgb(255 255 255 / 0.08); }

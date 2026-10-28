@@ -12,10 +12,11 @@
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-// Drawn in a 1000 × 500 box that keeps its proportions: the side-panel
-// grid takes the same 2:1 aspect ratio, and its padding (in cqi, so 10
-// units = 1cqi) puts the keys inside the keypad housing, which starts at
-// x 190, y 175 and is skewed 3° so its rear end sits higher.
+// Drawn in a 1000 × 540 box that keeps its proportions: the side-panel
+// grid takes the same aspect ratio, and its padding (in cqi, so 10 units =
+// 1cqi) puts the keys inside the keypad housing, which starts at x 150,
+// y 150 and is skewed 3° so its rear end sits higher. The body is drawn
+// faded (.ma-body) so the keys stand out.
 const ART = `
 <defs>
   <linearGradient id="ma-shell" x1="0" y1="0" x2="0" y2="1">
@@ -39,28 +40,30 @@ const ART = `
   <filter id="ma-blur" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>
   <filter id="ma-glow" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="5"/></filter>
 </defs>
-<ellipse class="ma-floor" cx="495" cy="474" rx="470" ry="12" filter="url(#ma-blur)"/>
-<ellipse class="ma-wheel" cx="262" cy="110" rx="36" ry="14" transform="rotate(-24 262 110)"/>
-<path class="ma-shell" d="M70 468 C36 466 20 440 18 400 C16 330 18 285 28 250 C90 170 330 52 600 40 C770 32 905 80 952 190 C985 270 988 380 968 440 C958 462 935 468 900 469 L70 468 Z"/>
-<path class="ma-top" d="M28 250 C90 170 330 52 600 40 C770 32 905 80 952 190 C905 110 770 66 605 70 C345 80 110 190 40 272 Z"/>
-<path class="ma-sheen-shape" d="M28 250 C90 170 330 52 600 40 C770 32 905 80 952 190 C905 110 770 66 605 70 C345 80 110 190 40 272 Z"/>
-<path class="ma-seam" d="M40 272 C110 190 345 80 605 70 C770 66 905 110 952 190"/>
-<path class="ma-grip" d="M842 250 C876 238 918 242 952 264 C966 320 966 390 945 440 C912 450 876 452 842 448 Z"/>
-<path class="ma-shelf" d="M150 430 C380 410 760 408 920 422 C952 426 956 458 924 466 L170 468 C138 466 130 436 150 430 Z"/>
-<path class="ma-led-glow" d="M800 58 C880 76 930 122 950 182" filter="url(#ma-glow)"/>
-<path class="ma-led" d="M800 58 C880 76 930 122 950 182"/>
-<rect class="ma-fire" x="76" y="232" width="70" height="26" rx="13" transform="rotate(-36 111 245)"/>
-<rect class="ma-fire-hi" x="82" y="235" width="56" height="5" rx="2.5" transform="rotate(-36 111 245)"/>
-<g transform="translate(190 175) skewY(-3)">
-  <rect class="ma-bezel" width="620" height="248" rx="38"/>
-  <rect class="ma-well" x="9" y="9" width="602" height="230" rx="31"/>
+<ellipse class="ma-floor" cx="495" cy="514" rx="470" ry="12" filter="url(#ma-blur)"/>
+<g class="ma-body">
+  <ellipse class="ma-wheel" cx="262" cy="92" rx="36" ry="14" transform="rotate(-18 262 92)"/>
+  <path class="ma-shell" d="M70 508 C36 506 20 480 18 440 C16 370 16 290 24 230 C80 130 330 40 600 30 C770 22 905 70 955 190 C988 280 990 410 970 478 C960 502 935 508 900 509 L70 508 Z"/>
+  <path class="ma-top" d="M24 230 C80 130 330 40 600 30 C770 22 905 70 955 190 C905 100 770 56 605 58 C345 64 96 150 34 252 Z"/>
+  <path class="ma-sheen-shape" d="M24 230 C80 130 330 40 600 30 C770 22 905 70 955 190 C905 100 770 56 605 58 C345 64 96 150 34 252 Z"/>
+  <path class="ma-seam" d="M34 252 C96 150 345 64 605 58 C770 56 905 100 955 190"/>
+  <path class="ma-grip" d="M872 250 C898 240 930 246 956 266 C968 330 968 420 948 480 C922 490 896 492 872 488 Z"/>
+  <path class="ma-shelf" d="M120 468 C380 456 760 452 920 462 C952 466 956 498 924 506 L150 508 C112 506 102 474 120 468 Z"/>
+  <path class="ma-led-glow" d="M800 44 C880 64 932 112 952 180" filter="url(#ma-glow)"/>
+  <path class="ma-led" d="M800 44 C880 64 932 112 952 180"/>
+  <rect class="ma-fire" x="58" y="196" width="70" height="26" rx="13" transform="rotate(-38 93 209)"/>
+  <rect class="ma-fire-hi" x="64" y="199" width="56" height="5" rx="2.5" transform="rotate(-38 93 209)"/>
+</g>
+<g transform="translate(150 150) skewY(-3)">
+  <rect class="ma-bezel" width="700" height="300" rx="40"/>
+  <rect class="ma-well" x="8" y="8" width="684" height="284" rx="33"/>
 </g>
 `;
 
 export function createMouseSideArt(): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("class", "mouse-art");
-  svg.setAttribute("viewBox", "0 0 1000 500");
+  svg.setAttribute("viewBox", "0 0 1000 540");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   svg.innerHTML = ART; // a fixed drawing; nothing from user data
