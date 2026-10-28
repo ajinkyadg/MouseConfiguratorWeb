@@ -373,7 +373,9 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     const invalid = !!value && opts.validate(value) !== null;
     const desc = value ? opts.describe(value) : null;
     const line = el("span", "tile-line");
-    line.append(el("span", "tile-slot", slot.tag), " ", el("span", "tile-name", desc ? desc.name : "Default"));
+    const name = el("span", "tile-name", desc ? desc.name : "Default");
+    name.title = name.textContent!; // the drawn side pad can cut long names short
+    line.append(el("span", "tile-slot", slot.tag), " ", name);
     tile.replaceChildren(line);
     if (desc?.keys.length) tile.append(" ", keycaps(desc.keys));
     if (invalid) tile.append(" ", el("span", "tile-note", "Not recognised"));

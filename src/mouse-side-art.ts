@@ -1,17 +1,21 @@
 // Left-side view of the mouse drawn behind the side-panel keys, so the
-// keys read as part of a real mouse: shell with its hump and top-shell
-// seam, rounded nose and tail, thumb shelf, fire button, recessed keypad
-// housing, rear light line and a desk shadow. Black in Play, white in Pro
+// keys read as part of a real mouse: low nose rising in a long line to the
+// hump about 60% back, a short drop to the tail, the top-shell seam, scroll
+// wheel and fire button up front, textured rear grip, thumb shelf under the
+// pad, rear light line and a desk shadow. Black in Play, white in Pro
 // (Redragon sells both). Colours come from CSS (.mouse-art rules in
 // public/styles.css) so it follows the theme and the profile colour. The
-// keypad is enlarged relative to the body so the keys can hold their
-// descriptions. Decorative only: aria-hidden, no pointer events.
+// keypad is larger than on the real mouse so the keys can hold their
+// descriptions, but it keeps its place (front-of-middle, lower half) and
+// its tilt (rear end higher). Decorative only: aria-hidden, no pointer
+// events.
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-// Drawn in a 1000 × 560 box stretched over the side-panel grid. The
-// keypad housing (x 126-824, y 90-481) lines up with the grid's padding in
-// public/styles.css: 15% left, 20% right, 5rem top, 4.5rem bottom.
+// Drawn in a 1000 × 500 box that keeps its proportions: the side-panel
+// grid takes the same 2:1 aspect ratio, and its padding (in cqi, so 10
+// units = 1cqi) puts the keys inside the keypad housing, which starts at
+// x 190, y 175 and is skewed 3° so its rear end sits higher.
 const ART = `
 <defs>
   <linearGradient id="ma-shell" x1="0" y1="0" x2="0" y2="1">
@@ -35,26 +39,28 @@ const ART = `
   <filter id="ma-blur" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="12"/></filter>
   <filter id="ma-glow" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="5"/></filter>
 </defs>
-<ellipse class="ma-floor" cx="505" cy="548" rx="480" ry="16" filter="url(#ma-blur)"/>
-<path class="ma-shelf" d="M48 490 C250 516 700 520 930 492 Q976 488 972 516 Q966 548 906 552 C680 562 300 562 86 554 Q20 550 20 520 Q22 492 48 490 Z"/>
-<path class="ma-shell" d="M70 500 C30 496 14 440 18 330 C22 200 55 120 140 72 C300 22 520 10 660 16 C820 24 940 80 985 200 C1003 300 996 420 948 486 C860 505 400 508 70 500 Z"/>
-<path class="ma-top" d="M18 330 C22 200 55 120 140 72 C300 22 520 10 660 16 C820 24 940 80 985 200 C930 110 830 62 690 56 C520 50 320 64 170 112 C90 140 40 200 28 300 Z"/>
-<path class="ma-sheen-shape" d="M28 300 C40 200 90 140 170 112 C320 64 520 50 690 56 C830 62 930 110 985 200 C996 260 996 300 990 330 C700 250 380 250 30 330 Z"/>
-<path class="ma-seam" d="M28 300 C40 200 90 140 170 112 C320 64 520 50 690 56 C830 62 930 110 976 200"/>
-<path class="ma-grip" d="M846 238 C880 230 930 236 972 262 C984 330 982 410 944 470 C910 480 876 482 846 478 Z"/>
-<path class="ma-led-glow" d="M830 74 C900 92 952 136 980 196" filter="url(#ma-glow)"/>
-<path class="ma-led" d="M830 74 C900 92 952 136 980 196"/>
-<rect class="ma-fire" x="26" y="176" width="76" height="30" rx="14" transform="rotate(-28 64 191)"/>
-<rect class="ma-fire-hi" x="32" y="179" width="62" height="6" rx="3" transform="rotate(-28 64 191)"/>
-<rect class="ma-bezel" x="126" y="90" width="698" height="391" rx="54"/>
-<rect class="ma-well" x="138" y="102" width="674" height="367" rx="46"/>
+<ellipse class="ma-floor" cx="495" cy="474" rx="470" ry="12" filter="url(#ma-blur)"/>
+<ellipse class="ma-wheel" cx="262" cy="110" rx="36" ry="14" transform="rotate(-24 262 110)"/>
+<path class="ma-shell" d="M70 468 C36 466 20 440 18 400 C16 330 18 285 28 250 C90 170 330 52 600 40 C770 32 905 80 952 190 C985 270 988 380 968 440 C958 462 935 468 900 469 L70 468 Z"/>
+<path class="ma-top" d="M28 250 C90 170 330 52 600 40 C770 32 905 80 952 190 C905 110 770 66 605 70 C345 80 110 190 40 272 Z"/>
+<path class="ma-sheen-shape" d="M28 250 C90 170 330 52 600 40 C770 32 905 80 952 190 C905 110 770 66 605 70 C345 80 110 190 40 272 Z"/>
+<path class="ma-seam" d="M40 272 C110 190 345 80 605 70 C770 66 905 110 952 190"/>
+<path class="ma-grip" d="M842 250 C876 238 918 242 952 264 C966 320 966 390 945 440 C912 450 876 452 842 448 Z"/>
+<path class="ma-shelf" d="M150 430 C380 410 760 408 920 422 C952 426 956 458 924 466 L170 468 C138 466 130 436 150 430 Z"/>
+<path class="ma-led-glow" d="M800 58 C880 76 930 122 950 182" filter="url(#ma-glow)"/>
+<path class="ma-led" d="M800 58 C880 76 930 122 950 182"/>
+<rect class="ma-fire" x="76" y="232" width="70" height="26" rx="13" transform="rotate(-36 111 245)"/>
+<rect class="ma-fire-hi" x="82" y="235" width="56" height="5" rx="2.5" transform="rotate(-36 111 245)"/>
+<g transform="translate(190 175) skewY(-3)">
+  <rect class="ma-bezel" width="620" height="248" rx="38"/>
+  <rect class="ma-well" x="9" y="9" width="602" height="230" rx="31"/>
+</g>
 `;
 
 export function createMouseSideArt(): SVGSVGElement {
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("class", "mouse-art");
-  svg.setAttribute("viewBox", "0 0 1000 560");
-  svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("viewBox", "0 0 1000 500");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   svg.innerHTML = ART; // a fixed drawing; nothing from user data
