@@ -163,4 +163,15 @@ describe("M913 config read", () => {
       side12: "ctrl+arrow_up",
     });
   });
+
+  it("keeps the right-hand ⌘/Win key, and leaves other right-hand modifiers alone", () => {
+    // side5's events at 0x180: 04 | 80 01 00 | 81 4f 00 | 40 01 00 | 41 4f 00
+    const mem = captureMemory();
+    mem.set(0x182, 0x81).set(0x188, 0x81); // Ctrl + right ⌘
+    expect(decodeConfig(mem).config.buttonActions?.side5).toBe("ctrl+super_r+arrow_right");
+    mem.set(0x182, 0x10).set(0x188, 0x10); // right Ctrl
+    const { config, warnings } = decodeConfig(mem);
+    expect(config.buttonActions?.side5).toBeUndefined();
+    expect(warnings.length).toBeGreaterThan(0);
+  });
 });

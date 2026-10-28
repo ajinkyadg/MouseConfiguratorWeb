@@ -99,7 +99,8 @@ export interface DecodedConfig {
 }
 
 const MOUSE_ACTIONS = Object.entries(tables.mouseActions as Record<string, number[]>);
-const MODIFIER_BITS: Record<string, number> = { ctrl: 0x01, shift: 0x02, alt: 0x04, super: 0x08 };
+const MODIFIER_BITS: Record<string, number> = { ctrl: 0x01, shift: 0x02, alt: 0x04, super: 0x08, super_r: 0x80 };
+const KNOWN_MODIFIER_BITS = Object.values(MODIFIER_BITS).reduce((a, b) => a | b);
 
 // keyCodes has aliases (left / arrow_left, return / enter…); name keys the
 // way the combo builder and preset tables do.
@@ -156,6 +157,9 @@ function decodeKeyEvents(mem: Memory, base: number): string | null {
       keys.push(name);
     }
   }
+  // Right-hand Ctrl, Shift or Alt can't be shown or edited here; leave the
+  // binding as it is rather than read it back as the left-hand key.
+  if (mods & ~KNOWN_MODIFIER_BITS) return null;
   const modNames = MODIFIER_ORDER.filter((m) => mods & MODIFIER_BITS[m]!);
   const combo = [...modNames, ...keys];
   return combo.length ? combo.join("+") : null;

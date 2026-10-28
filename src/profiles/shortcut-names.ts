@@ -87,6 +87,9 @@ export function shortcutName(value: string, os: ShortcutOS): string | undefined 
 }
 
 const MAC_GLYPHS: Record<string, string> = { super: "⌘", shift: "⇧", ctrl: "⌃", alt: "⌥" };
+// The right-hand ⌘ / Windows key, for remote desktops (Citrix on a Mac)
+// that pass only that one through as the Windows key.
+const RIGHT_SUPER: Record<ShortcutOS, string> = { macos: "Right ⌘", windows: "Right Win", linux: "Right Super" };
 const PC_MODS: Record<string, string> = { ctrl: "Ctrl", shift: "Shift", alt: "Alt" };
 const KEYS: Record<string, string> = {
   arrow_up: "↑", arrow_down: "↓", arrow_left: "←", arrow_right: "→",
@@ -98,7 +101,8 @@ const KEYS: Record<string, string> = {
 export function comboKeys(value: string, os: ShortcutOS): string[] {
   const superName = os === "windows" ? "Win" : "Super";
   return value.trim().toLowerCase().split("+").filter(Boolean).map((t) =>
-    os === "macos" ? MAC_GLYPHS[t] ?? KEYS[t] ?? t.toUpperCase()
+    t === "super_r" ? RIGHT_SUPER[os]
+    : os === "macos" ? MAC_GLYPHS[t] ?? KEYS[t] ?? t.toUpperCase()
     : t === "super" ? superName : PC_MODS[t] ?? KEYS[t] ?? t.toUpperCase());
 }
 
@@ -106,26 +110,29 @@ export function comboKeys(value: string, os: ShortcutOS): string[] {
 /// glyph + short name on macOS ("⌘ Cmd", tooltip "Command"), the key name elsewhere.
 export function modifierLabel(mod: string, os: ShortcutOS): { short: string; full: string } {
   if (os === "macos") {
-    const mac: Record<string, [string, string]> = { ctrl: ["⌃ Ctrl", "Control"], alt: ["⌥ Opt", "Option"], super: ["⌘ Cmd", "Command"], shift: ["⇧ Shift", "Shift"] };
+    const mac: Record<string, [string, string]> = {
+      ctrl: ["⌃ Ctrl", "Control"], alt: ["⌥ Opt", "Option"], super: ["⌘ Cmd", "Command"], shift: ["⇧ Shift", "Shift"],
+      super_r: ["Right ⌘", "Right-hand Command key (some remote desktops, such as Citrix, pass only this one through as the Windows key)"],
+    };
     const [short, full] = mac[mod] ?? [mod, mod];
     return { short, full };
   }
-  const name = { ctrl: "Ctrl", alt: "Alt", super: os === "windows" ? "Win" : "Super", shift: "Shift" }[mod] ?? mod;
-  return { short: name, full: name };
+  const name = { ctrl: "Ctrl", alt: "Alt", super: os === "windows" ? "Win" : "Super", shift: "Shift", super_r: RIGHT_SUPER[os] }[mod] ?? mod;
+  return { short: name, full: mod === "super_r" ? `${name} key (some remote desktops, such as Citrix, pass only this one through)` : name };
 }
 
 /// Modifier order used everywhere a combo string is built, so a recorded
 /// shortcut matches the preset/name tables ("super+shift+z", "ctrl+alt+…").
-export const MODIFIER_ORDER = ["ctrl", "alt", "super", "shift"] as const;
+export const MODIFIER_ORDER = ["ctrl", "alt", "super", "super_r", "shift"] as const;
 
 /// Renders "super+shift+z" the way the OS writes it: "⌘⇧Z" on macOS,
 /// "Ctrl+Shift+Z" style elsewhere.
 export function formatCombo(value: string, os: ShortcutOS): string {
   const tokens = value.trim().toLowerCase().split("+");
   const key = (t: string) => KEYS[t] ?? t.toUpperCase();
-  if (os === "macos") return tokens.map((t) => MAC_GLYPHS[t] ?? key(t)).join("");
+  if (os === "macos") return tokens.map((t) => (t === "super_r" ? `${RIGHT_SUPER.macos} ` : MAC_GLYPHS[t] ?? key(t))).join("");
   const superName = os === "windows" ? "Win" : "Super";
-  return tokens.map((t) => (t === "super" ? superName : PC_MODS[t] ?? key(t))).join("+");
+  return tokens.map((t) => (t === "super" ? superName : t === "super_r" ? RIGHT_SUPER[os] : PC_MODS[t] ?? key(t))).join("+");
 }
 
 /// "Copy · ⌘C" for a known shortcut; undefined for anything else, so callers

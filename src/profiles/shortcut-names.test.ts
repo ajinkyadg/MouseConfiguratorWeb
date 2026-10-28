@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeShortcut, formatCombo } from "./shortcut-names";
+import { comboKeys, describeShortcut, formatCombo } from "./shortcut-names";
 import { BUILT_IN_PRESETS } from "./user-profiles";
 
 describe("shortcut names", () => {
@@ -8,6 +8,9 @@ describe("shortcut names", () => {
     expect(formatCombo("ctrl+arrow_up", "macos")).toBe("⌃↑");
     expect(formatCombo("super+shift+s", "windows")).toBe("Win+Shift+S");
     expect(formatCombo("ctrl+alt+arrow_left", "linux")).toBe("Ctrl+Alt+←");
+    expect(formatCombo("ctrl+super_r+arrow_right", "macos")).toBe("⌃Right ⌘ →");
+    expect(formatCombo("ctrl+super_r+arrow_right", "windows")).toBe("Ctrl+Right Win+→");
+    expect(comboKeys("ctrl+super_r+arrow_right", "macos")).toEqual(["⌃", "Right ⌘", "→"]);
   });
 
   it("names the same combo differently per OS", () => {

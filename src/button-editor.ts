@@ -551,12 +551,19 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   record.addEventListener("click", () => {
     if (recording) return stopRecording();
     recording = true;
+    rightSuper = false;
     record.setAttribute("aria-pressed", "true");
     record.textContent = "Listening… (Esc to cancel)";
     recordHint.textContent = "Press the shortcut now. System ones like ⌘Tab can't be captured — build those below.";
   });
   record.addEventListener("blur", stopRecording);
   let heldMods: Record<Modifier, boolean> | null = null;
+  // metaKey doesn't say which ⌘/Win key is down, so note it as it's pressed.
+  let rightSuper = false;
+  const heldFrom = (event: KeyboardEvent): Record<Modifier, boolean> => ({
+    ctrl: event.ctrlKey, alt: event.altKey, shift: event.shiftKey,
+    super: event.metaKey && !rightSuper, super_r: event.metaKey && rightSuper,
+  });
   record.addEventListener("keyup", (event) => {
     if (!recording || !heldMods || !(MODIFIER_CODES.test(event.key) || MODIFIER_CODES.test(event.code))) return;
     const combo = MODIFIER_ORDER.filter((m) => heldMods![m]).join("+");
@@ -581,7 +588,8 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     if (MODIFIER_CODES.test(event.key) || MODIFIER_CODES.test(event.code)) {
       // Wait for a real key; if the modifiers are released without one, the
       // modifiers alone are the shortcut (see keyup below).
-      heldMods = { ctrl: event.ctrlKey, alt: event.altKey, super: event.metaKey, shift: event.shiftKey };
+      if (/^(Meta|OS)(Left|Right)$/.test(event.code)) rightSuper = event.code.endsWith("Right");
+      heldMods = heldFrom(event);
       return;
     }
     heldMods = null;
@@ -590,7 +598,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       recordHint.textContent = `"${event.key}" can't be sent by the mouse — try another key.`;
       return;
     }
-    const held = { ctrl: event.ctrlKey, alt: event.altKey, super: event.metaKey, shift: event.shiftKey };
+    const held = heldFrom(event);
     const combo = [...MODIFIER_ORDER.filter((m) => held[m]), key].join("+");
     const error = opts.validate(combo);
     if (error) {

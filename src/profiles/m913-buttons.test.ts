@@ -118,6 +118,12 @@ describe("buildButtonMappingPackets", () => {
     expectValidChecksum(packets[1]);
   });
 
+  it("sends the right-hand ⌘/Win key as its own modifier bit", () => {
+    const [p1] = buildButtonMappingPackets({ side5: "ctrl+super_r+arrow_right" }, "areson");
+    // Key-down events: Ctrl (bit 0x01), right GUI (bit 0x80), then →.
+    expect(Array.from(p1!.slice(6, 16))).toEqual([6, 0x80, 0x01, 0x00, 0x80, 0x80, 0x00, 0x81, 0x4f, 0x00]);
+  });
+
   it("applies the Compx index translation, not the Areson identity mapping", () => {
     // "left" is enum index 7. Under Areson that's packet 3 offset 10.
     // Under Compx, compxIndexTranslation maps left -> protocol slot 0,

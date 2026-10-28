@@ -25,6 +25,7 @@ describe("parseM908Action — keyboard keys, with and without modifiers", () => 
 
   it("supports the family's explicit left/right-side modifier names too", () => {
     expect(parseM908Action("ctrl_r+c")).toEqual([0x8f, 16, 0x06, 0x00]);
+    expect(parseM908Action("ctrl+super_r+arrow_right")).toEqual([0x8f, 0x81, 0x4f, 0x00]);
   });
 
   it("rejects an unrecognized key", () => {
