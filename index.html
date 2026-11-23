@@ -11,7 +11,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="MouseConfig" />
     <meta property="og:title" content="Redragon M913 Software for Mac, Windows &amp; Linux | MouseConfig" />
-    <meta property="og:description" content="Remap buttons, DPI and RGB on your Redragon M913 from the browser — the M913 software for Mac and Linux that Redragon doesn\'t make. Free, no install." />
+    <meta property="og:description" content="Remap buttons, DPI and RGB on your Redragon M913 from the browser — the M913 software for Mac and Linux that Redragon doesn't make. Free, no install." />
     <meta property="og:url" content="https://mouseconfig.app/" />
     <meta property="og:image" content="https://mouseconfig.app/brand/share.png" />
     <meta property="og:image:width" content="1200" />
@@ -26,21 +26,86 @@
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "MouseConfig",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Windows, macOS, Linux",
-        "url": "https://mouseconfig.app/",
-        "description": "Free browser-based software for the Redragon M913 Impact Elite gaming mouse — DPI, polling rate, RGB, and button remapping, no software install required.",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "Panther Tech"
-        }
+        "@graph": [
+          {
+            "@type": "SoftwareApplication",
+            "name": "MouseConfig",
+            "applicationCategory": "UtilitiesApplication",
+            "operatingSystem": "Windows, macOS, Linux",
+            "url": "https://mouseconfig.app/",
+            "description": "Free browser-based software for the Redragon M913 Impact Elite gaming mouse: button remapping, DPI, polling rate and RGB lighting, over the USB cable or the 2.4 GHz wireless receiver, with no software install.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Panther Tech"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Does Redragon make M913 software for Mac or Linux?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Redragon's own M913 software only runs on Windows. MouseConfig does the same job in Chrome or Edge on macOS, Windows and Linux, with nothing to install."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need to download anything?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Open this page in Chrome or Edge, click Connect and choose your mouse. Your settings are saved on the mouse itself, so they keep working on any computer, including ones that have never seen MouseConfig."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does it work through the wireless receiver?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. Plug in the M913's 2.4 GHz receiver or its USB cable: either one can read and apply settings and show the battery level. If the mouse has gone to sleep, move it to wake it before you apply."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What can I change on the M913?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "All 16 buttons (keyboard shortcuts, media keys, mouse actions and rapid fire), the five DPI stages and their colours, the polling rate, and the lighting mode, colour and brightness."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can it read the settings already on my mouse?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. MouseConfig reads the buttons, DPI, polling rate and lighting stored on the mouse, so you start from your current setup instead of a blank one."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which browsers work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Chrome or Edge on a computer. Safari and Firefox don't support WebHID, the technology the page uses to reach the mouse."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "I have a Redragon M908. Does this work for it?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, the M908 has its own page: the M908 configurator at mouseconfig.app/m908."
+                }
+              }
+            ]
+          }
+        ]
       }
     </script>
 
@@ -310,6 +375,23 @@
 <ellipse class="glow" cx="79.1" cy="90.9" rx="13" ry="7" filter="url(#mcS)"/>
 <path class="spec" d="M54.7 107.3C57.6 105 66.4 98.2 72.3 93.7C78.2 89.2 84.1 84.6 90.1 80.3C96 76 102.1 71.5 108.2 68.1C114.3 64.6 120.5 61.1 126.8 59.4C133.2 57.7 139.8 57.5 146.4 57.7C153.1 58 163.3 60.3 166.6 60.8"/>
 </svg>
+    </section>
+    <section class="faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Questions about the M913 software</h2>
+      <h3>Does Redragon make M913 software for Mac or Linux?</h3>
+      <p class="prose-muted">No. Redragon's own M913 software only runs on Windows. MouseConfig does the same job in Chrome or Edge on macOS, Windows and Linux, with nothing to install.</p>
+      <h3>Do I need to download anything?</h3>
+      <p class="prose-muted">No. Open this page in Chrome or Edge, click Connect and choose your mouse. Your settings are saved on the mouse itself, so they keep working on any computer, including ones that have never seen MouseConfig.</p>
+      <h3>Does it work through the wireless receiver?</h3>
+      <p class="prose-muted">Yes. Plug in the M913's 2.4 GHz receiver or its USB cable: either one can read and apply settings and show the battery level. If the mouse has gone to sleep, move it to wake it before you apply.</p>
+      <h3>What can I change on the M913?</h3>
+      <p class="prose-muted">All 16 buttons (keyboard shortcuts, media keys, mouse actions and rapid fire), the five DPI stages and their colours, the polling rate, and the lighting mode, colour and brightness.</p>
+      <h3>Can it read the settings already on my mouse?</h3>
+      <p class="prose-muted">Yes. MouseConfig reads the buttons, DPI, polling rate and lighting stored on the mouse, so you start from your current setup instead of a blank one.</p>
+      <h3>Which browsers work?</h3>
+      <p class="prose-muted">Chrome or Edge on a computer. Safari and Firefox don't support WebHID, the technology the page uses to reach the mouse.</p>
+      <h3>I have a Redragon M908. Does this work for it?</h3>
+      <p class="prose-muted">Yes, the M908 has its own page: the <a href="/m908">M908 configurator</a>.</p>
     </section>
     </main>
 

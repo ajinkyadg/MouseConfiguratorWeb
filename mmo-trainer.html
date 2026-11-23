@@ -23,6 +23,76 @@
     <meta name="twitter:title" content="MMO Mouse Trainer: Learn Your 12 Side Buttons | MouseConfig" />
     <meta name="twitter:description" content="Free browser game that teaches the 12 side buttons of an MMO mouse by feel. Press the matching button to beat each enemy. Works with Redragon M908 and M913." />
 
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "MMO Mouse Trainer",
+            "url": "https://mouseconfig.app/mmo-trainer",
+            "applicationCategory": "GameApplication",
+            "operatingSystem": "Any (web browser)",
+            "description": "Free browser game that teaches the 12 side buttons of an MMO mouse by feel.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Panther Tech"
+            }
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "How do I play?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Press the side button whose number is on the enemy at the front of the line before it reaches you. A run lasts 90 seconds. You have three lives, and for the first 20 seconds an enemy that gets through is sent back instead of costing a life."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which mice does it work with?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Any mouse with 12 side buttons that send the number keys 1 to 9, 0, minus and equals, or the numeric keypad. That's how the Redragon M913 and M908 come set up, and most MMO mice can be set the same way. A keyboard works too."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How does it teach the buttons?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It starts with the front three buttons and adds a column at a time. Each button's hint fades as you get it right and comes back when you miss, and the game sends more enemies for the buttons you're slowest on. From level 7, some enemies need two buttons in a row."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What does the end of a run show?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Your score, accuracy, average reaction time and the three buttons you were slowest on, so you know what to practise. Your best score is kept in your browser."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "My side buttons are remapped. Will it still work?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Only if they still send number keys. Set them back to the default 1 to 12 in the M913 or M908 configurator to practise, then load your own profile again afterwards."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+
     <link rel="icon" href="/brand/mark.svg" type="image/svg+xml" />
     <script>
       /* Theme before first paint, so neither face ever flashes: the stored
@@ -148,6 +218,25 @@
     <section aria-labelledby="game-heading">
       <h2 id="game-heading" class="visually-hidden">Game</h2>
       <div id="game"></div>
+    </section>
+
+    <section aria-labelledby="why-heading">
+      <h2 id="why-heading">Why train your side buttons</h2>
+      <p class="prose-muted">An MMO mouse puts 12 buttons under your thumb, but they only help if you can hit the right one without looking. Most people learn the front row and leave the rest unused. Short daily runs build the same muscle memory you have for the number row on a keyboard, so abilities, shortcuts and macros on the back buttons become as quick as the front ones.</p>
+    </section>
+
+    <section class="faq" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">Questions</h2>
+      <h3>How do I play?</h3>
+      <p class="prose-muted">Press the side button whose number is on the enemy at the front of the line before it reaches you. A run lasts 90 seconds. You have three lives, and for the first 20 seconds an enemy that gets through is sent back instead of costing a life.</p>
+      <h3>Which mice does it work with?</h3>
+      <p class="prose-muted">Any mouse with 12 side buttons that send the number keys 1 to 9, 0, minus and equals, or the numeric keypad. That's how the Redragon M913 and M908 come set up, and most MMO mice can be set the same way. A keyboard works too.</p>
+      <h3>How does it teach the buttons?</h3>
+      <p class="prose-muted">It starts with the front three buttons and adds a column at a time. Each button's hint fades as you get it right and comes back when you miss, and the game sends more enemies for the buttons you're slowest on. From level 7, some enemies need two buttons in a row.</p>
+      <h3>What does the end of a run show?</h3>
+      <p class="prose-muted">Your score, accuracy, average reaction time and the three buttons you were slowest on, so you know what to practise. Your best score is kept in your browser.</p>
+      <h3>My side buttons are remapped. Will it still work?</h3>
+      <p class="prose-muted">Only if they still send number keys. Set them back to the default 1 to 12 in the <a href="/">M913</a> or <a href="/m908">M908</a> configurator to practise, then load your own profile again afterwards.</p>
     </section>
     </main>
 

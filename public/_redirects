@@ -1,0 +1,13 @@
+# Old .html addresses go permanently to the clean ones, so search engines
+# keep one URL per page (Cloudflare would otherwise answer with a temporary 307).
+/index.html / 301
+/jmk-decoder.html /jmk-decoder 301
+/productivity-setup.html /productivity-setup 301
+/redragon-m913-mac.html /redragon-m913-mac 301
+/m908.html /m908 301
+/dpi-checker.html /dpi-checker 301
+/sensitivity-converter.html /sensitivity-converter 301
+/privacy.html /privacy 301
+/terms.html /terms 301
+/mmo-trainer.html /mmo-trainer 301
+/typing-test.html /typing-test 301

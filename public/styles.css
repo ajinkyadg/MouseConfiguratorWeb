@@ -976,6 +976,10 @@ table.result-table th { color: var(--text-secondary); font-weight: 600; font-siz
 .error-message { color: var(--danger); font-size: var(--fs-sm); margin-top: 0.5rem; }
 
 .prose-muted { font-size: var(--fs-md); color: var(--text-secondary); line-height: 1.6; }
+/* Question-and-answer sections (also matched by each page's FAQPage data). */
+.faq h3 { font-size: var(--fs-md); margin: 1.1rem 0 0.35rem; }
+.faq h3:first-of-type { margin-top: 0; }
+.faq p { margin: 0; }
 .mt-3 { margin-top: 0.75rem; }
 .visually-hidden {
   position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
