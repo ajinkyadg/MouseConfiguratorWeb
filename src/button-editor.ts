@@ -7,6 +7,7 @@
 // The page owns the data (getValue/setValue) and the device rules
 // (validate/describe); this module owns only the interaction.
 import { createMouseSideArt } from "./mouse-side-art";
+import { createMouseTopArt, markTopPart, type TopTile } from "./mouse-top-art";
 import type { ActionCategory } from "./profiles/m913-action-catalog";
 import { MODIFIER_ORDER } from "./profiles/shortcut-names";
 
@@ -16,6 +17,7 @@ export interface EditorSlot {
   tag: string; // small label on the tile: "3", "Left", "DPI +"
   full: string; // panel heading / accessible name: "Side button 3"
   group: string; // EditorGroup.id
+  top?: TopTile; // where it sits on the drawn top view (non-side groups)
 }
 
 export interface EditorGroup {
@@ -80,6 +82,34 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className = "", text 
   return node;
 }
 
+// Is this grid's drawing showing (wide screens), so tiles sit around it?
+function drawn(grid: HTMLElement): boolean {
+  const art = grid.querySelector(".mouse-art");
+  return !!art && getComputedStyle(art).display !== "none";
+}
+
+// The tile nearest to `from` in the arrow's direction, measured between
+// centres with sideways distance counting double; null if none lies that way.
+function nearest(candidates: HTMLElement[], from: HTMLElement, key: string): HTMLElement | null {
+  const centre = (e: HTMLElement) => {
+    const r = e.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2] as const;
+  };
+  const [fx, fy] = centre(from);
+  const [ux, uy] = ({ ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] } as Record<string, [number, number]>)[key] ?? [0, 0];
+  let best: HTMLElement | null = null;
+  let bestScore = Infinity;
+  for (const c of candidates) {
+    if (c === from) continue;
+    const [cx, cy] = centre(c);
+    const ahead = (cx - fx) * ux + (cy - fy) * uy;
+    if (ahead <= 1) continue;
+    const score = ahead + 2 * Math.abs((cx - fx) * uy + (cy - fy) * ux);
+    if (score < bestScore) { bestScore = score; best = c; }
+  }
+  return best;
+}
+
 function keycaps(keys: string[]): HTMLSpanElement {
   const wrap = el("span", "keycaps");
   for (const key of keys) wrap.append(el("kbd", "", key));
@@ -104,6 +134,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
   let selected = slots[0]!.id;
   const tiles = new Map<string, HTMLButtonElement>();
   const phone = matchMedia("(max-width: 760px)");
+  const topArt = new Map<string, SVGSVGElement>(); // slot id -> its top-view drawing
 
   // --- Grid ---------------------------------------------------------------
   const map = el("div", "btn-map");
@@ -118,6 +149,16 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       grid.classList.add("has-art");
       grid.append(createMouseSideArt());
     }
+    // Top buttons: the mouse seen from above, each tile beside it with a
+    // line to its button (wide screens; phones keep the plain grid).
+    const placed = slots.filter((s) => s.group === group.id && s.top);
+    let art: SVGSVGElement | null = null;
+    if (!side && placed.length) {
+      art = createMouseTopArt(placed.map((s) => s.top!));
+      grid.classList.add("has-top");
+      grid.style.setProperty("--top-h", art.viewBox.baseVal.height.toFixed(0));
+      grid.append(art);
+    }
     slots.filter((s) => s.group === group.id).forEach((slot, i) => {
       const tile = el("button", "button-tile");
       tile.type = "button";
@@ -128,6 +169,15 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
         const { col, row } = sidePosition(i);
         tile.dataset.col = String(col);
         tile.dataset.row = String(row);
+      }
+      if (art && slot.top) {
+        const { part, col, row } = slot.top;
+        const drawing = art;
+        tile.dataset.topCol = col;
+        tile.style.setProperty("--top-row", String(row + 1));
+        topArt.set(slot.id, drawing);
+        tile.addEventListener("pointerenter", () => markTopPart(drawing, part, "hot", true));
+        tile.addEventListener("pointerleave", () => markTopPart(drawing, part, "hot", false));
       }
       tile.setAttribute("aria-controls", "btn-panel");
       tile.addEventListener("click", () => select(slot.id, true));
@@ -154,6 +204,17 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       tile.focus();
     };
     const padded = columns === 4;
+    // Around the drawn top view, arrows go to the nearest tile that way;
+    // Down from the bottom goes on to the next group.
+    if (grid.classList.contains("has-top") && drawn(grid) && event.key.startsWith("Arrow")) {
+      const next = nearest([...grid.querySelectorAll<HTMLElement>(".button-tile")], current, event.key);
+      if (next) return go(next);
+      if (event.key === "ArrowDown") {
+        const below = grid.nextElementSibling?.nextElementSibling;
+        return go(below?.querySelector<HTMLElement>('[data-col="0"][data-row="0"]') ?? below?.querySelector<HTMLElement>(".button-tile"));
+      }
+      return go(null);
+    }
     // On the drawn thumb pad, arrows go to the physically adjacent key;
     // Up from its top row leaves for the row of tiles above it.
     if (current.dataset.col && padded && event.key.startsWith("Arrow")) {
@@ -166,6 +227,7 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
       if (event.key === "ArrowUp") {
         const above = grid.previousElementSibling?.previousElementSibling;
         const tilesAbove = above ? [...above.querySelectorAll<HTMLElement>(".button-tile")] : [];
+        if (above?.classList.contains("has-top") && drawn(above as HTMLElement)) return go(nearest(tilesAbove, current, "ArrowUp"));
         return go(tilesAbove[tilesAbove.length - 4 + col] ?? tilesAbove[tilesAbove.length - 1]);
       }
       return go(null);
@@ -388,6 +450,8 @@ export function createButtonEditor(opts: ButtonEditorOptions) {
     tile.classList.toggle("changed", changed);
     const isSelected = slot.id === selected;
     tile.classList.toggle("selected", isSelected);
+    const drawing = topArt.get(slot.id);
+    if (drawing && slot.top) markTopPart(drawing, slot.top.part, "on", isSelected);
     tile.setAttribute("aria-current", String(isSelected));
     tile.tabIndex = isSelected ? 0 : -1;
   }

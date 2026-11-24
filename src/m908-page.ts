@@ -1,5 +1,6 @@
 // Wires the M908 configurator page (m908.html) to the M908 protocol
 // modules. Confirmed on a real M908 by the owner (2026-10-13) — see docs/protocol-notes/m908.md.
+import type { TopTile } from "./mouse-top-art";
 import { offerDesktopHandoff } from "./unsupported-browser";
 import { initDropdowns } from "./dropdowns";
 import { initRangeSliders, syncRangeSliders } from "./range-slider";
@@ -387,12 +388,25 @@ function tileLabel(name: M908ButtonName): { short: string; full: string; group: 
   const labels: Record<string, [string, string, string]> = {
     button_left: ["Left", "Left click", "clicks"], button_right: ["Right", "Right click", "clicks"],
     button_middle: ["Middle", "Middle click", "clicks"], button_fire: ["Fire", "Fire button", "clicks"],
-    button_dpi_up: ["DPI +", "DPI up button", "wheel"], button_dpi_down: ["DPI −", "DPI down button", "wheel"],
-    scroll_up: ["Scroll ↑", "Wheel scroll up", "wheel"], scroll_down: ["Scroll ↓", "Wheel scroll down", "wheel"],
+    button_dpi_up: ["DPI +", "DPI up button", "clicks"], button_dpi_down: ["DPI −", "DPI down button", "clicks"],
+    scroll_up: ["Scroll ↑", "Wheel scroll up", "clicks"], scroll_down: ["Scroll ↓", "Wheel scroll down", "clicks"],
   };
   const [short, full, group] = labels[name]!;
   return { short, full, group };
 }
+
+// Where the top buttons sit around the drawn top view (src/mouse-top-art.ts):
+// clicks and DPI on the left, the wheel's actions on the right.
+const M908_TOP: Partial<Record<M908ButtonName, TopTile>> = {
+  button_left: { part: "left", col: "l", row: 0 },
+  button_fire: { part: "fire", col: "l", row: 1 },
+  button_dpi_up: { part: "dpi_up", col: "l", row: 2 },
+  button_dpi_down: { part: "dpi_down", col: "l", row: 3 },
+  button_right: { part: "right", col: "r", row: 0 },
+  button_middle: { part: "middle", col: "r", row: 1 },
+  scroll_up: { part: "scroll_up", col: "r", row: 2 },
+  scroll_down: { part: "scroll_down", col: "r", row: 3 },
+};
 
 const TILE_ORDER: M908ButtonName[] = [
   "button_left", "button_right", "button_middle", "button_fire",
@@ -404,13 +418,12 @@ const TILE_ORDER: M908ButtonName[] = [
 const buttonEditor = createButtonEditor({
   root: buttonEditorEl,
   groups: [
-    { id: "clicks", label: "Clicks" },
-    { id: "wheel", label: "Wheel & DPI" },
+    { id: "clicks", label: "Top buttons" },
     { id: "side", label: "Side panel" },
   ],
   slots: TILE_ORDER.map((id) => {
     const label = tileLabel(id);
-    return { id, ...label, tag: label.short.replace(/^Side /, "") };
+    return { id, ...label, tag: label.short.replace(/^Side /, ""), top: M908_TOP[id] };
   }),
   categories: M908_CATEGORIES,
   getValue: (id) => profile.buttonActions[id as M908ButtonName] ?? "",

@@ -1262,3 +1262,60 @@ button[hidden] { display: none; }
 .config-toolbar #preset-select { min-inline-size: 12rem; }
 .config-toolbar #active-profile { min-inline-size: 0; }
 .config-toolbar .slot-switcher button { min-inline-size: 2.4rem; }
+
+/* The mouse seen from above (src/mouse-top-art.ts) between the top-button
+   tiles, a line from each tile to its button. The SVG spans the grid, 800
+   units = 100cqi wide: tile columns 230 units (28.75cqi) at each edge, rows
+   60 units (7.5cqi) every 80, the first 24 down (3cqi). Keep in step with
+   TILE_W / ROW_* there. Below 720px the rows are too short for a tile's
+   keycaps, so narrower maps keep the plain grid. */
+@container btnmap (max-width: 719.98px) { .mouse-art.mouse-top-art { display: none; } }
+@container btnmap (min-width: 720px) {
+  .button-grid.has-top {
+    position: relative; isolation: isolate;
+    aspect-ratio: 800 / var(--top-h, 300);
+    grid-template-columns: 28.75cqi minmax(0, 1fr) 28.75cqi; grid-template-rows: none;
+    grid-auto-rows: 7.5cqi; gap: 2.5cqi 0; padding: 3cqi 0 0; align-content: start;
+  }
+  .has-top .button-tile[data-top-col="l"] { grid-column: 1; grid-row: var(--top-row); }
+  .has-top .button-tile[data-top-col="r"] { grid-column: 3; grid-row: var(--top-row); }
+  .has-top .button-tile { min-block-size: 0; padding: 0.35rem 0.75rem; overflow: hidden; align-content: center; }
+  .has-top .tile-line { flex-direction: row; align-items: baseline; gap: 0.4rem; }
+  .has-top .keycaps { flex-wrap: nowrap; overflow: hidden; max-inline-size: 100%; }
+  .mouse-art.mouse-top-art { mask-image: none; }
+}
+.mouse-top-art {
+  --mt-body: #1d1d21; --mt-palm: #17171a; --mt-btn: #27272c; --mt-edge: rgb(255 255 255 / 0.1);
+  --mt-channel: #0b0b0d; --mt-lead: rgb(255 255 255 / 0.24); --mt-floor: rgb(0 0 0 / 0.45);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="play"]) .mouse-top-art {
+    --mt-body: #f3f4f6; --mt-palm: #e9ebee; --mt-btn: #fcfcfd; --mt-edge: rgb(21 23 28 / 0.16);
+    --mt-channel: #d3d7dd; --mt-lead: rgb(21 23 28 / 0.28); --mt-floor: rgb(21 23 28 / 0.1);
+  }
+  :root:not([data-theme="play"]) .mouse-top-art .mt-led-glow { display: none; }
+}
+:root[data-theme="pro"] .mouse-top-art {
+  --mt-body: #f3f4f6; --mt-palm: #e9ebee; --mt-btn: #fcfcfd; --mt-edge: rgb(21 23 28 / 0.16);
+  --mt-channel: #d3d7dd; --mt-lead: rgb(21 23 28 / 0.28); --mt-floor: rgb(21 23 28 / 0.1);
+}
+:root[data-theme="pro"] .mouse-top-art .mt-led-glow { display: none; }
+.mouse-top-art .mt-floor { fill: var(--mt-floor); }
+.mouse-top-art .mt-body { fill: var(--mt-body); stroke: var(--mt-edge); stroke-width: 1.5; }
+.mouse-top-art .mt-palm { fill: var(--mt-palm); }
+.mouse-top-art .mt-channel { fill: var(--mt-channel); }
+.mouse-top-art .mt-part, .mouse-top-art .mt-pad rect { fill: var(--mt-btn); stroke: var(--mt-edge); stroke-width: 1.2; transition: fill 0.15s, stroke 0.15s; }
+.mouse-top-art .mt-tread { fill: none; stroke: var(--mt-edge); stroke-width: 1.5; }
+.mouse-top-art .mt-arrow { fill: none; stroke: var(--mt-lead); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mouse-top-art .mt-dpi-led { fill: none; stroke: var(--side-led, var(--accent)); stroke-width: 2.5; stroke-linecap: round; }
+.mouse-top-art .mt-led, .mouse-top-art .mt-led-glow { fill: none; stroke: var(--side-led, var(--accent)); stroke-linecap: round; }
+.mouse-top-art .mt-led { stroke-width: 3; }
+.mouse-top-art .mt-led-glow { stroke-width: 10; opacity: 0.3; }
+.mouse-top-art .mt-leader { fill: none; stroke: var(--mt-lead); stroke-width: 1.25; }
+.mouse-top-art .mt-dot { fill: var(--mt-lead); }
+.mouse-top-art .mt-part:is(.on, .hot) { fill: color-mix(in srgb, var(--accent) 22%, var(--mt-btn)); stroke: var(--accent); }
+.mouse-top-art :is(.mt-arrow, .mt-leader):is(.on, .hot) { stroke: var(--accent); }
+.mouse-top-art .mt-leader.on { stroke-width: 2; }
+.mouse-top-art .mt-dot:is(.on, .hot) { fill: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .mouse-top-art .mt-part { transition: none; } }
+@media (forced-colors: active) { .mouse-top-art { display: none !important; } }

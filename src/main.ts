@@ -38,6 +38,7 @@ import {
 } from "./profiles/m913";
 import { buildButtonMappingPackets, actionComboTokens, MAX_COMBO_TOKENS } from "./profiles/m913-buttons";
 import { ACTION_CATEGORIES, BUTTON_SLOTS } from "./profiles/m913-action-catalog";
+import type { TopTile } from "./mouse-top-art";
 import { comboKeys, formatCombo, modifierLabel, shortcutName, type ShortcutOS } from "./profiles/shortcut-names";
 import { createButtonEditor, type ActionDescription } from "./button-editor";
 import { comboKeyGroups } from "./profiles/key-combo-keys";
@@ -520,10 +521,18 @@ function validateAction(value: string): string | null {
 // "Unsaved-change tracking" below).
 let baseline: MouseWebConfig | null = null;
 
+// Where the top buttons sit around the drawn top view (src/mouse-top-art.ts).
+const M913_TOP: Record<string, TopTile> = {
+  left: { part: "left", col: "l", row: 0 },
+  fire: { part: "fire", col: "l", row: 1 },
+  right: { part: "right", col: "r", row: 0 },
+  middle: { part: "middle", col: "r", row: 1 },
+};
+
 const buttonEditor = createButtonEditor({
   root: buttonEditorEl,
   groups: [
-    { id: "clicks", label: "Clicks" },
+    { id: "clicks", label: "Top buttons" },
     { id: "side", label: "Side panel" },
   ],
   slots: BUTTON_SLOTS.map((slot) => {
@@ -534,6 +543,7 @@ const buttonEditor = createButtonEditor({
       tag: side ? side[1]! : slot.displayName.replace(/ (Click|Button)$/, ""),
       full: slot.displayName,
       group: side ? "side" : "clicks",
+      top: M913_TOP[slot.id],
     };
   }),
   categories: ACTION_CATEGORIES,
